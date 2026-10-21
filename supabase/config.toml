@@ -1,0 +1,10 @@
+# Edge Function configuration for Cardora payment scaffolds.
+[functions.create-payment-intent]
+verify_jwt = true
+
+# Webhooks have no Supabase user JWT; the function must verify the provider signature itself.
+[functions.payment-webhook]
+verify_jwt = false
+
+[functions.request-seller-payout]
+verify_jwt = true
