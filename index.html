@@ -4041,4 +4041,68 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
 })();
 </script>
 
+
+<!-- CARDORA V6 TARGETED UI/ROUTING PATCH -->
+<style id="cardora-v6-ui-fixes">
+/* Keep global floating controls above the full-screen independent-page shell. */
+#ptxToast{z-index:100030!important}
+#ptxAiLauncher,#ptxAiChat,#cardoraPolicyLaunch{z-index:100010!important}
+#cardoraPolicyBackdrop{z-index:100020!important}
+/* Keep the email auth modal above policy/chat overlays when it is opened. */
+#ptxAuthOverlay{z-index:100100!important}
+#ptxAuthOverlay.open{z-index:100100!important}
+</style>
+<script id="cardora-v6-routing-fixes">
+(function(){
+  const previousGo=window.ptxIPGo;
+  if(typeof previousGo!=='function') return;
+  window.ptxIPGo=function(page){
+    // The nav uses data-ip="seller" while the actual route key is "sell".
+    if(page==='seller') page='sell';
+    if(page==='battle'){
+      // Render the existing Battle Arena module as its own page rather than routing to Home.
+      previousGo('support');
+      const host=document.getElementById('ptxRealPageContent');
+      const battle=document.getElementById('ptxBattleArena');
+      if(host && battle){
+        host.replaceChildren();
+        const intro=document.createElement('div');
+        intro.className='ptx-page-intro';
+        intro.innerHTML='<strong>Battle Arena · Demo</strong><br>Demo gameplay only; no real-money entry or prize payout.';
+        host.appendChild(intro);
+        battle.style.display='';
+        host.appendChild(battle);
+        const title=document.getElementById('ptxIpTitle'); if(title) title.textContent='Battle Arena';
+        const sub=document.getElementById('ptxIpSub'); if(sub) sub.textContent='Demo gameplay · no real-money entry';
+        document.querySelectorAll('#ptxIpNav [data-ip]').forEach(b=>b.classList.toggle('active',b.dataset.ip==='battle'));
+        try{history.replaceState(null,'','#battle')}catch(e){}
+      }
+      return;
+    }
+    const result=previousGo(page);
+    if(page==='orders'){
+      // The live order renderer previously targeted a container parked inside the old Hub.
+      const host=document.getElementById('ptxRealPageContent');
+      const live=document.getElementById('ptxOrdersLive');
+      if(host && live && !host.contains(live)){
+        const wrap=document.createElement('div');
+        wrap.className='ptx-ip-card';
+        const heading=document.createElement('h3'); heading.textContent='My Orders';
+        wrap.appendChild(heading); wrap.appendChild(live); host.appendChild(wrap);
+      }
+      if(typeof window.ptxLoadLiveOrders==='function'){
+        Promise.resolve().then(()=>window.ptxLoadLiveOrders()).catch(e=>console.warn('Live orders refresh failed',e));
+      }
+    }
+    return result;
+  };
+  // Route the Battle shortcut to the real Battle Arena page.
+  const oldHubGo=window.ptxHubGo;
+  window.ptxHubGo=function(target){
+    if(target==='ptxBattleArena'){window.ptxIPGo('battle');return;}
+    return typeof oldHubGo==='function'?oldHubGo(target):undefined;
+  };
+})();
+</script>
+
 </body></html>
