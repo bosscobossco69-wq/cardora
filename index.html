@@ -2843,10 +2843,18 @@ window.ptxVerifyOtp=async function(mode){
   try{
     const {data,error}=await ptxSupabase.auth.verifyOtp({email,token,type:'email'});
     if(error)throw error;
-    // Use the returned session immediately so the UI changes in the same turn.
-    await ptxUpdateAuthUI(data?.session||null);
-    ptxCloseAuth();
-    if(typeof ptxToast==='function')ptxToast(mode==='register'?'Account created successfully':'Signed in successfully');
+    // Match the previously verified V8 login-state fix: use the OTP session when
+    // supplied, otherwise read the actual persisted Supabase session.
+    const verifiedSession = data?.session || (await ptxSupabase.auth.getSession()).data?.session || null;
+    await ptxUpdateAuthUI(verifiedSession);
+    if(verifiedSession?.user){
+      ptxCloseAuth();
+      // Sync again after closing the modal so the Account page and header agree.
+      requestAnimationFrame(()=>ptxUpdateAuthUI(verifiedSession));
+      if(typeof ptxToast==='function')ptxToast(mode==='register'?'Account created successfully':'Signed in successfully');
+    }else{
+      ptxSetAuthMessage(msgId,'Verification completed, but no active session was found. Please refresh and try again.');
+    }
   }catch(err){
     console.error('OTP verify error:',err);
     ptxSetAuthMessage(msgId,err?.message||'Invalid or expired code. Please request a new code.');
