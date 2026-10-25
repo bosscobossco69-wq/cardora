@@ -6,6 +6,7 @@
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <meta content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://crqqockaetgacddxkqpb.supabase.co; frame-src https://accounts.google.com https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" http-equiv="Content-Security-Policy"/>
 <title>Cardora — Global Collectibles Marketplace</title>
+<meta name="cardora-auth-fix" content="session-persistence-v2-2026-10-25"/>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#080711;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .app{max-width:430px;margin:auto;min-height:100vh;background:linear-gradient(180deg,#100c24,#080711 45%);padding-bottom:78px}
@@ -824,25 +825,46 @@ function authTab(tab,btn){
 
 const PTX_SUPABASE_URL='https://crqqockaetgacddxkqpb.supabase.co';
 const PTX_SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNycXFvY2thZXRnYWNkZHhrcXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4NDQwOTQsImV4cCI6MjEwNTQyMDA5NH0.2OlGiOeE8vcFwWgLt5tO8BVZfi1V-YO-aeywFdi5oEs';
-let ptxSupabase=window.supabase?.createClient(PTX_SUPABASE_URL,PTX_SUPABASE_KEY) || null;
+// Keep one Supabase client for the whole page and explicitly enable browser session persistence.
+// The explicit auth options make the Google OAuth callback/session handling predictable.
+const PTX_AUTH_OPTIONS={
+  auth:{
+    flowType:'pkce',
+    autoRefreshToken:true,
+    persistSession:true,
+    detectSessionInUrl:true,
+    storage:window.localStorage,
+    storageKey:'cardora-supabase-auth-v1'
+  }
+};
+let ptxSupabase=window.supabase?.createClient(PTX_SUPABASE_URL,PTX_SUPABASE_KEY,PTX_AUTH_OPTIONS) || null;
 window.ptxSupabase=ptxSupabase;
-window.ptxSupabaseReady = !!ptxSupabase;
+window.ptxSupabaseReady=!!ptxSupabase;
 window.ptxEnsureSupabase=async function(){
   if(ptxSupabase){window.ptxSupabaseReady=true;return ptxSupabase;}
   for(let i=0;i<30;i++){
-    if(window.supabase?.createClient){try{ptxSupabase=window.supabase.createClient(PTX_SUPABASE_URL,PTX_SUPABASE_KEY);window.ptxSupabase=ptxSupabase;window.ptxSupabaseReady=true;return ptxSupabase;}catch(e){}}
+    if(window.supabase?.createClient){
+      try{
+        ptxSupabase=window.supabase.createClient(PTX_SUPABASE_URL,PTX_SUPABASE_KEY,PTX_AUTH_OPTIONS);
+        window.ptxSupabase=ptxSupabase;
+        window.ptxSupabaseReady=true;
+        return ptxSupabase;
+      }catch(e){console.error('Supabase client init failed:',e);}
+    }
     await new Promise(r=>setTimeout(r,100));
   }
-  window.ptxSupabaseReady=false; throw new Error('Supabase is not ready. Please refresh the page.');
+  window.ptxSupabaseReady=false;
+  throw new Error('Supabase is not ready. Please refresh the page.');
 };
-
 
 async function ptxCurrentUser(){
   if(!ptxSupabase) throw new Error('Supabase client failed to load.');
-  const {data,error}=await ptxSupabase.auth.getUser();
+  // Read the persisted browser session first. Avoid getUser() requests when no session exists.
+  const {data,error}=await ptxSupabase.auth.getSession();
   if(error) throw error;
-  if(!data.user) throw new Error('Please sign in first.');
-  return data.user;
+  const user=data?.session?.user||null;
+  if(!user) throw new Error('Please sign in first.');
+  return user;
 }
 
 function ptxDepositMsg(msg,error=false){
@@ -860,10 +882,19 @@ async function ptxSubmitDeposit(){
   if(amount) amount.value='';
 }
 
+let ptxWalletLoadInFlight=false;
 async function ptxLoadWallet(){
+  if(ptxWalletLoadInFlight) return;
+  ptxWalletLoadInFlight=true;
   try{
     const user=await ptxCurrentUser();
-    const {data:profile,error:profileError}=await ptxSupabase.from('users').select('id,balance').eq('auth_user_id',user.id).single();
+    const {data:profile,error:profileError}=await ptxSupabase.from('users').select('id,balance').eq('auth_user_id',user.id).maybeSingle();
+    if(profileError) throw profileError;
+    if(!profile){
+      const bal=document.getElementById('ptxLiveBalance'); if(bal) bal.textContent='Account setup required';
+      const list=document.getElementById('ptxDepositList'); if(list) list.innerHTML='<div class="ptx-muted">Your account profile is not set up yet. Please contact support.</div>';
+      return;
+    }
     if(profileError) throw profileError;
     const bal=document.getElementById('ptxLiveBalance'); if(bal) bal.textContent='Migration required';
     const {data:rows,error}=await ptxSupabase.from('wallet_reviews').select('review_id,amount,txid,status,created_at').eq('user_id',profile.id).eq('review_type','deposit').order('created_at',{ascending:false}).limit(10);
@@ -872,6 +903,7 @@ async function ptxLoadWallet(){
     if(!rows?.length){list.innerHTML='<div class="ptx-muted">No deposit requests yet.</div>';return;}
     list.innerHTML=rows.map(r=>{const st=String(r.status||'pending'); const c=st==='approved'?'#8ee7b4':st==='rejected'?'#ff9a9a':'#f0d27a'; return `<div class="ptx-card" style="margin:8px 0"><div class="ptx-row"><b>${r.review_id}</b><span style="color:${c};font-weight:800">${st.toUpperCase()}</span></div><div class="ptx-muted">${Number(r.amount).toFixed(2)} USD · TXID ${r.txid||'—'}</div><div class="ptx-muted">${new Date(r.created_at).toLocaleString()}</div></div>`;}).join('');
   }catch(e){ console.warn('wallet load',e); }
+  finally{ptxWalletLoadInFlight=false;}
 }
 
 async function ptxUpdateAuthUI(sessionOverride=null){
@@ -944,14 +976,30 @@ window.ptxLogout=async function(){
 
 async function ptxInitBackend(){
   try{await window.ptxEnsureSupabase();}catch(e){console.warn('Supabase init',e);return;}
+  let authUiRefreshTimer=null;
+  const refreshAuthUi=()=>{
+    clearTimeout(authUiRefreshTimer);
+    authUiRefreshTimer=setTimeout(async()=>{
+      await ptxUpdateAuthUI();
+      await ptxLoadWallet();
+    },150);
+  };
   const start=async()=>{
-    // Wait until every Account/Auth element exists before the first session render.
+    // Let Supabase finish processing an OAuth callback before reading the persisted session.
+    try{await ptxSupabase.auth.getSession();}catch(e){console.warn('Initial auth session check failed:',e);}
     await ptxUpdateAuthUI();
     await ptxLoadWallet();
   };
   ptxSupabase.auth.onAuthStateChange((event,session)=>{
-    setTimeout(()=>{ptxUpdateAuthUI(session);ptxLoadWallet();},0);
+    // Do not call Supabase auth methods synchronously inside this callback.
+    setTimeout(()=>{
+      ptxUpdateAuthUI(session||null);
+      ptxLoadWallet();
+    },0);
   });
+  window.addEventListener('pageshow',refreshAuthUi);
+  window.addEventListener('focus',refreshAuthUi);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshAuthUi();});
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',start,{once:true});
   }else{
@@ -2843,18 +2891,10 @@ window.ptxVerifyOtp=async function(mode){
   try{
     const {data,error}=await ptxSupabase.auth.verifyOtp({email,token,type:'email'});
     if(error)throw error;
-    // Match the previously verified V8 login-state fix: use the OTP session when
-    // supplied, otherwise read the actual persisted Supabase session.
-    const verifiedSession = data?.session || (await ptxSupabase.auth.getSession()).data?.session || null;
-    await ptxUpdateAuthUI(verifiedSession);
-    if(verifiedSession?.user){
-      ptxCloseAuth();
-      // Sync again after closing the modal so the Account page and header agree.
-      requestAnimationFrame(()=>ptxUpdateAuthUI(verifiedSession));
-      if(typeof ptxToast==='function')ptxToast(mode==='register'?'Account created successfully':'Signed in successfully');
-    }else{
-      ptxSetAuthMessage(msgId,'Verification completed, but no active session was found. Please refresh and try again.');
-    }
+    // Use the returned session immediately so the UI changes in the same turn.
+    await ptxUpdateAuthUI(data?.session||null);
+    ptxCloseAuth();
+    if(typeof ptxToast==='function')ptxToast(mode==='register'?'Account created successfully':'Signed in successfully');
   }catch(err){
     console.error('OTP verify error:',err);
     ptxSetAuthMessage(msgId,err?.message||'Invalid or expired code. Please request a new code.');
@@ -4038,70 +4078,6 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
  $('csStartCamera').addEventListener('click',startCamera);$('csStopCamera').addEventListener('click',stopCamera);$('csDemoScan').addEventListener('click',demoScan);$('csRegister').addEventListener('click',register);$('csModeSealed').addEventListener('click',()=>mode('sealed'));$('csModeOpen').addEventListener('click',()=>mode('open'));$('csCreateOrder').addEventListener('click',createOrder);$('csStartOpening').addEventListener('click',startOpening);$('csFinishOpening').addEventListener('click',finishOpening);$('csExport').addEventListener('click',exportCSV);$('csReset').addEventListener('click',reset);
  load();mode(state.mode||'sealed');render();
  window.cardoraSealedTest={getState:()=>JSON.parse(JSON.stringify(state)),demoScan,register,createOrder,startOpening,finishOpening,reset};
-})();
-</script>
-
-
-<!-- CARDORA V6 TARGETED UI/ROUTING PATCH -->
-<style id="cardora-v6-ui-fixes">
-/* Keep global floating controls above the full-screen independent-page shell. */
-#ptxToast{z-index:100030!important}
-#ptxAiLauncher,#ptxAiChat,#cardoraPolicyLaunch{z-index:100010!important}
-#cardoraPolicyBackdrop{z-index:100020!important}
-/* Keep the email auth modal above policy/chat overlays when it is opened. */
-#ptxAuthOverlay{z-index:100100!important}
-#ptxAuthOverlay.open{z-index:100100!important}
-</style>
-<script id="cardora-v6-routing-fixes">
-(function(){
-  const previousGo=window.ptxIPGo;
-  if(typeof previousGo!=='function') return;
-  window.ptxIPGo=function(page){
-    // The nav uses data-ip="seller" while the actual route key is "sell".
-    if(page==='seller') page='sell';
-    if(page==='battle'){
-      // Render the existing Battle Arena module as its own page rather than routing to Home.
-      previousGo('support');
-      const host=document.getElementById('ptxRealPageContent');
-      const battle=document.getElementById('ptxBattleArena');
-      if(host && battle){
-        host.replaceChildren();
-        const intro=document.createElement('div');
-        intro.className='ptx-page-intro';
-        intro.innerHTML='<strong>Battle Arena · Demo</strong><br>Demo gameplay only; no real-money entry or prize payout.';
-        host.appendChild(intro);
-        battle.style.display='';
-        host.appendChild(battle);
-        const title=document.getElementById('ptxIpTitle'); if(title) title.textContent='Battle Arena';
-        const sub=document.getElementById('ptxIpSub'); if(sub) sub.textContent='Demo gameplay · no real-money entry';
-        document.querySelectorAll('#ptxIpNav [data-ip]').forEach(b=>b.classList.toggle('active',b.dataset.ip==='battle'));
-        try{history.replaceState(null,'','#battle')}catch(e){}
-      }
-      return;
-    }
-    const result=previousGo(page);
-    if(page==='orders'){
-      // The live order renderer previously targeted a container parked inside the old Hub.
-      const host=document.getElementById('ptxRealPageContent');
-      const live=document.getElementById('ptxOrdersLive');
-      if(host && live && !host.contains(live)){
-        const wrap=document.createElement('div');
-        wrap.className='ptx-ip-card';
-        const heading=document.createElement('h3'); heading.textContent='My Orders';
-        wrap.appendChild(heading); wrap.appendChild(live); host.appendChild(wrap);
-      }
-      if(typeof window.ptxLoadLiveOrders==='function'){
-        Promise.resolve().then(()=>window.ptxLoadLiveOrders()).catch(e=>console.warn('Live orders refresh failed',e));
-      }
-    }
-    return result;
-  };
-  // Route the Battle shortcut to the real Battle Arena page.
-  const oldHubGo=window.ptxHubGo;
-  window.ptxHubGo=function(target){
-    if(target==='ptxBattleArena'){window.ptxIPGo('battle');return;}
-    return typeof oldHubGo==='function'?oldHubGo(target):undefined;
-  };
 })();
 </script>
 
