@@ -2785,7 +2785,7 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 <button class="ptx-auth-main" id="ptxLoginEmailSend" onclick="ptxSendOtp('login')" type="button">Send verification code</button>
 <div class="ptx-auth-note" id="ptxLoginMessage" style="min-height:20px"></div>
 <div id="ptxLoginOtpArea" style="display:none">
-<label>8-digit verification code</label>
+<label>Verification code (6–8 digits)</label>
 <input autocomplete="one-time-code" id="ptxModalLoginOtp" inputmode="numeric" maxlength="8" placeholder="12345678"/>
 <button class="ptx-auth-main" onclick="ptxVerifyOtp('login')" type="button">Verify &amp; Sign in</button>
 </div>
@@ -2802,7 +2802,7 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 <button class="ptx-auth-main" id="ptxRegisterEmailSend" onclick="ptxSendOtp('register')" type="button">Send verification code</button>
 <div class="ptx-auth-note" id="ptxRegisterMessage" style="min-height:20px"></div>
 <div id="ptxRegisterOtpArea" style="display:none">
-<label>8-digit verification code</label>
+<label>Verification code (6–8 digits)</label>
 <input autocomplete="one-time-code" id="ptxModalRegisterOtp" inputmode="numeric" maxlength="8" placeholder="12345678"/>
 <button class="ptx-auth-main" onclick="ptxVerifyOtp('register')" type="button">Verify &amp; Create account</button>
 </div>
@@ -2873,7 +2873,7 @@ window.ptxSendOtp=async function(mode){
     const {error}=await ptxSupabase.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
     if(error)throw error;
     const area=document.getElementById(areaId); if(area)area.style.display='block';
-    ptxSetAuthMessage(msgId,'Code sent. Check your email for the 8-digit verification code.',true);
+    ptxSetAuthMessage(msgId,'Code sent. Check your email for the verification code.',true);
   }catch(err){console.error('OTP send error:',err);ptxSetAuthMessage(msgId,err?.message||'Could not send the verification code.');}
   finally{if(btn){btn.disabled=false;btn.textContent='Send verification code';}}
 };
@@ -2884,7 +2884,7 @@ window.ptxVerifyOtp=async function(mode){
   const email=(document.getElementById(emailId)?.value||'').replace(/\s+/g,'').trim().toLowerCase();
   const token=(document.getElementById(otpId)?.value||'').replace(/\D/g,'');
   if(!email){ptxSetAuthMessage(msgId,'Please enter your email address.');return;}
-  if(!/^\d{8}$/.test(token)){ptxSetAuthMessage(msgId,'Enter the 8-digit code from your email.');return;}
+  if(!/^\d{6,8}$/.test(token)){ptxSetAuthMessage(msgId,'Enter the 6–8 digit code from your email.');return;}
   if(!ptxSupabase){ptxSetAuthMessage(msgId,'Supabase client is not ready. Please refresh the page.');return;}
   const verifyBtn=document.querySelector(mode==='register'?'#ptxRegisterOtpArea .ptx-auth-main':'#ptxLoginOtpArea .ptx-auth-main');
   if(verifyBtn){verifyBtn.disabled=true;verifyBtn.textContent='VERIFYING…';}
