@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<meta content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://fdkfquvzbswxocyrhduk.supabase.co; frame-src https://accounts.google.com https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" http-equiv="Content-Security-Policy"/>
+<meta content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://crqqockaetgacddxkqpb.supabase.co; frame-src https://accounts.google.com https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" http-equiv="Content-Security-Policy"/>
 <title>Cardora — Global Collectibles Marketplace</title>
 <meta name="cardora-auth-fix" content="session-persistence-v2-2026-10-25"/>
 <style>
@@ -823,8 +823,8 @@ function authTab(tab,btn){
  document.getElementById('registerForm').style.display=tab==='register'?'block':'none';
 }
 
-const PTX_SUPABASE_URL='https://fdkfquvzbswxocyrhduk.supabase.co';
-const PTX_SUPABASE_KEY='sb_publishable_V99GEROTQ492-d_w2QIoGg_RWx8DqwT';
+const PTX_SUPABASE_URL='https://crqqockaetgacddxkqpb.supabase.co';
+const PTX_SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNycXFvY2thZXRnYWNkZHhrcXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4NDQwOTQsImV4cCI6MjEwNTQyMDA5NH0.2OlGiOeE8vcFwWgLt5tO8BVZfi1V-YO-aeywFdi5oEs';
 // Keep one Supabase client for the whole page and explicitly enable browser session persistence.
 // The explicit auth options make the Google OAuth callback/session handling predictable.
 const PTX_AUTH_OPTIONS={
@@ -906,10 +906,11 @@ async function ptxLoadWallet(){
   finally{ptxWalletLoadInFlight=false;}
 }
 
-async function ptxUpdateAuthUI(sessionOverride=null){
+async function ptxUpdateAuthUI(sessionOverride){
   if(!ptxSupabase) return null;
   try{
-    const session=sessionOverride || (await ptxSupabase.auth.getSession()).data?.session || null;
+    // `null` is a real signed-out state. Only read storage when no argument was supplied.
+    const session=arguments.length>0 ? sessionOverride : ((await ptxSupabase.auth.getSession()).data?.session || null);
     const user=session?.user||null;
     const overlay=document.getElementById('ptxAuthOverlay');
     const signedOut=document.getElementById('ptxSignedOutCard');
@@ -944,9 +945,13 @@ async function ptxUpdateAuthUI(sessionOverride=null){
         headerBtn.onclick=()=>window.ptxIPGo?.('account');
       }
     }else{
+      // A signed-out state must also close any stale modal and reset page scroll.
+      if(overlay) overlay.classList.remove('open');
+      document.body.style.overflow='';
       if(signedOut) signedOut.style.display='block';
       if(signedIn) signedIn.style.display='none';
       if(authCenter) authCenter.style.display='block';
+      if(accountCenter) accountCenter.style.display='none';
       if(headerBtn){
         headerBtn.textContent='Sign in';
         headerBtn.title='Sign in';
@@ -991,10 +996,10 @@ async function ptxInitBackend(){
     await ptxLoadWallet();
   };
   ptxSupabase.auth.onAuthStateChange((event,session)=>{
-    // Do not call Supabase auth methods synchronously inside this callback.
-    setTimeout(()=>{
-      ptxUpdateAuthUI(session||null);
-      ptxLoadWallet();
+    // Defer UI/data work out of the auth callback to avoid re-entrant Supabase calls.
+    setTimeout(async()=>{
+      await ptxUpdateAuthUI(session ?? null);
+      await ptxLoadWallet();
     },0);
   });
   window.addEventListener('pageshow',refreshAuthUi);
@@ -2891,9 +2896,10 @@ window.ptxVerifyOtp=async function(mode){
   try{
     const {data,error}=await ptxSupabase.auth.verifyOtp({email,token,type:'email'});
     if(error)throw error;
-    // Use the returned session immediately so the UI changes in the same turn.
-    await ptxUpdateAuthUI(data?.session||null);
+    // Pass the returned session explicitly; null must not fall back to stale local storage.
+    await ptxUpdateAuthUI(data?.session ?? null);
     ptxCloseAuth();
+    await ptxLoadWallet();
     if(typeof ptxToast==='function')ptxToast(mode==='register'?'Account created successfully':'Signed in successfully');
   }catch(err){
     console.error('OTP verify error:',err);
