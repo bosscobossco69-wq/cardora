@@ -1,12 +1,21 @@
 <!DOCTYPE html>
 
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <meta content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://crqqockaetgacddxkqpb.supabase.co; frame-src https://accounts.google.com https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" http-equiv="Content-Security-Policy"/>
 <title>Cardora — Global Collectibles Marketplace</title>
-<meta name="cardora-auth-fix" content="session-persistence-v2-2026-10-25"/>
+<meta name="description" content="Cardora is a global collectible card marketplace preview: browse Pokémon card listings, compare sellers and shipping, and manage your account. Payments are not live yet."/>
+<meta name="theme-color" content="#080711"/>
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="Cardora — Global Collectibles Marketplace"/>
+<meta property="og:description" content="Browse collectible card listings, compare sellers and manage your account. Cardora is in preview; local payments are not connected yet."/>
+<meta name="twitter:card" content="summary"/>
+<meta content="no-store, no-cache, must-revalidate" http-equiv="Cache-Control"/>
+<meta content="no-cache" http-equiv="Pragma"/>
+<meta content="0" http-equiv="Expires"/>
+<meta name="cardora-auth-fix" content="launch-hardening-v1-2026-10-27"/>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#080711;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .app{max-width:430px;margin:auto;min-height:100vh;background:linear-gradient(180deg,#100c24,#080711 45%);padding-bottom:78px}
@@ -77,7 +86,7 @@ nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(430px,
 @media(max-width:900px){.ptx-bookgrid{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:600px){.ptx-book{margin:12px 8px;padding:13px}.ptx-bookgrid{grid-template-columns:repeat(3,1fr);gap:8px}.ptx-slot-art{height:72%;font-size:27px}.ptx-slot-name{font-size:9px}.ptx-bookfoot{align-items:flex-start;flex-direction:column}.ptx-bookprogress{max-width:none;width:100%}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
 <style id="ptx-mobile-overflow-fix-v15">
 /* v15: harden the public storefront against horizontal overflow on iPhone/WeChat preview */
 html, body {
@@ -118,7 +127,7 @@ img, video, iframe, canvas, svg { max-width:100%; }
 .ptx-shimmer{background:linear-gradient(90deg,#f5c542,#fff0a4,#f5c542);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:ptxShimmer 3s linear infinite}@keyframes ptxShimmer{to{background-position:200% center}}
 .ptx-live{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:#83f0ae}.ptx-live i{width:7px;height:7px;border-radius:50%;background:#62e89a;box-shadow:0 0 9px #62e89a;animation:ptxPulse 1.5s infinite}@keyframes ptxPulse{50%{opacity:.35}}
 .ptx-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.ptx-stat{background:#120d1eaa;border:1px solid #49366a;border-radius:12px;padding:10px}.ptx-stat b{font-size:16px}.ptx-stat span{display:block;color:#9f95ac;font-size:10px;margin-top:2px}
-.ptx-toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(15px);background:#211633;color:#fff;border:1px solid #6b4a91;border-radius:12px;padding:10px 14px;z-index:80;opacity:0;pointer-events:none;transition:.25s}.ptx-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.ptx-toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(15px);background:#211633;color:#fff;border:1px solid #6b4a91;border-radius:12px;padding:10px 14px;z-index:100001;opacity:0;pointer-events:none;transition:.25s}.ptx-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(max-width:650px){.ptx-brandbar{padding:9px 10px}.ptx-logo-mark{width:34px;height:34px}.ptx-stats{grid-template-columns:1fr 1fr 1fr}}
 
 /* Cardora sealed inventory prototype */
@@ -201,6 +210,8 @@ window.ptxToast=function(msg){
  const e=document.getElementById("ptxToast");e.textContent=msg;e.classList.add("show");
  clearTimeout(window.__ptxToast);window.__ptxToast=setTimeout(()=>e.classList.remove("show"),1800);
 };
+// Escape every database/user supplied string before it goes into innerHTML.
+window.ptxEsc=function(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));};
 </script>
 <div class="app">
 <header><div class="logo">🎴 Cardora</div><div class="pill">🌐 EN / 中文</div></header>
@@ -741,7 +752,7 @@ shipments
 <button class="btn" onclick="placeOrder()" style="width:100%;margin-top:12px">Confirm Demo Order</button>
 </section>
 <h2>👛 Wallet</h2>
-<div class="wallet"><div class="muted">Available Balance</div><div class="balance" id="ptxLiveBalance">— USD</div><button class="btn" onclick="document.getElementById('ptxDepositPanel')?.scrollIntoView({behavior:'smooth'})">＋ Deposit</button></div>
+<div class="wallet"><div class="muted">Available Balance</div><div class="balance" id="ptxLiveBalance">— USD</div><button class="btn" onclick="document.getElementById('ptxDepositPanel')?.scrollIntoView({behavior:'smooth'})">＋ Deposit</button><div class="muted" id="ptxBalanceNote" style="margin-top:8px">Demo ledger · withdrawals are not enabled.</div></div>
 <h2>🎴 My Collection</h2>
 <div class="grid"><div class="card"><div class="art">⚡</div><div class="tag">DEMO CARD</div><div class="price">38.00 USD</div></div><div class="card"><div class="art">✨</div><div class="tag">AR DEMO</div><div class="price">12.50 USD</div></div></div>
 </div>
@@ -837,6 +848,8 @@ const PTX_AUTH_OPTIONS={
     storageKey:'cardora-supabase-auth-v1'
   }
 };
+// Snapshot OAuth callback params before supabase-js initializes and strips them from the URL.
+const PTX_AUTH_CALLBACK=ptxReadAuthCallback();
 let ptxSupabase=window.supabase?.createClient(PTX_SUPABASE_URL,PTX_SUPABASE_KEY,PTX_AUTH_OPTIONS) || null;
 window.ptxSupabase=ptxSupabase;
 window.ptxSupabaseReady=!!ptxSupabase;
@@ -856,6 +869,81 @@ window.ptxEnsureSupabase=async function(){
   window.ptxSupabaseReady=false;
   throw new Error('Supabase is not ready. Please refresh the page.');
 };
+
+// OAuth redirects must be an absolute http(s) URL that Supabase has allow-listed.
+// A file:// page has no usable origin, so return null and let the caller explain it.
+function ptxOAuthRedirectUrl(){
+  try{
+    const url=new URL(window.location.href);
+    if(url.protocol!=='http:'&&url.protocol!=='https:') return null;
+    url.hash='';url.search='';
+    return url.toString();
+  }catch(e){return null;}
+}
+function ptxReadAuthCallback(){
+  const search=new URLSearchParams(window.location.search||'');
+  const hash=new URLSearchParams((window.location.hash||'').replace(/^#/,''));
+  const pick=key=>search.get(key)||hash.get(key);
+  return {
+    error:pick('error'),
+    errorCode:pick('error_code'),
+    description:pick('error_description'),
+    code:search.get('code')||hash.get('code')||'',
+    flowId:search.get('sb_flow_id')||'',
+    accessToken:hash.get('access_token')||'',
+    refreshToken:hash.get('refresh_token')||'',
+    hasCode:!!(search.get('code')||hash.get('code')||hash.get('access_token')),
+    hadAuthParams:!!(search.get('code')||search.get('state')||search.get('sb_flow_id')||hash.get('code')||hash.get('access_token')||pick('error'))
+  };
+}
+function ptxAuthErrorMessage(callback){
+  const description=callback.description||'';
+  const code=callback.errorCode||'';
+  if(/access_denied/i.test(callback.error||'')||/access_denied/i.test(code)) return 'Google sign-in was cancelled.';
+  if(/redirect/i.test(description)||/redirect/i.test(code)) return 'Google sign-in failed because the redirect URL is not allowed. Add this exact page URL to Supabase → Authentication → URL Configuration → Redirect URLs.';
+  return 'Google sign-in failed: '+(description||code||callback.error||'unknown error');
+}
+function ptxAuthFailureHint(callback,err){
+  const msg=String(err?.message||err||'');
+  if(/code verifier|pkce/i.test(msg)) return 'Google sign-in started in a different tab or browser profile, so the security check could not be completed. Click "Continue with Google" again and finish it in this same tab.';
+  if(/expired|already used|invalid/i.test(msg)) return 'The Google sign-in code expired or was already used. Please start the sign-in again from this page.';
+  if(/redirect/i.test(msg)) return 'Google sign-in failed because this page URL is not allowed in Supabase → Authentication → URL Configuration → Redirect URLs.';
+  return 'Google sign-in failed: '+(msg||'unknown error');
+}
+function ptxShowAuthFailure(message){
+  window.ptxLastAuthError=message;
+  window.ptxOpenAuth?.('login');
+  window.ptxSetAuthMessage?.('ptxLoginMessage',message,false);
+  window.ptxSetAuthMessage?.('ptxRegisterMessage',message,false);
+  document.querySelectorAll('[data-ptx-auth-status]').forEach(el=>{el.textContent=message;el.style.color='#ff9a9a';el.style.display='block';});
+  try{ if(typeof ptxToast==='function') ptxToast(message.length>120?message.slice(0,117)+'…':message); }catch(e){}
+}
+function ptxShowAuthSuccess(){
+  window.ptxLastAuthError='';
+  document.querySelectorAll('[data-ptx-auth-status]').forEach(el=>{el.textContent='';el.style.display='none';});
+}
+function ptxCleanAuthUrl(){
+  try{
+    const url=new URL(window.location.href);
+    ['code','state','error','error_code','error_description','sb_flow_id'].forEach(key=>url.searchParams.delete(key));
+    if(/access_token=|error=|error_description=/.test(url.hash)){
+      const hashParams=new URLSearchParams(url.hash.replace(/^#/,''));
+      ['access_token','refresh_token','expires_in','expires_at','token_type','provider_token','provider_refresh_token','state','code','sb_flow_id','error','error_code','error_description'].forEach(key=>hashParams.delete(key));
+      const rest=hashParams.toString();
+      url.hash=rest?rest:'';
+    }
+    history.replaceState(null,'',url.toString());
+  }catch(e){}
+}
+let ptxSignedInToastAt=0;
+function ptxNotifySignedIn(){
+  const now=Date.now();
+  if(now-ptxSignedInToastAt<4000) return;
+  ptxSignedInToastAt=now;
+  // The first paint also fires "Market refreshed"; show the sign-in confirmation after it
+  // so the success message is the one left on screen.
+  setTimeout(()=>{ if(typeof ptxToast==='function') ptxToast('✓ Signed in successfully'); },1200);
+}
 
 async function ptxCurrentUser(){
   if(!ptxSupabase) throw new Error('Supabase client failed to load.');
@@ -887,7 +975,11 @@ async function ptxLoadWallet(){
   if(ptxWalletLoadInFlight) return;
   ptxWalletLoadInFlight=true;
   try{
-    const user=await ptxCurrentUser();
+    if(!ptxSupabase) return;
+    // Signed-out visitors have nothing to load; skip quietly instead of logging errors.
+    const {data:sessionData}=await ptxSupabase.auth.getSession();
+    const user=sessionData?.session?.user||null;
+    if(!user) return;
     const {data:profile,error:profileError}=await ptxSupabase.from('users').select('id,balance').eq('auth_user_id',user.id).maybeSingle();
     if(profileError) throw profileError;
     if(!profile){
@@ -895,14 +987,21 @@ async function ptxLoadWallet(){
       const list=document.getElementById('ptxDepositList'); if(list) list.innerHTML='<div class="ptx-muted">Your account profile is not set up yet. Please contact support.</div>';
       return;
     }
-    if(profileError) throw profileError;
-    const bal=document.getElementById('ptxLiveBalance'); if(bal) bal.textContent='Migration required';
+    const bal=document.getElementById('ptxLiveBalance');
+    if(bal) bal.textContent=Number(profile.balance||0).toFixed(2)+' USD';
+    const note=document.getElementById('ptxBalanceNote');
+    if(note) note.textContent='Demo ledger · withdrawals are not enabled.';
     const {data:rows,error}=await ptxSupabase.from('wallet_reviews').select('review_id,amount,txid,status,created_at').eq('user_id',profile.id).eq('review_type','deposit').order('created_at',{ascending:false}).limit(10);
     if(error) throw error;
     const list=document.getElementById('ptxDepositList');
+    if(!list) return;
     if(!rows?.length){list.innerHTML='<div class="ptx-muted">No deposit requests yet.</div>';return;}
-    list.innerHTML=rows.map(r=>{const st=String(r.status||'pending'); const c=st==='approved'?'#8ee7b4':st==='rejected'?'#ff9a9a':'#f0d27a'; return `<div class="ptx-card" style="margin:8px 0"><div class="ptx-row"><b>${r.review_id}</b><span style="color:${c};font-weight:800">${st.toUpperCase()}</span></div><div class="ptx-muted">${Number(r.amount).toFixed(2)} USD · TXID ${r.txid||'—'}</div><div class="ptx-muted">${new Date(r.created_at).toLocaleString()}</div></div>`;}).join('');
-  }catch(e){ console.warn('wallet load',e); }
+    const esc=window.ptxEsc||(v=>String(v??''));
+    list.innerHTML=rows.map(r=>{const st=String(r.status||'pending'); const c=st==='approved'?'#8ee7b4':st==='rejected'?'#ff9a9a':'#f0d27a'; return `<div class="ptx-card" style="margin:8px 0"><div class="ptx-row"><b>${esc(r.review_id)}</b><span style="color:${c};font-weight:800">${esc(st.toUpperCase())}</span></div><div class="ptx-muted">${Number(r.amount).toFixed(2)} USD · TXID ${esc(r.txid||'—')}</div><div class="ptx-muted">${esc(new Date(r.created_at).toLocaleString())}</div></div>`;}).join('');
+  }catch(e){
+    const m=String(e?.message||e);
+    if(!/Please sign in first|Auth session missing/i.test(m)) console.warn('wallet load',e);
+  }
   finally{ptxWalletLoadInFlight=false;}
 }
 
@@ -938,6 +1037,9 @@ async function ptxUpdateAuthUI(sessionOverride){
       document.querySelectorAll('[data-ptx-account-email]').forEach(el=>el.textContent=email||'—');
       document.querySelectorAll('[data-ptx-account-name]').forEach(el=>el.textContent=name);
       document.querySelectorAll('[data-ptx-user-id]').forEach(el=>el.textContent=user.id||'—');
+      const provider=String(user.app_metadata?.provider||'email');
+      const providerLabel=provider==='google'?'Google':provider==='email'?'Email code':provider;
+      document.querySelectorAll('[data-ptx-account-provider]').forEach(el=>el.textContent=providerLabel);
       document.querySelectorAll('[data-ptx-login-required]').forEach(el=>el.style.display='none');
       if(headerBtn){
         headerBtn.textContent=shortName;
@@ -945,9 +1047,8 @@ async function ptxUpdateAuthUI(sessionOverride){
         headerBtn.onclick=()=>window.ptxIPGo?.('account');
       }
     }else{
-      // A signed-out state must also close any stale modal and reset page scroll.
-      if(overlay) overlay.classList.remove('open');
-      document.body.style.overflow='';
+      // Do not force-close an open sign-in modal: focus/visibility refreshes fire while
+      // the user is reading the emailed code, and the result message must stay visible.
       if(signedOut) signedOut.style.display='block';
       if(signedIn) signedIn.style.display='none';
       if(authCenter) authCenter.style.display='block';
@@ -959,6 +1060,12 @@ async function ptxUpdateAuthUI(sessionOverride){
       }
       document.querySelectorAll('[data-ptx-login-required]').forEach(el=>el.style.display='');
     }
+    document.querySelectorAll('[data-ptx-auth-status]').forEach(el=>{
+      if(user||!window.ptxLastAuthError){el.textContent='';el.style.display='none';}
+      else{el.textContent=window.ptxLastAuthError;el.style.color='#ff9a9a';el.style.display='block';}
+    });
+    if(user) window.ptxLastAuthError='';
+    if(document.getElementById('ptxIpAccountStatus')){ try{ window.ptxRenderIndependentAccount?.(); }catch(e){} }
     return user;
   }catch(e){console.warn('auth ui',e);return null;}
 }
@@ -980,7 +1087,13 @@ window.ptxLogout=async function(){
 };
 
 async function ptxInitBackend(){
-  try{await window.ptxEnsureSupabase();}catch(e){console.warn('Supabase init',e);return;}
+  try{await window.ptxEnsureSupabase();}catch(e){
+    console.warn('Supabase init',e);
+    if(PTX_AUTH_CALLBACK.hasCode||PTX_AUTH_CALLBACK.error){
+      ptxShowAuthFailure('Could not load the Supabase client. Check the network connection and refresh this page.');
+    }
+    return;
+  }
   let authUiRefreshTimer=null;
   const refreshAuthUi=()=>{
     clearTimeout(authUiRefreshTimer);
@@ -991,14 +1104,73 @@ async function ptxInitBackend(){
   };
   const start=async()=>{
     // Let Supabase finish processing an OAuth callback before reading the persisted session.
-    try{await ptxSupabase.auth.getSession();}catch(e){console.warn('Initial auth session check failed:',e);}
-    await ptxUpdateAuthUI();
+    const callback=PTX_AUTH_CALLBACK;
+    let session=null, sessionRead=false;
+    const readSession=async()=>{
+      try{
+        session=(await ptxSupabase.auth.getSession()).data?.session||null;
+        sessionRead=true;
+      }catch(e){
+        console.warn('Initial auth session check failed:',e);
+      }
+    };
+    await readSession();
+    if(!session && callback.hasCode && !callback.error){
+      // supabase-js can fail the PKCE exchange silently (e.g. the verifier is missing or
+      // belongs to an older OAuth attempt). Retry explicitly so the real reason is visible.
+      try{
+        let result=null;
+        if(callback.code){
+          result=await ptxSupabase.auth.exchangeCodeForSession(callback.code,callback.flowId?{flowId:callback.flowId}:undefined);
+        }else if(callback.accessToken&&callback.refreshToken){
+          result=await ptxSupabase.auth.setSession({access_token:callback.accessToken,refresh_token:callback.refreshToken});
+        }
+        if(result?.error) throw result.error;
+        session=result?.data?.session||null;
+        if(session) sessionRead=true;
+      }catch(e){
+        console.warn('OAuth callback exchange failed:',e);
+        callback.exchangeError=e;
+        await readSession();
+      }
+    }
+    if(sessionRead) await ptxUpdateAuthUI(session); else await ptxUpdateAuthUI();
+    if(session){
+      ptxShowAuthSuccess();
+      if(callback.hadAuthParams){
+        ptxNotifySignedIn();
+        ptxCleanAuthUrl();
+        if(!/^#(account|wallet|orders|seller)$/i.test(location.hash)){
+          setTimeout(()=>{try{window.ptxIPGo?.('account');}catch(e){}},120);
+        }
+      }
+      try{ window.ptxRenderIndependentAccount?.(); }catch(e){}
+    }else if(callback.error){
+      ptxShowAuthFailure(ptxAuthErrorMessage(callback));
+      ptxCleanAuthUrl();
+    }else if(callback.hasCode){
+      ptxShowAuthFailure(callback.exchangeError
+        ?ptxAuthFailureHint(callback,callback.exchangeError)
+        :'Google sign-in did not complete. Click "Continue with Google" again and finish it in this tab.');
+      ptxCleanAuthUrl();
+    }
     await ptxLoadWallet();
   };
   ptxSupabase.auth.onAuthStateChange((event,session)=>{
     // Defer UI/data work out of the auth callback to avoid re-entrant Supabase calls.
     setTimeout(async()=>{
-      await ptxUpdateAuthUI(session ?? null);
+      // A stale INITIAL_SESSION(null) can arrive after an explicit exchange succeeded;
+      // re-read storage so a null event never flips a valid session back to signed-out.
+      let current=session??null;
+      if(!current){
+        try{ current=(await ptxSupabase.auth.getSession()).data?.session||null; }catch(e){}
+      }
+      await ptxUpdateAuthUI(current);
+      if(event==='SIGNED_IN'&&current){
+        window.ptxLastAuthError='';
+        ptxNotifySignedIn();
+        try{ window.ptxRenderIndependentAccount?.(); }catch(e){}
+      }
       await ptxLoadWallet();
     },0);
   });
@@ -1143,8 +1315,8 @@ html[data-ptx-auth="signed-out"] #ptxAccountCenter{display:none !important}
 <button class="ptx-btn" onclick="ptxLogout()" style="width:100%;margin-top:12px" type="button">Sign Out</button>
 </div>
 <div class="ptx-grid">
-<div class="ptx-card"><div class="ptx-label">Account</div><div class="ptx-value">Verified Email</div><span class="ptx-status">Active</span></div>
-<div class="ptx-card"><div class="ptx-label">KYC</div><div class="ptx-value">Basic Verification</div><span class="ptx-status">Pending Review</span></div>
+<div class="ptx-card"><div class="ptx-label">Sign-in method</div><div class="ptx-value" data-ptx-account-provider="">—</div><span class="ptx-status">Active</span></div>
+<div class="ptx-card"><div class="ptx-label">KYC</div><div class="ptx-value">Not started</div><span class="ptx-status">Not connected</span></div>
 <div class="ptx-card"><div class="ptx-label">Demo Balance</div><div class="ptx-value">Demo only</div></div>
 <div class="ptx-card"><div class="ptx-label">Escrow Demo</div><div class="ptx-value">Demo only</div></div>
 </div>
@@ -1154,22 +1326,14 @@ html[data-ptx-auth="signed-out"] #ptxAccountCenter{display:none !important}
 <div class="ptx-grid">
 <div class="ptx-card"><div class="ptx-label">Payment methods planned</div><div class="ptx-value">MYR / other local currencies</div><p class="ptx-muted" style="margin-top:8px">Payment methods will be selected by the customer country and enabled payment provider. Malaysian customers may use MYR methods such as FPX only after a supported provider is integrated.</p><span class="ptx-status">Not connected yet</span></div>
 <div class="ptx-card"><div class="ptx-label">Before paying</div><p class="ptx-muted">This website is currently a preview. No bank account, QR payment, FPX checkout, payment verification, refunds or payouts are connected. Never send money to a personal account based on a chat message.</p></div>
-<div class="ptx-card"><div class="ptx-label">Wallet / balance</div><p class="ptx-muted">Legacy wallet balances must be reconciled before being displayed as USD. A currency label change is not a real exchange or balance conversion.</p><span class="ptx-status">Migration required</span></div>
+<div class="ptx-card"><div class="ptx-label">Wallet / balance</div><p class="ptx-muted">Your balance is shown from the demo ledger and cannot be withdrawn. No bank transfer, FPX, QR or payout is connected yet.</p><span class="ptx-status">Not enabled</span></div>
 </div>
 </section>
 <section class="ptx-panel">
 <h2>📒 USD Transaction Ledger</h2>
 <div class="ptx-card">
-<div>+50.00 USD · Deposit <span class="ptx-status">Completed</span></div>
-<div class="ptx-muted">19 Sep 2026 · TX-DEMO-84921</div>
-</div>
-<div class="ptx-card">
-<div>-39.99 USD · Card Purchase <span class="ptx-status">Escrow</span></div>
-<div class="ptx-muted">19 Sep 2026 · Order PT-58421</div>
-</div>
-<div class="ptx-card">
-<div>+3.20 USD · Agent Commission <span class="ptx-status">Pending</span></div>
-<div class="ptx-muted">19 Sep 2026 · Referral transaction</div>
+<div class="ptx-muted">No transactions yet.</div>
+<p class="ptx-muted" style="margin-top:6px">Deposits, purchases, refunds and commissions will appear here after a payment provider and a server-side ledger are connected. No sample amounts are shown on your account.</p>
 </div>
 </section>
 <section class="ptx-panel">
@@ -1177,33 +1341,25 @@ html[data-ptx-auth="signed-out"] #ptxAccountCenter{display:none !important}
 <div class="ptx-grid">
 <div class="ptx-card">
 <div class="ptx-label">Identity</div>
-<div class="ptx-value">Basic KYC</div>
-<p class="ptx-muted">Name and country submitted. Document review is simulated.</p>
-<button class="ptx-btn" onclick="alert('Demo: KYC review opened')">View Verification</button>
+<div class="ptx-value">Not verified</div>
+<p class="ptx-muted">Identity verification is not connected. No identity documents are collected in this build.</p>
+<button class="ptx-btn" onclick="alert('KYC is not connected in this build.')">Verification status</button>
 </div>
 <div class="ptx-card">
 <div class="ptx-label">Seller Trust</div>
-<div class="ptx-value">Card Seller</div>
-<p class="ptx-muted">Required before higher-value listings or withdrawals in production.</p>
-<button class="ptx-btn alt" onclick="alert('Demo: seller verification checklist')">Checklist</button>
+<div class="ptx-value">Not started</div>
+<p class="ptx-muted">Seller verification is required before higher-value listings or withdrawals once seller tools are enabled.</p>
+<button class="ptx-btn alt" onclick="alert('Seller verification is not connected in this build.')">Checklist</button>
 </div>
 </div>
 </section>
 <section class="ptx-panel">
 <h2>🔗 Agent Referral Center</h2>
 <div class="ptx-card">
-<div class="ptx-label">Your referral link</div>
-<input class="ptx-input" id="ptxReferral" readonly="" value="https://pokemon-treasure.demo/r/PT10284"/>
-<button class="ptx-btn" onclick="navigator.clipboard?.writeText(document.getElementById('ptxReferral').value);alert('Referral link copied')">Copy Link</button>
-<button class="ptx-btn alt" onclick="alert('Demo share sheet')">Share</button>
+<div class="ptx-label">Referral program</div>
+<div class="ptx-value">Not active yet</div>
+<p class="ptx-muted" style="margin-top:8px">Referral links, qualified transactions and commission balances will appear here after the referral program is enabled on the server. Nothing is tracked or payable in this build.</p>
 </div>
-<div class="ptx-grid">
-<div class="ptx-card"><div class="ptx-label">Current Tier</div><div class="ptx-value">Silver · 4%</div></div>
-<div class="ptx-card"><div class="ptx-label">Qualified Transactions</div><div class="ptx-value">37</div></div>
-<div class="ptx-card"><div class="ptx-label">Pending Commission</div><div class="ptx-value">18.40 USD</div></div>
-<div class="ptx-card"><div class="ptx-label">Available Commission</div><div class="ptx-value">62.70 USD</div></div>
-</div>
-<p class="ptx-muted">Commission is tied to eligible completed marketplace transactions, not recruitment alone. Refunds, disputes, fraud or ineligible transactions may reverse commissions.</p>
 </section>
 <section class="ptx-panel">
 <h2>🛡️ Buyer Protection &amp; Dispute</h2>
@@ -1212,6 +1368,12 @@ html[data-ptx-auth="signed-out"] #ptxAccountCenter{display:none !important}
 <div class="ptx-card"><b>2. Seller ships</b><p class="ptx-muted">Tracking is submitted inside the order.</p></div>
 <div class="ptx-card"><b>3. Buyer confirms</b><p class="ptx-muted">Order completes after delivery/confirmation or applicable review.</p></div>
 <div class="ptx-card"><b>4. Dispute</b><p class="ptx-muted">Report counterfeit, missing, damaged or materially misdescribed cards.</p></div>
+</div>
+<div class="ptx-card" style="margin-top:10px">
+<div class="ptx-label">Need help?</div>
+<div class="ptx-value">Ask the AI assistant</div>
+<p class="ptx-muted" style="margin-top:6px">Payments, buying, selling, shipping, refunds, verification and login questions. Automated answers — it cannot access your orders or confirm a payment.</p>
+<button class="ptx-btn" onclick="window.ptxOpenAiChat?.()" type="button">✦ Ask the AI</button>
 </div>
 <button class="ptx-btn" onclick="alert('Demo dispute form opened')">Report an Issue</button>
 </section>
@@ -1314,6 +1476,9 @@ window.ptxOpenCart=function(){document.getElementById("ptxCartDrawer").style.dis
 window.ptxCloseCart=function(){document.getElementById("ptxCartDrawer").style.display="none";};
 window.ptxCheckout=async function(){
  if(!cart.length)return alert("Your cart is empty");
+ // Sample/fallback cards have no listings row; creating a real order for them would pollute the DB.
+ const isDbListing=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+ if(!cart.every(x=>isDbListing.test(String(x.id)))){alert('These are sample cards, not live marketplace inventory. Ordering opens when real listings are connected.');return;}
  try{
    await window.ptxEnsureSupabase();
    const user=await ptxCurrentUser();
@@ -1585,9 +1750,8 @@ async function ptxLoadAdminDeposits(){
   const box=document.getElementById('ptxAdminDepositList');
   if(!box || !ptxSupabase) return;
   try{
-    const {data:me,error:meError}=await ptxSupabase.auth.getUser();
-    if(meError) throw meError;
-    if(!me.user){ box.innerHTML='<div class="ptx-muted">Sign in with an admin account to review deposits.</div>'; return; }
+    const {data:sessionData}=await ptxSupabase.auth.getSession();
+    if(!sessionData?.session){ box.innerHTML='<div class="ptx-muted">Sign in with an admin account to review deposits.</div>'; return; }
     const {data:isAdmin,error:adminError}=await ptxSupabase.rpc('is_admin');
     if(adminError) throw adminError;
     if(!isAdmin){ box.innerHTML='<div class="ptx-muted">Admin access required.</div>'; return; }
@@ -1599,19 +1763,20 @@ async function ptxLoadAdminDeposits(){
     document.getElementById('ptxDepositPendingCount').textContent=String(rows?.length||0);
     document.getElementById('ptxDepositRefresh').textContent=new Date().toLocaleTimeString();
     if(!rows?.length){ box.innerHTML='<div class="ptx-muted">No pending deposits.</div>'; return; }
-    box.innerHTML=rows.map(r=>`<div class="ptx-review" id="dep-${r.id}">
+    const esc=window.ptxEsc||(v=>String(v??''));
+    box.innerHTML=rows.map(r=>`<div class="ptx-review" id="dep-${esc(r.id)}">
       <div class="ptx-review-img">💰</div>
       <div>
-        <b>${r.review_id}</b><br>
+        <b>${esc(r.review_id)}</b><br>
         <span class="ptx-pill">${Number(r.amount).toFixed(2)} USD</span>
-        <p class="ptx-muted">User: ${r.users?.member_id||'—'} · ${r.users?.email||'—'}</p>
-        <p class="ptx-muted">TXID: ${r.txid||'—'}</p>
-        <p class="ptx-muted">Submitted: ${new Date(r.created_at).toLocaleString()}</p>
-        <div id="shot-${r.id}" class="ptx-muted">Loading screenshot…</div>
+        <p class="ptx-muted">User: ${esc(r.users?.member_id||'—')} · ${esc(r.users?.email||'—')}</p>
+        <p class="ptx-muted">TXID: ${esc(r.txid||'—')}</p>
+        <p class="ptx-muted">Submitted: ${esc(new Date(r.created_at).toLocaleString())}</p>
+        <div id="shot-${esc(r.id)}" class="ptx-muted">Loading screenshot…</div>
       </div>
       <div class="ptx-actions">
-        <button class="ptx-btn" onclick="ptxApproveDeposit('${r.id}')">Approve</button>
-        <button class="ptx-btn alt" onclick="ptxRejectDeposit('${r.id}')">Reject</button>
+        <button class="ptx-btn" onclick="ptxApproveDeposit('${esc(r.id)}')">Approve</button>
+        <button class="ptx-btn alt" onclick="ptxRejectDeposit('${esc(r.id)}')">Reject</button>
       </div>
     </div>`).join('');
     for(const r of rows){
@@ -1946,6 +2111,7 @@ window.ptxQuickFilter=function(v){
 <button class="ptx-btn" onclick="ptxOpenAuth('login')" style="width:100%">Sign In</button>
 <button class="ptx-btn alt" onclick="ptxOpenAuth('register')" style="width:100%;margin-top:10px">Create Account</button>
 <p class="ptx-muted" style="text-align:center;margin:10px 0 0">One secure registration and login flow powered by Supabase.</p>
+<p class="ptx-muted" data-ptx-auth-status style="display:none;text-align:center;margin:10px 0 0;color:#ff9a9a"></p>
 </div>
 <div class="ptx-loginbox" style="margin-top:14px">
 <h3>🌐 Language</h3>
@@ -2361,6 +2527,8 @@ window.ptxPlaceOrder=async function(){
    if(profileRes.error)throw profileRes.error;
    const listing=window.ptxGetMarketplaceProduct?.(current.id)||current;
    if(!listing?.id)throw new Error('This listing is not available in the marketplace database.');
+   const isDbListing=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+   if(!isDbListing.test(String(listing.id)))throw new Error('This is a sample card, not live marketplace inventory. Ordering opens when real listings are connected.');
    const itemTotal=Number(current.price||listing.price||0);
    const total=Number((itemTotal+3.99).toFixed(2));
    const orderCode='PTX-'+Date.now().toString(36).toUpperCase();
@@ -2390,13 +2558,13 @@ window.ptxModalAdd=function(){if(window.ptxAdd)ptxAdd(current.id);ptxToast("Adde
 <div class="ptx-live"><i></i> SELLER CENTER</div>
 <div class="ptx-row"><div><h2 style="margin:5px 0">📦 Manage Your Sales</h2><div class="ptx-muted">Orders, shipping, listings and settlement in one place.</div></div><button class="ptx-btn" onclick="ptxJump('ptxSellCard')">＋ List Card</button></div>
 <div class="ptx-seller-kpis" style="margin-top:12px">
-<div class="ptx-sk"><div class="ptx-label">Active Listings</div><b>24</b></div>
-<div class="ptx-sk"><div class="ptx-label">New Orders</div><b>3</b></div>
-<div class="ptx-sk"><div class="ptx-label">Pending Shipment</div><b>2</b></div>
-<div class="ptx-sk"><div class="ptx-label">Available Balance</div><b>284.60 USD</b></div>
+<div class="ptx-sk"><div class="ptx-label">Active Listings</div><b>—</b></div>
+<div class="ptx-sk"><div class="ptx-label">New Orders</div><b>—</b></div>
+<div class="ptx-sk"><div class="ptx-label">Pending Shipment</div><b>—</b></div>
+<div class="ptx-sk"><div class="ptx-label">Available Balance</div><b id="ptxSellerAvailable">0.00 USD</b></div>
 </div>
 <div class="ptx-seller-order">
-<div class="ptx-row"><div><b>#PT-58421 · Pikachu ex SAR</b><div class="ptx-muted">Buyer: PT-10284 · 43.98 USD</div></div><span class="ptx-status" id="sellerStatus">NEW ORDER</span></div>
+<div class="ptx-row"><div><b>Sample order · preview only</b><div class="ptx-muted">No real buyer, sale or payout is attached to this card.</div></div><span class="ptx-status" id="sellerStatus">SAMPLE</span></div>
 <div class="ptx-seller-actions">
 <button class="ptx-btn" onclick="ptxSellerAccept()">Accept Order</button>
 <button class="ptx-btn alt" onclick="ptxSellerPack()">Mark Packed</button>
@@ -2409,15 +2577,16 @@ window.ptxModalAdd=function(){if(window.ptxAdd)ptxAdd(current.id);ptxToast("Adde
 <div class="ptx-muted" id="ptxSellerHint" style="margin-top:9px">Next: accept the order, pack the card safely, then add tracked shipping.</div>
 </div>
 <div class="ptx-seller-order">
-<div class="ptx-row"><div><b>#PT-58420 · Charizard ex SIR</b><div class="ptx-muted">Buyer: PT-19021 · 74.50 USD</div></div><span class="ptx-status">DELIVERED</span></div>
-<div class="ptx-muted" style="margin-top:8px">Buyer confirmed delivery. Eligible seller proceeds: <b>70.78 USD</b> after demo marketplace fee.</div>
-<button class="ptx-btn" onclick="ptxToast('Demo: 70.78 USD added to seller balance')" style="margin-top:9px">View Settlement</button>
+<div class="ptx-row"><div><b>Sample settlement · preview only</b><div class="ptx-muted">No real buyer, delivery or proceeds are attached to this card.</div></div><span class="ptx-status">SAMPLE</span></div>
+<div class="ptx-muted" style="margin-top:8px">Eligible seller proceeds are calculated by the server when settlement is enabled.</div>
+<button class="ptx-btn" onclick="ptxToast('Preview only: no settlement exists.')" style="margin-top:9px">View Settlement</button>
 </div>
 <div class="ptx-panel" style="margin-top:12px">
 <h3>💰 Seller Balance</h3>
-<div class="ptx-row"><span>Available</span><b>284.60 USD</b></div>
-<div class="ptx-row"><span>Pending settlement</span><b>43.98 USD</b></div>
-<div class="ptx-row"><span>Total earned</span><b>1,842.30 USD</b></div>
+<div class="ptx-row"><span>Available</span><b>0.00 USD</b></div>
+<div class="ptx-row"><span>Pending settlement</span><b>0.00 USD</b></div>
+<div class="ptx-row"><span>Total earned</span><b>0.00 USD</b></div>
+<p class="ptx-muted" style="margin-top:8px">Seller settlement and payouts are not connected in this build.</p>
 <button class="ptx-btn" onclick="ptxToast('Preview only: no payout request was created and no money was transferred.')" style="margin-top:10px">Request USD Payout</button>
 </div>
 </section>
@@ -2852,18 +3021,47 @@ window.ptxSetAuthMessage=function(id,text,ok=false){
 window.ptxGoogleAuth=async function(){
   const msgId=document.getElementById('ptxAuthRegister')?.classList.contains('active')?'ptxRegisterMessage':'ptxLoginMessage';
   if(typeof ptxSupabase==='undefined' || !ptxSupabase){ptxSetAuthMessage(msgId,'Supabase client is not ready. Please refresh the page.');return;}
+  const redirectTo=ptxOAuthRedirectUrl();
+  if(!redirectTo){
+    const file=(location.pathname.split('/').pop()||'Cardora_Login_Session_Fixed_v4.html');
+    const local='http://127.0.0.1:5500/'+file;
+    const el=document.getElementById(msgId);
+    if(el){
+      el.textContent='';
+      el.append('Google sign-in needs an http(s) page, but this tab was opened from '+location.protocol+'//. Open ');
+      const a=document.createElement('a');
+      a.href=local;a.textContent=local;a.style.color='#f5c542';a.style.textDecoration='underline';a.style.wordBreak='break-all';
+      el.append(a,', then click Continue with Google.');
+      el.style.color='#ff9a9a';
+    }
+    return;
+  }
   ptxSetAuthMessage(msgId,'Connecting to Google…',true);
+  // A second click while the redirect is pending would replace the PKCE verifier of the
+  // first attempt, which makes the returning code fail to exchange.
+  const buttons=[...document.querySelectorAll('.ptx-google-btn')];
+  buttons.forEach(b=>{b.dataset.ptxLabel=b.textContent;b.disabled=true;b.textContent='Redirecting to Google…';});
   try{
     const {error}=await ptxSupabase.auth.signInWithOAuth({
       provider:'google',
-      options:{redirectTo:window.location.origin}
+      options:{redirectTo}
     });
     if(error)throw error;
   }catch(err){
     console.error('Google OAuth error:',err);
-    ptxSetAuthMessage(msgId,err?.message||'Google sign-in is not configured yet.');
+    buttons.forEach(b=>{b.disabled=false;if(b.dataset.ptxLabel)b.textContent=b.dataset.ptxLabel;});
+    const message=err?.message||'Google sign-in is not configured yet.';
+    window.ptxLastAuthError=message;
+    ptxSetAuthMessage(msgId,message);
   }
 };
+window.addEventListener('pageshow',()=>{
+  let restored=false;
+  document.querySelectorAll('.ptx-google-btn').forEach(b=>{
+    if(b.disabled){restored=true;b.disabled=false;if(b.dataset.ptxLabel)b.textContent=b.dataset.ptxLabel;}
+  });
+  if(restored) ptxSetAuthMessage('ptxLoginMessage','Google sign-in was not completed. Please try again.',false);
+});
 
 window.ptxSendOtp=async function(mode){
   const emailId=mode==='register'?'ptxModalRegisterEmail':'ptxModalLoginEmail';
@@ -3361,9 +3559,9 @@ document.addEventListener("DOMContentLoaded",async()=>{
     try{await ensure();const user=await ptxCurrentUser();const name=user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split('@')[0]||'Member';box.innerHTML=`<div class="ptx-account-card"><div class="ptx-avatar">CA</div><div><b>${esc(name)}</b><small>${esc(user.email||'')} · Signed in</small></div><span class="ptx-chip">Verified Email</span></div>`;}catch(e){box.innerHTML='<div class="ptx-v5-empty">Please sign in to view your account.</div>';}
   };
 
-  window.ptxHubRefresh=async function(){
+  window.ptxHubRefresh=async function(silent){
     const btn=document.getElementById('ptxHubRefreshBtn'); if(btn)btn.classList.add('ptx-v5-refreshing');
-    setRefresh('Refreshing…',true);
+    if(!silent) setRefresh('Refreshing…',true);
     try{
       await ensure();
       const session=(await ptxSupabase.auth.getSession()).data?.session||null;
@@ -3374,13 +3572,14 @@ document.addEventListener("DOMContentLoaded",async()=>{
       else if(currentHub==='account')await window.ptxLoadAccountSummary();
       await ptxLoadWallet();
       setRefresh('Updated '+new Date().toLocaleTimeString(),true);
-      window.ptxToast?.('✓ '+(currentHub==='orders'?'Orders':currentHub.charAt(0).toUpperCase()+currentHub.slice(1))+' refreshed');
-    }catch(e){console.error('refresh',e);setRefresh('Refresh failed · try again',false);window.ptxToast?.('Refresh failed');}
+      if(!silent) window.ptxToast?.('✓ '+(currentHub==='orders'?'Orders':currentHub.charAt(0).toUpperCase()+currentHub.slice(1))+' refreshed');
+    }catch(e){console.error('refresh',e);setRefresh('Refresh failed · try again',false);if(!silent) window.ptxToast?.('Refresh failed');}
     finally{if(btn)btn.classList.remove('ptx-v5-refreshing');}
   };
 
   document.addEventListener('DOMContentLoaded',function(){
-    window.ptxHubRefresh?.();
+    // Initial paint should not cover the sign-in success toast with a generic refresh notice.
+    window.ptxHubRefresh?.(true);
   });
 })();
 </script>
@@ -3500,7 +3699,7 @@ body.ptx-ip-open{overflow:hidden}
     </div>
     <div class="ptx-ip-card" style="margin-top:12px"><h3>🌐 Language</h3><div class="ptx-ip-muted">This setting applies to the whole website.</div><select class="ptx-ip-select" id="ptxIpLanguage" onchange="if(window.ptxLang)ptxLang(this.value)"><option>English</option><option>简体中文</option><option>ไทย</option><option>Bahasa Melayu</option><option>日本語</option></select></div>
   </div>`;
-  if(page==='support') h=`<div class="ptx-ip-grid">${card('🛡️ Safety','Keep payments and order communication inside Cardora. Never treat screenshots or chat messages as payment confirmation.','Payment &amp; Safety Policy',"ptxIPGo('payments')",true)}${card('⚖️ Disputes','For a live launch, dispute intake must be connected to server-stored case records and evidence upload. This preview does not submit a real dispute.','Payment &amp; Safety Policy',"ptxIPGo('payments')")}</div>`;
+  if(page==='support') h=`<div class="ptx-ip-grid">${card('✦ AI Assistant','Ask about payments, buying, selling, shipping, refunds, verification, privacy or login. Automated answers — it cannot read your account or confirm a payment.','Ask the AI',"window.ptxOpenAiChat&&window.ptxOpenAiChat()",true)}${card('🛡️ Safety','Keep payments and order communication inside Cardora. Never treat screenshots or chat messages as payment confirmation.','Payment &amp; Safety Policy',"ptxIPGo('payments')")}${card('⚖️ Disputes','For a live launch, dispute intake must be connected to server-stored case records and evidence upload. This preview does not submit a real dispute.','Payment &amp; Safety Policy',"ptxIPGo('payments')")}</div>`;
   content().innerHTML=h;
   if(page==='cart'&&window.ptxRenderIndependentCart)window.ptxRenderIndependentCart();
   if(page==='orders'){const d=document.createElement('div');d.id='ptxIpOrdersLive';d.style.marginTop='12px';content().appendChild(d);if(window.ptxLoadLiveOrders)window.ptxLoadLiveOrders();}
@@ -3511,15 +3710,21 @@ body.ptx-ip-open{overflow:hidden}
   const status=document.getElementById('ptxIpAccountStatus'), emailEl=document.getElementById('ptxIpAccountEmail');
   if(!status)return;
   try{
-   const session=(await window.ptxEnsureSupabase?.())?.session || (await ptxSupabase?.auth.getSession())?.data?.session || null;
+   try{await window.ptxEnsureSupabase?.();}catch(e){}
+   const session=(await ptxSupabase?.auth.getSession())?.data?.session || null;
    const user=session?.user||null;
    if(user){
     const name=user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split('@')[0]||'Member';
     status.textContent='Signed in as '+name;
+    status.style.color='#8ee7b4';
     emailEl.textContent=user.email||'';
+    emailEl.style.color='';
+    window.ptxLastAuthError='';
    }else{
     status.textContent='Not signed in';
-    emailEl.textContent='Sign in to edit your profile information.';
+    status.style.color='';
+    emailEl.textContent=window.ptxLastAuthError||'Sign in to edit your profile information.';
+    emailEl.style.color=window.ptxLastAuthError?'#ff9a9a':'';
    }
   }catch(e){status.textContent='Not signed in';emailEl.textContent='';}
  };
@@ -3820,17 +4025,17 @@ window.ptxRenderIndependentCart=function(){
 #ptxAiLauncher{position:fixed;right:18px;bottom:22px;z-index:9998;border:0;border-radius:999px;padding:13px 17px;background:linear-gradient(135deg,#f5c542,#9c61e9);color:#130c20;font-weight:900;box-shadow:0 10px 34px #0008;cursor:pointer}
 #ptxAiChat{position:fixed;right:18px;bottom:82px;width:min(380px,calc(100vw - 24px));height:min(540px,calc(100dvh - 115px));z-index:9999;display:none;flex-direction:column;overflow:hidden;border:1px solid #594078;border-radius:18px;background:#100b1b;color:#f8f4ff;box-shadow:0 18px 60px #000b;font-family:system-ui,-apple-system,sans-serif}
 #ptxAiChat.open{display:flex}#ptxAiHead{display:flex;align-items:center;justify-content:space-between;padding:14px;background:linear-gradient(135deg,#27153d,#171022);border-bottom:1px solid #403052}#ptxAiHead strong{font-size:14px}#ptxAiHead small{display:block;color:#b8a9cb;font-size:11px;margin-top:3px}#ptxAiClose{background:transparent;color:#fff;border:0;font-size:23px;cursor:pointer}#ptxAiMessages{padding:13px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:10px}.ptx-ai-msg{max-width:92%;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px 12px;border-radius:13px;font-size:13px;line-height:1.5}.ptx-ai-bot{align-self:flex-start;background:#241934;border:1px solid #3c2a51}.ptx-ai-user{align-self:flex-end;background:#4d2e70;border:1px solid #7651a0}.ptx-ai-quick{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 10px}.ptx-ai-quick button{border:1px solid #594078;border-radius:999px;background:#1b1228;color:#e9dcff;padding:7px 9px;font-size:11px;cursor:pointer}.ptx-ai-form{display:flex;gap:7px;padding:10px;border-top:1px solid #403052;background:#130d20}.ptx-ai-form input{flex:1;min-width:0;background:#080610;color:#fff;border:1px solid #594078;border-radius:10px;padding:11px;font-size:13px}.ptx-ai-form button{background:#d9b8ff;color:#1b1028;border:0;border-radius:10px;padding:0 13px;font-weight:800}.ptx-ai-disclaimer{font-size:10px;color:#a99ab9;padding:0 12px 9px;line-height:1.4}
-@media(max-width:520px){#ptxAiLauncher{right:12px;bottom:14px;padding:12px 14px}#ptxAiChat{right:8px;bottom:70px;width:calc(100vw - 16px);height:min(72dvh,560px);border-radius:16px}}
+@media(max-width:520px){#ptxAiLauncher{right:12px;bottom:92px;padding:12px 14px}#ptxAiChat{right:8px;bottom:150px;width:calc(100vw - 16px);height:min(60dvh,500px);border-radius:16px}}
 </style>
 <button aria-controls="ptxAiChat" aria-expanded="false" id="ptxAiLauncher" type="button">✦ AI Customer Service</button>
 <section aria-label="AI Customer Service" aria-modal="false" id="ptxAiChat" role="dialog">
-<div id="ptxAiHead"><div><strong>✦ Cardora Support</strong><small>Automated help · English / 中文 / Bahasa Melayu</small></div><button aria-label="Close customer service" id="ptxAiClose" type="button">×</button></div>
+<div id="ptxAiHead"><div><strong>✦ Cardora AI Assistant</strong><small>Automated answers · English / 中文 / Bahasa Melayu</small></div><button aria-label="Close customer service" id="ptxAiClose" type="button">×</button></div>
 <div aria-live="polite" id="ptxAiMessages"><div class="ptx-ai-msg ptx-ai-bot">Hi! I can help with common questions about accounts, USD pricing, buying and selling cards.
 
 Notice: this is a preview website. Payments are not live, and I cannot access your account or confirm a payment.</div></div>
-<div class="ptx-ai-quick"><button data-ptx-ai="payment" type="button">USD payment</button><button data-ptx-ai="buy" type="button">Buying cards</button><button data-ptx-ai="sell" type="button">Selling cards</button><button data-ptx-ai="account" type="button">Login help</button></div>
+<div class="ptx-ai-quick"><button data-ptx-ai="payment" type="button">Payments</button><button data-ptx-ai="buy" type="button">Buying</button><button data-ptx-ai="sell" type="button">Selling</button><button data-ptx-ai="shipping" type="button">Shipping</button><button data-ptx-ai="dispute" type="button">Refunds</button><button data-ptx-ai="account" type="button">Login</button></div>
 <form class="ptx-ai-form" id="ptxAiForm"><input aria-label="Ask customer service" autocomplete="off" id="ptxAiInput" maxlength="500" placeholder="Ask a question… / 输入问题"/><button type="submit">Send</button></form>
-<div class="ptx-ai-disclaimer">Basic automated FAQ is active. A real generative AI service requires a secured server-side endpoint; no chat history is saved by this widget. Never send passwords, OTPs, full bank details or identity documents.</div>
+<div class="ptx-ai-disclaimer">Automated answers — general guidance only, not an order or payment confirmation. This widget does not read your account or save chat history. Never send passwords, OTPs, bank details or identity documents.</div>
 </section>
 <script>
 (function(){
@@ -3838,28 +4043,77 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
  if(!launcher||!chat||!form||!input||!messages)return;
  const open=()=>{chat.classList.add('open');launcher.setAttribute('aria-expanded','true');setTimeout(()=>input.focus(),30)};
  const shut=()=>{chat.classList.remove('open');launcher.setAttribute('aria-expanded','false')};
+ window.ptxOpenAiChat=open;window.ptxCloseAiChat=shut;
  launcher.addEventListener('click',()=>chat.classList.contains('open')?shut():open());close.addEventListener('click',shut);
  function add(text,who){const d=document.createElement('div');d.className='ptx-ai-msg '+(who==='user'?'ptx-ai-user':'ptx-ai-bot');d.textContent=text;messages.appendChild(d);messages.scrollTop=messages.scrollHeight;return d}
  function answer(q){const x=q.toLowerCase();
-  if(/中文|马币|马来西亚|付款|支付|myr|rm\b|payment|pay|bank|fpx|deposit|withdraw|退款|refund/.test(x))return 'Product prices use USD as the base currency. You can choose a local-currency estimate for reference, but final checkout currency depends on the payment provider. Local checkout, payment verification, refunds and payouts are NOT connected in this preview. Please do not transfer money.';
-  if(/买|购买|buy|checkout|order|下单|shipping|运费|配送/.test(x))return 'You can browse sample card listings and preview the checkout flow, but orders and payments are not live yet. Check card condition, language, shipping fee and return policy before buying. Sample order IDs and prices are not confirmed transactions.';
-  if(/卖|上架|seller|sell|listing|commission|手续费|佣金/.test(x))return 'The seller and listing screens are currently a preview. The displayed platform fee is an example only; seller verification, listing persistence, order settlement and payouts need server-side implementation before real selling.';
-  if(/登录|login|sign in|otp|验证码|google|email|账号|account/.test(x))return 'For login, use the sign-in controls and check that Google OAuth and email OTP callbacks are configured for the published domain. Never share your password or one-time code with support.';
-  if(/安全|scam|诈骗|被骗|report|举报|privacy|隐私/.test(x))return 'Never share passwords, OTP codes, recovery phrases, full bank details or identity documents in chat. This preview does not process payments. Publish a verified contact channel, privacy policy and terms before opening to customers.';
-  if(/你好|客服/.test(x))return '你好！我可以回答网站、马币价格、买卡、卖卡和登录方面的常见问题。目前网站仍是预览版，真实收款和订单尚未启用。请勿向任何个人账户转账。';
-  if(/hai|saya|bahasa|ringgit|duit|bayar|akaun|jual|beli/.test(x))return 'Harga asas dipaparkan dalam USD; anggaran mata wang tempatan hanya untuk rujukan. Pembayaran bank/FPX, pengesahan bayaran, bayaran balik dan pembayaran kepada penjual belum disambungkan. Jangan pindahkan wang buat masa ini.';
-  return 'Thanks for your question. I can currently answer common FAQs, but I cannot access personal orders or confirm payments. This website is still a preview and USD checkout is not live. Please do not send money or sensitive account information. A real AI assistant and human support channel must be connected on the server before launch.';
+  const L=/[\u4e00-\u9fff]/.test(q)?'zh':/\b(hai|salam|saya|boleh|akaun|bayar|beli|jual|penghantaran|harga|duit|tak|apa|macam|pulangan|penipuan)\b/.test(x)?'ms':'en';
+  const t=(en,zh,ms)=>L==='zh'?zh:L==='ms'?ms:en;
+  if(/scam|fraud|hack|stolen|report|诈骗|被骗|举报|盗号|penipuan|lapor|dicuai/.test(x))return t(
+    'Never send money to a personal bank account, QR code or wallet shared in chat. Cardora is a preview: no payment is live. If someone asks you to pay outside the site, or asks for a password or OTP, stop and use the Report an Issue page.',
+    '请不要向聊天中提供的个人银行账户、二维码或钱包转账。本站目前是预览版，没有启用真实支付。如有人要求站外付款，或索取密码、验证码，请立即停止并通过 Report an Issue 页面上报。',
+    'Jangan pindahkan wang ke akaun bank peribadi, kod QR atau wallet yang dikongsi dalam chat. Cardora masih pratonton dan pembayaran sebenar belum aktif. Jika seseorang meminta bayaran di luar laman atau kata laluan/OTP, berhenti dan laporkan melalui halaman Report an Issue.');
+  if(/kyc|verify|verification|identity|身份证|实名|认证|pengesahan|identiti/.test(x))return t(
+    'Identity verification (KYC) and seller verification are not connected in this preview, so no documents are collected. Verification will be required before higher-value selling or withdrawals once seller tools go live.',
+    '本预览版尚未接入身份认证（KYC）和卖家认证，因此不会收集任何证件。等卖家功能正式上线后，较高金额的出售或提现需要先完成认证。',
+    'Pengesahan identiti (KYC) dan pengesahan penjual belum disambungkan dalam pratonton ini, jadi tiada dokumen dikumpul. Pengesahan akan diperlukan sebelum jualan bernilai tinggi atau pengeluaran apabila alat penjual diaktifkan.');
+  if(/privacy|data|delete my|gdpr|隐私|数据|删除|privasi|padam/.test(x))return t(
+    'This preview does not save the support chat. Handling of account data follows the published Privacy Policy; once an official support channel is published you can request access, correction or deletion there.',
+    '本预览版不会保存客服聊天记录。账号数据的处理以已发布的隐私政策为准；官方客服渠道公布后，可通过该渠道申请查阅、更正或删除数据。',
+    'Pratonton ini tidak menyimpan sejarah chat sokongan. Pengendalian data akaun mengikut Dasar Privasi yang diterbitkan; apabila saluran sokongan rasmi disiarkan, anda boleh meminta akses, pembetulan atau pemadaman di sana.');
+  if(/refund|return|dispute|cancel|damaged|wrong card|missing|退款|退货|纠纷|取消|损坏|投诉|bayar balik|pulangan|batal|rosak/.test(x))return t(
+    'Refunds and disputes follow the published policy and payment-provider rules. In this preview no real payment, refund or dispute case can be processed. If a card is counterfeit, missing, damaged or not as described, report it through the Report an Issue page once live.',
+    '退款和纠纷按公布的规则及支付服务商政策处理。本预览版无法处理真实付款、退款或纠纷。如卡片为假卡、缺失、损坏或与描述不符，请在正式上线后通过 Report an Issue 页面上报。',
+    'Bayaran balik dan pertikaian mengikut dasar yang disiarkan serta peraturan penyedia pembayaran. Dalam pratonton ini tiada pembayaran, bayaran balik atau kes pertikaian sebenar boleh diproses. Jika kad palsu, hilang, rosak atau tidak seperti dihuraikan, laporkan melalui halaman Report an Issue apabila aktif.');
+  if(/ship|deliver|track|postage|courier|运费|物流|快递|多久|寄出|配送|penghantaran|kurier|pos/.test(x))return t(
+    'Shipping cost, origin and estimated delivery are set by each seller and shown on the listing or order. This preview cannot track a real parcel or promise delivery times.',
+    '运费、发货地和预计送达时间由各卖家设定，并显示在商品或订单中。本预览版无法查询真实包裹或承诺送达时间。',
+    'Kos penghantaran, lokasi asal dan anggaran penghantaran ditetapkan oleh setiap penjual dan dipaparkan pada senarai atau pesanan. Pratonton ini tidak boleh menjejak bungkusan sebenar atau menjanjikan masa penghantaran.');
+  if(/authentic|fake|counterfeit|genuine|psa|bgs|cert|真伪|假卡|鉴定|评级|kesahihan|palsu|tulen/.test(x))return t(
+    'Sellers are responsible for accurate condition, language and authenticity. Before buying, ask for clear photos of the front, back and edges; for graded cards check the grading company and certificate number. This preview cannot verify a card.',
+    '卖家需对品相、语言和真伪的描述负责。购买前请索取卡面、卡背和卡边的清晰照片；评级卡请核对评级公司和证书编号。本预览版无法鉴定卡片。',
+    'Penjual bertanggungjawab atas ketepatan keadaan, bahasa dan kesahihan kad. Sebelum membeli, minta foto jelas bahagian depan, belakang dan tepi; untuk kad bergred, semak syarikat penggredan dan nombor sijil. Pratonton ini tidak boleh mengesahkan kad.');
+  if(/中文|马币|马来西亚|付款|支付|price|usd|myr|\brm\b|currency|payment|pay\b|bank|fpx|deposit|withdraw|bayar|harga|duit|mata wang|充值|提现|汇率/.test(x))return t(
+    'Prices use USD as the base currency; local-currency estimates (for example MYR) are for reference only. Local checkout, FPX/bank payments, payment verification, refunds and payouts are NOT connected in this preview. Please do not transfer money.',
+    '价格以 USD 为基准；马币等本地货币估算仅供参考。本预览版未接入本地结账、FPX/银行付款、付款验证、退款和提现，请不要转账。',
+    'Harga menggunakan USD sebagai mata wang asas; anggaran mata wang tempatan (contohnya MYR) hanya untuk rujukan. Pembayaran tempatan, FPX/bank, pengesahan bayaran, bayaran balik dan pengeluaran TIDAK disambungkan dalam pratonton ini. Jangan pindahkan wang.');
+  if(/买|购买|buy|checkout|order|cart|下单|订单|购物车|beli|pesan|troli/.test(x))return t(
+    'Browse the market, check condition, language, shipping cost and return policy, then use Add to Cart to preview checkout. Orders and payments are not live yet, so a sample order is not a confirmed purchase or price.',
+    '可以先浏览市场，确认品相、语言、运费和退货规则，再用 Add to Cart 预览结账流程。订单和支付尚未启用，示例订单不代表真实购买或成交价。',
+    'Layari pasaran, semak keadaan, bahasa, kos penghantaran dan dasar pemulangan, kemudian guna Add to Cart untuk pratonton pembayaran. Pesanan dan pembayaran belum aktif, jadi pesanan contoh bukan pembelian atau harga yang disahkan.');
+  if(/卖|上架|seller|sell|listing|commission|fee|payout|佣金|手续费|结算|jual|senarai|komisen|yuran/.test(x))return t(
+    'The seller and listing screens are a preview. The platform fee shown is an example only; seller verification, persistent listings, order settlement and payouts need server-side implementation before real selling.',
+    '卖家和上架页面目前是预览。显示的平台手续费只是示例；真实卖卡前，卖家认证、商品持久化、订单结算和提现都需要服务端实现。',
+    'Skrin penjual dan penyenaraian ialah pratonton. Yuran platform yang dipaparkan hanyalah contoh; pengesahan penjual, penyenaraian kekal, penyelesaian pesanan dan pengeluaran memerlukan pelaksanaan pelayan sebelum jualan sebenar.');
+  if(/登录|login|sign in|otp|验证码|google|email|password|账号|邮箱|密码|log masuk|akaun|kata laluan/.test(x))return t(
+    'Sign in with Google or email from this page. If Google returns you to the site and the account page still shows signed out, refresh once and try again; open the site over https, not as a local file. Never share your password or one-time code with anyone.',
+    '请在本页面用 Google 或邮箱登录。如果 Google 跳回后账号页仍显示未登录，请刷新一次再试；请通过 https 网址打开，不要直接双击本地文件。切勿把密码或验证码告诉任何人。',
+    'Log masuk dengan Google atau e-mel dari halaman ini. Jika Google kembali ke laman tetapi halaman akaun masih menunjukkan belum log masuk, muat semula sekali dan cuba lagi; buka laman melalui https, bukan fail tempatan. Jangan kongsi kata laluan atau kod sekali guna dengan sesiapa.');
+  if(/^(hi|hello|hey)\b|你好|您好|\bhai\b|\bsalam\b/.test(x))return t(
+    'Hi! Ask me about payments, buying, selling, shipping, refunds, verification or account help. This is a preview site — real payments are not live.',
+    '你好！可以问我付款、买卡、卖卡、物流、退款、认证或账号问题。本站是预览版，真实支付尚未启用。',
+    'Hai! Tanya saya tentang pembayaran, membeli, menjual, penghantaran, bayaran balik, pengesahan atau akaun. Laman ini pratonton — pembayaran sebenar belum aktif.');
+  return t(
+    'I can help with payments, buying, selling, shipping, refunds, verification, privacy and login. For account-specific questions, use the official support channel once published. This is a preview; no payment or order can be confirmed here, and never share passwords or OTPs.',
+    '我可以回答付款、买卡、卖卡、物流、退款、认证、隐私和登录问题。涉及个人订单的问题请等官方客服渠道公布后咨询。本站是预览版，无法确认付款或订单，切勿分享密码或验证码。',
+    'Saya boleh membantu tentang pembayaran, membeli, menjual, penghantaran, bayaran balik, pengesahan, privasi dan log masuk. Untuk soalan khusus akaun, gunakan saluran sokongan rasmi apabila disiarkan. Ini pratonton; tiada pembayaran atau pesanan boleh disahkan di sini, dan jangan kongsi kata laluan atau OTP.');
  }
+ const recent=[];let aiState='unknown';
  async function send(q){q=String(q||'').trim();if(!q)return;add(q,'user');input.value='';const pending=add('Thinking…','bot');
+  const history=recent.slice(-6);
   // Calls the secure Supabase Edge Function when deployed; otherwise safely falls back to local FAQs.
-  try{if(typeof PTX_SUPABASE_URL!=='undefined'&&typeof PTX_SUPABASE_KEY!=='undefined'){
-    const response=await fetch(PTX_SUPABASE_URL+'/functions/v1/ai-support',{method:'POST',headers:{'Content-Type':'application/json','apikey':PTX_SUPABASE_KEY,'Authorization':'Bearer '+PTX_SUPABASE_KEY},body:JSON.stringify({message:q})});
-    if(response.ok){const data=await response.json();if(data&&typeof data.reply==='string'&&data.reply.trim()){pending.textContent=data.reply;messages.scrollTop=messages.scrollHeight;return}}
-  }}catch(e){}
-  pending.textContent=answer(q);messages.scrollTop=messages.scrollHeight;
+  try{if(aiState!=='off'&&typeof PTX_SUPABASE_URL!=='undefined'&&typeof PTX_SUPABASE_KEY!=='undefined'){
+    const ctl=new AbortController();const timer=setTimeout(()=>ctl.abort(),12000);
+    let response=null;
+    try{response=await fetch(PTX_SUPABASE_URL+'/functions/v1/ai-support',{method:'POST',headers:{'Content-Type':'application/json','apikey':PTX_SUPABASE_KEY,'Authorization':'Bearer '+PTX_SUPABASE_KEY},body:JSON.stringify({message:q,history}),signal:ctl.signal});}finally{clearTimeout(timer)}
+    if(response&&response.ok){const data=await response.json();if(data&&typeof data.reply==='string'&&data.reply.trim()){aiState='on';pending.textContent=data.reply;messages.scrollTop=messages.scrollHeight;recent.push({role:'user',text:q},{role:'assistant',text:data.reply});if(recent.length>8)recent.splice(0,recent.length-8);return}}
+    aiState='off';
+  }}catch(e){aiState='off';}
+  const reply=answer(q);pending.textContent=reply;messages.scrollTop=messages.scrollHeight;
+  recent.push({role:'user',text:q},{role:'assistant',text:reply});if(recent.length>8)recent.splice(0,recent.length-8);
  }
  form.addEventListener('submit',e=>{e.preventDefault();send(input.value)});
- chat.querySelectorAll('[data-ptx-ai]').forEach(b=>b.addEventListener('click',()=>{const k=b.getAttribute('data-ptx-ai');send(({payment:'How do I pay in USD?',buy:'How do I buy a card?',sell:'How do I sell a card?',account:'I need login help.'})[k]||k)}));
+ chat.querySelectorAll('[data-ptx-ai]').forEach(b=>b.addEventListener('click',()=>{const k=b.getAttribute('data-ptx-ai');send(({payment:'How do I pay in USD?',buy:'How do I buy a card?',sell:'How do I sell a card?',shipping:'How long does shipping take?',dispute:'How do refunds and disputes work?',account:'I need login help.'})[k]||k)}));
 })();
 </script>
 <script id="ptx-global-currency-display">
@@ -3923,7 +4177,7 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
   orders:[get('ptxLiveOrderFlow'),get('ptxNotifications'),findText('ORDER #TX-18492')],
   wallet:[get('ptxDepositPanel'),findText('USD Transaction Ledger'),get('ptxAccountCenter')],
   collection:[get('ptxMyCollection'),get('ptxCollectionBook'),get('ptxCollectorTools'),get('ptx-complete-hub')],
-  account:[get('ptxAuthCenter'),get('ptxAuthCenter'),findText('KYC / Seller Verification'),findText('Agent Referral Center')],
+  account:[get('ptxAuthCenter'),get('ptxAccountCenter'),findText('KYC / Seller Verification'),findText('Agent Referral Center')],
   support:[findText('Buyer Protection & Dispute'),get('ptxPlatformArchitecture'),get('ptxAiChat')]
  };
  const titles={
@@ -3962,7 +4216,9 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
   if(page==='account'&&window.ptxRenderIndependentAccount)window.ptxRenderIndependentAccount();
   if(page==='orders'&&window.ptxLoadLiveOrders)window.ptxLoadLiveOrders();
   if(page==='cart'&&window.ptxRenderIndependentCart)window.ptxRenderIndependentCart();
-  try{history.replaceState(null,'','#'+page)}catch(e){}
+  // Keep the query string: OAuth callbacks arrive with ?code=&state= and must not be
+  // erased before Supabase (or the explicit fallback exchange) reads them.
+  try{history.replaceState(null,'',location.pathname+location.search+'#'+page)}catch(e){}
  }
  window.ptxIPGo=show;
  window.ptxIPClose=function(){show('home')};
@@ -4086,5 +4342,11 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
  window.cardoraSealedTest={getState:()=>JSON.parse(JSON.stringify(state)),demoScan,register,createOrder,startOpening,finishOpening,reset};
 })();
 </script>
-
+<style id="ptx-auth-layout-fix">
+/* The account router forces every section visible with !important. These rules win
+   with higher specificity so the real auth state decides which card is shown. */
+html[data-ptx-auth="signed-in"] #ptxRealPageContent>section.ptx-auth{display:none!important}
+html[data-ptx-auth="signed-in"] #ptxRealPageContent>section#ptxAccountCenter{display:block!important}
+html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{display:none!important}
+</style>
 </body></html>
