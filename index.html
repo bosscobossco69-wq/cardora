@@ -5,6 +5,15 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <meta content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://crqqockaetgacddxkqpb.supabase.co; frame-src https://accounts.google.com https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" http-equiv="Content-Security-Policy"/>
+<script>
+(function(){
+  var CANON="cardora-rose.vercel.app";
+  var h=location.hostname;
+  if(h!==CANON&&/\.vercel\.app$/i.test(h)){
+    location.replace("https://"+CANON+location.pathname+location.hash);
+  }
+})();
+</script>
 <title>Cardora — Global Collectibles Marketplace</title>
 <meta name="description" content="Cardora is a global collectible card marketplace preview: browse Pokémon card listings, compare sellers and shipping, and manage your account. Payments are not live yet."/>
 <meta name="theme-color" content="#080711"/>
