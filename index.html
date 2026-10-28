@@ -1684,60 +1684,14 @@ ptxCalcSell();
 </div>
 <div class="ptx-panel" id="ptxAdminDepositList"><div class="ptx-muted">Checking admin access…</div></div>
 <h2>🛡️ Admin · Card Review Center</h2>
-<p class="ptx-muted">Review seller submissions before cards become publicly searchable.</p>
+<p class="ptx-muted">Seller card submissions are not stored in the database yet, so there is no review queue to show. Approve / Reject becomes available once submissions are collected server-side.</p>
 <div class="ptx-admin-grid">
-<div class="ptx-admin-card"><div class="ptx-label">Pending Review</div><div class="ptx-value">18</div></div>
-<div class="ptx-admin-card"><div class="ptx-label">AI Flagged</div><div class="ptx-value ptx-warn">3</div></div>
-<div class="ptx-admin-card"><div class="ptx-label">Approved Today</div><div class="ptx-value ptx-good">42</div></div>
-<div class="ptx-admin-card"><div class="ptx-label">Reports</div><div class="ptx-value ptx-danger">2</div></div>
+<div class="ptx-admin-card"><div class="ptx-label">Pending Review</div><div class="ptx-value">—</div></div>
+<div class="ptx-admin-card"><div class="ptx-label">AI Flagged</div><div class="ptx-value ptx-warn">—</div></div>
+<div class="ptx-admin-card"><div class="ptx-label">Approved Today</div><div class="ptx-value ptx-good">—</div></div>
+<div class="ptx-admin-card"><div class="ptx-label">Reports</div><div class="ptx-value ptx-danger">—</div></div>
 </div>
-<div class="ptx-shopbar">
-<input id="ptxAdminSearch" placeholder="Search seller / card / order"/>
-<select id="ptxAdminFilter"><option>All submissions</option><option>Pending</option><option>AI Flagged</option><option>High Value</option></select>
-<button class="ptx-btn" onclick="alert('Demo: filters applied')">Filter</button>
-</div>
-<div class="ptx-review">
-<div class="ptx-review-img">⚡</div>
-<div>
-<b>Pikachu ex · 132/106</b><br/>
-<span class="ptx-pill">SAR</span> <span class="ptx-pill">Japanese</span> <span class="ptx-pill">NM</span>
-<p class="ptx-muted">Seller: TreasureSeller · Price: 39.99 USD · Submitted 12 min ago</p>
-<div class="ptx-good">✓ AI match: 96% · ✓ Photo quality: Good · ✓ Duplicate check: Clear</div>
-</div>
-<div class="ptx-actions">
-<button class="ptx-btn" onclick="ptxApprove('Pikachu ex')">Approve</button>
-<button class="ptx-btn alt" onclick="ptxEdit('Pikachu ex')">Edit</button>
-<button class="ptx-btn alt" onclick="ptxReject('Pikachu ex')">Reject</button>
-</div>
-</div>
-<div class="ptx-review">
-<div class="ptx-review-img">🌙</div>
-<div>
-<b>Umbreon ex · 217/187</b><br/>
-<span class="ptx-pill">SAR</span> <span class="ptx-pill">Japanese</span> <span class="ptx-pill">NM</span>
-<p class="ptx-muted">Seller: CardVault88 · Price: 129.00 USD · Submitted 31 min ago</p>
-<div class="ptx-warn">⚠ AI match: 71% · ⚠ Possible image mismatch · Manual inspection required</div>
-</div>
-<div class="ptx-actions">
-<button class="ptx-btn" onclick="ptxApprove('Umbreon ex')">Approve</button>
-<button class="ptx-btn alt" onclick="ptxEdit('Umbreon ex')">Request More Photos</button>
-<button class="ptx-btn alt" onclick="ptxReject('Umbreon ex')">Reject</button>
-</div>
-</div>
-<div class="ptx-review">
-<div class="ptx-review-img">🔥</div>
-<div>
-<b>Charizard ex · 125/111</b><br/>
-<span class="ptx-pill">SIR</span> <span class="ptx-pill">English</span> <span class="ptx-pill">Excellent</span>
-<p class="ptx-muted">Seller: JPCardHouse · Price: 74.50 USD · Submitted 1 hr ago</p>
-<div class="ptx-good">✓ Identity match · ✓ Duplicate check · ✓ Seller verified</div>
-</div>
-<div class="ptx-actions">
-<button class="ptx-btn" onclick="ptxApprove('Charizard ex')">Approve</button>
-<button class="ptx-btn alt" onclick="ptxEdit('Charizard ex')">Edit</button>
-<button class="ptx-btn alt" onclick="ptxReject('Charizard ex')">Reject</button>
-</div>
-</div>
+<div class="ptx-panel"><div class="ptx-muted">No card submissions yet. Nothing can be approved or rejected until the submission queue is connected to the database.</div></div>
 <div class="ptx-panel">
 <h3>🔎 Review Rules</h3>
 <div class="ptx-grid">
@@ -1750,7 +1704,6 @@ ptxCalcSell();
 <div class="ptx-panel">
 <h3>📌 Approval Flow</h3>
 <p class="ptx-muted">Submitted → Automated checks → Human review → Approved / More information / Rejected → Published</p>
-<button class="ptx-btn" onclick="alert('Demo: bulk review queue opened')">Open Review Queue</button>
 </div>
 </section>
 <script>
@@ -4184,7 +4137,7 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
   market:[get('ptxMarketplace'),get('ptxMarketDetail'),get('ptxCardDetail'),get('ptxCardDatabase')],
   sell:[get('ptxSellCard'),get('ptxSellerCenter')],
   cart:[get('ptxCartDrawer')],
-  orders:[get('ptxLiveOrderFlow'),get('ptxNotifications'),findText('ORDER #TX-18492')],
+  orders:[],
   wallet:[get('ptxDepositPanel'),findText('USD Transaction Ledger'),get('ptxAccountCenter')],
   collection:[get('ptxMyCollection'),get('ptxCollectionBook'),get('ptxCollectorTools'),get('ptx-complete-hub')],
   account:[get('ptxAuthCenter'),get('ptxAccountCenter'),findText('KYC / Seller Verification'),findText('Agent Referral Center')],
@@ -4232,7 +4185,10 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
     const payPanel=document.createElement('div');payPanel.className='ptx-page-empty';
     payPanel.innerHTML='<h2>🔐 Payment &amp; Payout Safety</h2><p>This preview does not charge cards, hold funds or pay out sellers. Real payments stay disabled until an approved provider and server-side verification are in place.</p><ul style="text-align:left;line-height:1.8;padding-left:20px;margin:12px 0"><li>Pay only through an approved payment channel; never send money directly to another user.</li><li>Prices are shown in USD. Before a real checkout the charge currency, exchange rate, fees, shipping and taxes must be disclosed.</li><li>Status flow: Created → Pending → Processing → Paid. Only a server-verified provider event can mark an order paid.</li><li>Refunds and disputes follow the published policy and provider rules; a refund is complete only after provider confirmation.</li><li>Seller payouts require account verification, balance reconciliation and provider approval.</li></ul><button class="ptx-ip-action primary" type="button" onclick="cardoraOpenPolicy()">Open full policy center</button>';host.appendChild(payPanel);
   }
-  if(!nodes.length&&page!=='payments'){const empty=document.createElement('div');empty.className='ptx-page-empty';empty.innerHTML='<h2>'+title+'</h2><p>This page is ready for its dedicated workflow. Some payment, shipping, and account functions still require production backend integration.</p>';host.appendChild(empty)}
+  if(page==='orders'){
+    const live=document.createElement('div');live.id='ptxIpOrdersLive';host.appendChild(live);
+  }
+  if(!nodes.length&&page!=='payments'&&page!=='orders'){const empty=document.createElement('div');empty.className='ptx-page-empty';empty.innerHTML='<h2>'+title+'</h2><p>This page is ready for its dedicated workflow. Some payment, shipping, and account functions still require production backend integration.</p>';host.appendChild(empty)}
   shell.classList.add('open');shell.setAttribute('aria-hidden','false');document.body.classList.add('ptx-ip-open');shell.scrollTop=0;
   if(page==='account'&&window.ptxRenderIndependentAccount)window.ptxRenderIndependentAccount();
   if(page==='orders'&&window.ptxLoadLiveOrders)window.ptxLoadLiveOrders();
