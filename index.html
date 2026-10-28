@@ -170,11 +170,11 @@ img, video, iframe, canvas, svg { max-width:100%; }
 <div class="ptx-live"><i></i> MARKETPLACE DEMO · LIVE UI</div>
 <h1 class="ptx-shimmer" style="margin-top:12px">COLLECT.<br/>TRADE.<br/>TREASURE.</h1>
 <p>Cardora is a marketplace concept connecting independent card sellers with buyers across countries. Cardora does not own or directly sell the listed cards. Payments and transaction protection are not live yet.</p>
-<div class="ptx-muted" style="margin-top:10px">Preview figures only — not live customer, sales or revenue data.</div>
+<div class="ptx-muted" style="margin-top:10px">Live counts from the Cardora marketplace database.</div>
 <div class="ptx-stats">
-<div class="ptx-stat"><b>12.8K+</b><span>Cards Listed</span></div>
-<div class="ptx-stat"><b>1.2K+</b><span>Verified Sellers</span></div>
-<div class="ptx-stat"><b>68</b><span>Countries</span></div>
+<div class="ptx-stat"><b id="ptxStatListed">—</b><span>Cards Listed</span></div>
+<div class="ptx-stat"><b id="ptxStatStock">—</b><span>Cards in Stock</span></div>
+<div class="ptx-stat"><b id="ptxStatPrice">—</b><span>Lowest Price</span></div>
 </div>
 </div>
 </section>
@@ -212,6 +212,8 @@ img, video, iframe, canvas, svg { max-width:100%; }
 <div class="ptx-toast" id="ptxToast"></div>
 <script>
 window.ptxJump=function(id){
+ const route={ptxOfficialHome:'home',ptxMarketplace:'market',ptxMarketDetail:'market',ptxCardDetail:'market',ptxCardDatabase:'market',ptxSellCard:'sell',ptxSellerCenter:'sell',cardoraSealedCenter:'sell',ptxAccountCenter:'account',ptxAuthCenter:'account',ptxLiveOrderFlow:'orders',ptxNotifications:'orders',ptxBattleArena:'support',ptxDepositPanel:'wallet'}[id];
+ if(route&&typeof window.ptxIPGo==='function'){window.ptxIPGo(route);return;}
  const e=document.getElementById(id);
  if(e)e.scrollIntoView({behavior:"smooth",block:"start"});
 };
@@ -768,6 +770,7 @@ shipments
 <!-- Cardora Privacy, Marketplace Terms & Fees Center (preview policy draft) -->
 <style>
 #cardoraPolicyLaunch{position:fixed;right:14px;bottom:84px;z-index:9998;border:1px solid #6d55a0;border-radius:999px;background:#25163e;color:#fff;padding:10px 14px;font:700 12px system-ui;box-shadow:0 8px 26px #0006;cursor:pointer}
+@media(max-width:650px){#cardoraPolicyLaunch{display:none}}
 #cardoraPolicyBackdrop{display:none;position:fixed;inset:0;background:#05030bdc;z-index:100000;align-items:center;justify-content:center;padding:16px}
 #cardoraPolicyPanel{width:min(760px,100%);max-height:88vh;overflow:auto;background:#100d19;color:#f5f0ff;border:1px solid #4a3768;border-radius:18px;padding:20px;box-shadow:0 20px 80px #0009;font:14px/1.6 system-ui}
 #cardoraPolicyPanel h2{font-size:22px;margin:0 0 8px}#cardoraPolicyPanel h3{font-size:15px;margin:16px 0 4px;color:#e2ceff}#cardoraPolicyPanel p,#cardoraPolicyPanel li{color:#d0c6df}#cardoraPolicyPanel .cp-close{float:right;background:#2a1c40;color:#fff;border:1px solid #55406f;border-radius:9px;padding:7px 11px;cursor:pointer}#cardoraPolicyPanel .cp-note{border:1px solid #74591f;background:#241c0d;color:#ffe2a0;padding:10px;border-radius:10px;margin:12px 0;font-size:12px}#cardoraPolicyPanel nav{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}#cardoraPolicyPanel nav button{border:1px solid #4b3866;background:#21172f;color:#f5eaff;border-radius:9px;padding:8px 10px;cursor:pointer}#cardoraPolicyPanel section{border-top:1px solid #30243f;padding-top:8px;margin-top:8px}
@@ -3666,7 +3669,7 @@ body.ptx-ip-open{overflow:hidden}
 <div aria-hidden="true" id="ptxIndependentShell">
 <div class="ptx-ip-wrap">
 <div class="ptx-ip-head"><div><div class="ptx-live"><i></i> Cardora</div><h1 class="ptx-ip-title" id="ptxIpTitle">Home</h1><div class="ptx-ip-sub" id="ptxIpSub">Independent page</div></div><button class="ptx-ip-close" onclick="ptxIPGo('home')">⌂ Home</button></div>
-<div class="ptx-ip-nav" id="ptxIpNav"><button data-ip="home" onclick="ptxIPGo('home')" type="button">⌂ Home</button><button data-ip="market" onclick="ptxIPGo('market')" type="button">⌕ Market</button><button data-ip="seller" onclick="ptxIPGo('seller')" type="button">＋ Sell</button><button data-ip="cart" onclick="ptxIPGo('cart')" type="button">🛒 Cart</button><button data-ip="orders" onclick="ptxIPGo('orders')" type="button">📦 Orders</button><button data-ip="wallet" onclick="ptxIPGo('wallet')" type="button">💳 Wallet</button><button data-ip="payments" onclick="ptxIPGo('payments')" type="button">🔐 Payment Safety</button><button data-ip="collection" onclick="ptxIPGo('collection')" type="button">🎴 Collection</button><button data-ip="account" onclick="ptxIPGo('account')" type="button">♙ Account</button><button data-ip="support" onclick="ptxIPGo('support')" type="button">❔ Help</button></div>
+<div class="ptx-ip-nav" id="ptxIpNav"><button data-ip="home" onclick="ptxIPGo('home')" type="button">⌂ Home</button><button data-ip="market" onclick="ptxIPGo('market')" type="button">⌕ Market</button><button data-ip="seller" onclick="ptxIPGo('seller')" type="button">＋ Sell</button><button data-ip="cart" onclick="ptxIPGo('cart')" type="button">🛒 Cart</button><button data-ip="orders" onclick="ptxIPGo('orders')" type="button">📦 Orders</button><button data-ip="wallet" onclick="ptxIPGo('wallet')" type="button">💳 Wallet</button><button data-ip="payments" onclick="ptxIPGo('payments')" type="button">🔐 Payment Safety</button><button data-ip="collection" onclick="ptxIPGo('collection')" type="button">🎴 Collection</button><button data-ip="account" onclick="ptxIPGo('account')" type="button">♙ Account</button><button data-ip="agent" onclick="ptxIPGo('agent')" type="button">🎖 Agent</button><button data-ip="admin" onclick="ptxIPGo('admin')" type="button">⚙️ Admin</button><button data-ip="support" onclick="ptxIPGo('support')" type="button">❔ Help</button></div>
 <div id="ptxIpContent"><div class="ptx-real-page-content" id="ptxRealPageContent"></div></div>
 </div>
 </div>
@@ -4185,7 +4188,9 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
   wallet:[get('ptxDepositPanel'),findText('USD Transaction Ledger'),get('ptxAccountCenter')],
   collection:[get('ptxMyCollection'),get('ptxCollectionBook'),get('ptxCollectorTools'),get('ptx-complete-hub')],
   account:[get('ptxAuthCenter'),get('ptxAccountCenter'),findText('KYC / Seller Verification'),findText('Agent Referral Center')],
-  support:[findText('Buyer Protection & Dispute'),get('ptxPlatformArchitecture'),get('ptxAiChat')]
+  support:[findText('Buyer Protection & Dispute'),get('ptxPlatformArchitecture'),get('ptxAiChat')],
+  agent:[document.querySelector('section.agent'),document.querySelector('section.agentdash')],
+  admin:[get('ptxAdminReview')]
  };
  const titles={
   home:['Home','Welcome to Cardora','Browse the marketplace, continue collecting, or manage your account.'],
@@ -4197,7 +4202,9 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
   payments:['Payment Safety','Payment status, refunds and seller payouts','How payments, refunds and payouts must work before real money is enabled.'],
   collection:['Collection','Your collection','Manage owned cards, collection progress, favourites, and saved cards.'],
   account:['Account','Profile and verification','Manage sign-in, profile details, language, and seller verification.'],
-  support:['Help & Safety','Support and buyer protection','Find safety guidance and use the floating support assistant for common questions.']
+  support:['Help & Safety','Support and buyer protection','Find safety guidance and use the floating support assistant for common questions.'],
+  agent:['Agent','Agent Program dashboard','Referral performance, commissions, payouts and program rules.'],
+  admin:['Admin','Admin review center','Deposit and card review queues. Admin account required.']
  };
  // Hide the old all-in-one landing page; move each real feature section into a parked store.
  allSections.forEach(el=>{if(el.id==='ptxAiChat')return;parking.appendChild(el)});
@@ -4230,6 +4237,7 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
   if(page==='account'&&window.ptxRenderIndependentAccount)window.ptxRenderIndependentAccount();
   if(page==='orders'&&window.ptxLoadLiveOrders)window.ptxLoadLiveOrders();
   if(page==='cart'&&window.ptxRenderIndependentCart)window.ptxRenderIndependentCart();
+  if(page==='admin'&&window.ptxLoadAdminDeposits)window.ptxLoadAdminDeposits();
   // Keep the query string: OAuth callbacks arrive with ?code=&state= and must not be
   // erased before Supabase (or the explicit fallback exchange) reads them.
   try{history.replaceState(null,'',location.pathname+location.search+'#'+page)}catch(e){}
@@ -4363,4 +4371,29 @@ html[data-ptx-auth="signed-in"] #ptxRealPageContent>section.ptx-auth{display:non
 html[data-ptx-auth="signed-in"] #ptxRealPageContent>section#ptxAccountCenter{display:block!important}
 html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{display:none!important}
 </style>
+<script>
+(function(){
+  function set(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
+  async function loadStats(){
+    var tries=0;
+    while(!window.ptxSupabase&&tries++<40){await new Promise(function(r){setTimeout(r,250)});}
+    if(!window.ptxSupabase){set('ptxStatListed','—');set('ptxStatStock','—');set('ptxStatPrice','—');return;}
+    try{
+      var res=await window.ptxSupabase.from('listings').select('price,inventory').eq('status','active');
+      if(res.error)throw res.error;
+      var rows=res.data||[],stock=0,min=null;
+      rows.forEach(function(r){
+        var q=Number(r.inventory)||0;stock+=q;
+        var p=Number(r.price);if(isFinite(p)&&(min===null||p<min))min=p;
+      });
+      set('ptxStatListed',String(rows.length));
+      set('ptxStatStock',String(stock));
+      set('ptxStatPrice',min===null?'—':'$'+min.toFixed(2));
+    }catch(e){
+      set('ptxStatListed','—');set('ptxStatStock','—');set('ptxStatPrice','—');
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadStats);else loadStats();
+})();
+</script>
 </body></html>
