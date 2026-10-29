@@ -124,7 +124,7 @@ img, video, iframe, canvas, svg { max-width:100%; }
 </style>
 </head>
 <body>
-<div style="margin:10px 14px;padding:10px 12px;border-radius:12px;border:1px solid #6e5725;background:#20190b;color:#f5d36a;font-size:11px;line-height:1.45"><strong>PREVIEW BUILD</strong> · Global marketplace preview · USD base prices with local-currency estimates. Sample prices, balances, orders, statistics and exchange rates are demonstrations only. Local payments, payment confirmation, refunds and seller payouts are NOT connected; do not send money based on this preview.</div>
+<div style="margin:10px 14px;padding:10px 12px;border-radius:12px;border:1px solid #6e5725;background:#20190b;color:#f5d36a;font-size:11px;line-height:1.45"><strong>PREVIEW BUILD</strong> · Global marketplace preview · USD base prices. Sample prices, balances, orders and statistics are demonstrations only; local-currency figures use a fixed reference rate, not live FX. Local payments, payment confirmation, refunds and seller payouts are NOT connected; do not send money based on this preview.</div>
 <style>
 /* Premium brand layer */
 .ptx-brandbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:rgba(8,6,14,.96);border-bottom:1px solid #33244c;position:sticky;top:0;z-index:15;backdrop-filter:blur(12px)}
@@ -465,22 +465,11 @@ window.ptxEsc=function(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp
 <div class="agenthero">
 <div>🌎 GROW THE POKÉMON COMMUNITY</div>
 <h2>Become an Official Agent</h2>
-<p class="muted">Invite genuine collectors and earn commission from eligible completed transactions.</p>
-<button class="btn" onclick="document.getElementById('agentApply').scrollIntoView({behavior:'smooth'})">Apply Now</button>
-</div>
-<div class="agentgrid">
-<div class="agentstat"><div class="muted">Commission Rate</div><strong>3%</strong></div>
-<div class="agentstat"><div class="muted">Pending Commission</div><strong>126.40 U</strong></div>
-<div class="agentstat"><div class="muted">Approved Referrals</div><strong>48</strong></div>
-<div class="agentstat"><div class="muted">Total Earned</div><strong>684.20 U</strong></div>
+<p class="muted">Invite genuine collectors and sellers. The program is not active yet: no commission is earned, tracked or payable until payments and payouts are live.</p>
+<button class="btn" onclick="window.ptxIPGo?.('apply')">Apply Now</button>
 </div>
 <div class="agentbox">
-<b>🔗 Your Referral Link</b>
-<input readonly="" value="pokemontreasure.example/ref/AGT-8K29"/>
-<button class="smallbtn" onclick="copyReferral()">Copy Link</button>
-</div>
-<div class="agentbox">
-<b>💰 How commission works</b>
+<b>💰 How commission will work</b>
 <div class="agentsteps">
 <div class="agentstep"><b>1. Apply</b><span class="agentnote">Submit your agent application and complete any required verification.</span></div>
 <div class="agentstep"><b>2. Share</b><span class="agentnote">Share your official referral link or code with genuine customers.</span></div>
@@ -489,12 +478,9 @@ window.ptxEsc=function(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp
 </div>
 </div>
 <div class="agentbox" id="agentApply">
-<b>📝 Agent Application</b>
-<label class="muted">Display Name</label><input id="agentName" placeholder="Your public agent name"/>
-<label class="muted">Country / Market</label><input placeholder="e.g. Malaysia"/>
-<label class="muted">How will you promote?</label><input placeholder="TikTok, community, store, social media..."/>
-<label class="check"><input type="checkbox"/> I agree not to spam, mislead users, self-refer accounts, or make unauthorized claims about earnings.</label>
-<button class="btn" onclick="submitAgent()" style="width:100%;margin-top:10px">Submit Application</button>
+<b>📝 Agent application</b>
+<p class="agentnote">Applications are collected through the Cardora application form and reviewed by hand. Choose "Agent" when you fill it in.</p>
+<button class="btn" onclick="window.ptxIPGo?.('apply')" style="width:100%;margin-top:10px">Open application form</button>
 </div>
 <div class="agentbox">
 <b>🛡️ Agent Program Rules</b>
@@ -1374,12 +1360,16 @@ html[data-ptx-auth="signed-out"] #ptxAccountCenter{display:none !important}
 </div>
 </section>
 <section class="ptx-panel">
-<h2>🛡️ Buyer Protection &amp; Dispute</h2>
+<h2>🔎 How an order is meant to work</h2>
 <div class="ptx-grid">
-<div class="ptx-card"><b>1. Buyer pays</b><p class="ptx-muted">Funds are held according to the platform's settlement rules.</p></div>
-<div class="ptx-card"><b>2. Seller ships</b><p class="ptx-muted">Tracking is submitted inside the order.</p></div>
-<div class="ptx-card"><b>3. Buyer confirms</b><p class="ptx-muted">Order completes after delivery/confirmation or applicable review.</p></div>
+<div class="ptx-card"><b>1. Buyer pays</b><p class="ptx-muted">Not available yet: no card charge, FPX, QR or bank transfer is connected in this build.</p></div>
+<div class="ptx-card"><b>2. Seller ships</b><p class="ptx-muted">Tracking is recorded on the order once shipping is part of the platform.</p></div>
+<div class="ptx-card"><b>3. Buyer confirms</b><p class="ptx-muted">Order completes after delivery or the applicable review step.</p></div>
 <div class="ptx-card"><b>4. Dispute</b><p class="ptx-muted">Report counterfeit, missing, damaged or materially misdescribed cards.</p></div>
+</div>
+<div class="ptx-card" style="margin-top:10px;border-color:#6e5725;background:#1d1709">
+<b>No money is held by Cardora today</b>
+<p class="ptx-muted" style="margin-top:6px">Cardora is not a payment provider and does not hold, guarantee or refund buyer money in this build. Do not send money to anyone based on this site or on a chat message until a payment provider and a published policy are live.</p>
 </div>
 <div class="ptx-card" style="margin-top:10px">
 <div class="ptx-label">Need help?</div>
@@ -1387,7 +1377,7 @@ html[data-ptx-auth="signed-out"] #ptxAccountCenter{display:none !important}
 <p class="ptx-muted" style="margin-top:6px">Payments, buying, selling, shipping, refunds, verification and login questions. Automated answers — it cannot access your orders or confirm a payment.</p>
 <button class="ptx-btn" onclick="window.ptxOpenAiChat?.()" type="button">✦ Ask the AI</button>
 </div>
-<button class="ptx-btn" onclick="alert('Demo dispute form opened')">Report an Issue</button>
+<button class="ptx-btn" onclick="ptxToast('Issue reporting is not connected yet. Please contact support through the assistant.')">Report an Issue</button>
 </section>
 <style>
 .ptx-shop{padding:14px;background:linear-gradient(180deg,#120c20,#090711);border-radius:20px;margin:14px 0}
@@ -1411,7 +1401,7 @@ html[data-ptx-auth="signed-out"] #ptxAccountCenter{display:none !important}
 </style>
 <section class="ptx-shop" id="ptxMarketplace">
 <h2>🃏 Global Pokémon Marketplace</h2>
-<p class="ptx-muted">Buy verified cards from sellers worldwide · Settlement in USD</p>
+<p class="ptx-muted">Browse listings from sellers · prices shown in USD · payments not connected</p>
 <div class="ptx-shopbar">
 <input id="ptxSearch" oninput="ptxFilter()" placeholder="Search card / set / number"/>
 <select id="ptxRarity" onchange="ptxFilter()"><option value="">All Rarity</option><option>SAR</option><option>SIR</option><option>AR</option><option>Promo</option></select>
@@ -1426,19 +1416,11 @@ html[data-ptx-auth="signed-out"] #ptxAccountCenter{display:none !important}
 <div id="ptxCartItems"></div>
 <hr/>
 <div class="ptx-row"><b>Total</b><b id="ptxCartTotal">0 USD</b></div>
-<button class="ptx-btn" onclick="ptxCheckout()" style="width:100%;margin-top:12px">Secure Checkout</button>
-<p class="ptx-muted">Demo checkout only. No real payment is processed. Production payments will use an approved payment provider.</p>
+<button class="ptx-btn" onclick="ptxCheckout()" style="width:100%;margin-top:12px">Continue to order</button>
+<p class="ptx-muted">No payment is taken. This creates an order with PENDING status so a seller can be contacted; real payments will use an approved payment provider.</p>
 </div></div>
 <script>
 (function(){
-const fallbackProducts=[
- {legacyId:1,name:"Pikachu ex",set:"Super Electric Breaker",rarity:"SAR",price:39.99,lang:"JP",condition:"NM",icon:"⚡"},
- {legacyId:2,name:"Umbreon ex",set:"Terastal Festival",rarity:"SAR",price:89.00,lang:"JP",condition:"NM",icon:"🌙"},
- {legacyId:3,name:"Charizard ex",set:"Obsidian Flames",rarity:"SIR",price:54.50,lang:"EN",condition:"NM",icon:"🔥"},
- {legacyId:4,name:"Eevee",set:"Scarlet & Violet Promo",rarity:"Promo",price:12.80,lang:"EN",condition:"NM",icon:"✨"},
- {legacyId:5,name:"Psyduck",set:"151",rarity:"AR",price:8.90,lang:"JP",condition:"NM",icon:"💧"},
- {legacyId:6,name:"Mew ex",set:"151",rarity:"SAR",price:28.60,lang:"CN",condition:"NM",icon:"💖"}
-];
 const meta={
  "Pikachu ex":{set:"Super Electric Breaker",rarity:"SAR",lang:"JP",condition:"NM",icon:"⚡"},
  "Umbreon ex":{set:"Terastal Festival",rarity:"SAR",lang:"JP",condition:"NM",icon:"🌙"},
@@ -1448,7 +1430,7 @@ const meta={
  "Psyduck":{set:"151",rarity:"AR",lang:"JP",condition:"NM",icon:"💧"},
  "Mew ex":{set:"151",rarity:"SAR",lang:"CN",condition:"NM",icon:"💖"}
 };
-let products=fallbackProducts.map(x=>({...x,id:String(x.legacyId)}));
+let products=[];
 let cart=[];
 function resolveProduct(id){
  const key=String(id);
@@ -1456,6 +1438,7 @@ function resolveProduct(id){
 }
 function render(list=products){
  const el=document.getElementById("ptxProducts"); if(!el)return;
+ if(!list.length){el.innerHTML='<div class="ptx-db-empty" style="grid-column:1/-1">No cards are listed right now. Nothing is shown here unless a real seller listing exists.</div>';return;}
  el.innerHTML=list.map(p=>`<article class="ptx-product">
  <div class="ptx-art">${p.icon}</div><div class="body">
  <div><span class="ptx-tag">${p.rarity}</span><span class="ptx-tag">${p.lang}</span></div>
@@ -1475,7 +1458,7 @@ window.ptxAdd=function(id){
  let x=cart.find(x=>String(x.id)===String(p.id)); x?x.qty++:cart.push({...p,qty:1}); updateCart();
  if(typeof ptxToast==='function')ptxToast('🛒 '+p.name+' added to cart');
 };
-window.ptxFav=function(id){alert("Demo: card added to favourites");};
+window.ptxFav=function(id){if(typeof ptxToast==='function')ptxToast('Favourites are not connected yet.');};
 function updateCart(){
  const count=document.getElementById("ptxCartCount"),totalEl=document.getElementById("ptxCartTotal"),items=document.getElementById("ptxCartItems");
  const total=cart.reduce((a,x)=>a+x.price*x.qty,0);
@@ -1516,6 +1499,7 @@ async function loadListings(){
    products=data.map((row,i)=>{const m=meta[row.title]||{};return {id:row.id,legacyId:i+1,name:row.title,set:m.set||'Pokémon Marketplace',rarity:m.rarity||'Card',price:Number(row.price),lang:m.lang||'—',condition:m.condition||'NM',icon:m.icon||'🎴',inventory:Number(row.inventory||0),currency:row.currency||'USD'};});
    render();updateCart();
    window.ptxMarketplaceListings=products;
+   if(typeof window.ptxRenderHomeTrending==='function')window.ptxRenderHomeTrending();
    if(typeof window.ptxDbResultsRefresh==='function')window.ptxDbResultsRefresh(products);
  }catch(e){console.warn('market listings load',e);render();updateCart();}
 }
@@ -1605,24 +1589,24 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </label>
 </div>
 <div class="ptx-ai">
-<b>🤖 Demo Card Recognition</b>
+<b>🤖 Card Recognition</b>
 <p class="ptx-muted">After photo upload, production AI/OCR could suggest card name, set and number. Seller must verify the result before listing.</p>
 <button class="ptx-btn alt" onclick="ptxRecognize()">Analyze Card</button>
 </div>
 <div class="ptx-fields" style="margin-top:14px">
-<div class="ptx-field"><label>Card Name</label><input id="ptxName" value="Pikachu ex"/></div>
-<div class="ptx-field"><label>Set</label><input id="ptxSet" value="Super Electric Breaker"/></div>
-<div class="ptx-field"><label>Card Number</label><input id="ptxNumber" value="132/106"/></div>
+<div class="ptx-field"><label>Card Name</label><input id="ptxName" placeholder="e.g. Pikachu ex"/></div>
+<div class="ptx-field"><label>Set</label><input id="ptxSet" placeholder="e.g. Super Electric Breaker"/></div>
+<div class="ptx-field"><label>Card Number</label><input id="ptxNumber" placeholder="e.g. 132/106"/></div>
 <div class="ptx-field"><label>Language</label><select id="ptxLanguageSelect" onchange="window.ptxLang(this.value)"><option value="English">English</option><option value="简体中文">简体中文</option><option value="ไทย">ไทย</option><option value="Bahasa Melayu">Bahasa Melayu</option><option value="日本語">日本語</option><option value="한국어">한국어</option><option value="Tiếng Việt">Tiếng Việt</option><option value="Filipino">Filipino</option></select></div>
 <div class="ptx-field"><label>Rarity</label><select id="ptxRare"><option>SAR</option><option>SIR</option><option>AR</option><option>Promo</option><option>Other</option></select></div>
 <div class="ptx-field"><label>Condition</label><select id="ptxCondition"><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option></select></div>
-<div class="ptx-field"><label>Your Price (USD)</label><input id="ptxSellPrice" oninput="ptxCalcSell()" step="0.01" type="number" value="39.99"/></div>
+<div class="ptx-field"><label>Your Price (USD)</label><input id="ptxSellPrice" placeholder="0.00" step="0.01" type="number"/></div>
 <div class="ptx-field"><label>Quantity</label><input min="1" type="number" value="1"/></div>
 </div>
 <div class="ptx-estimate">
-<div class="ptx-row"><b>Marketplace Fee</b><span id="ptxFee">2.00 USD</span></div>
-<div class="ptx-row"><b>Estimated Seller Proceeds</b><b id="ptxProceeds">37.99 USD</b></div>
-<div class="ptx-muted">Demo fee: 5%. Actual production fees should be defined in the seller terms.</div>
+<div class="ptx-row"><b>Marketplace fee</b><span>Not set yet</span></div>
+<div class="ptx-row"><b>Seller proceeds</b><b>Shown once fees are published</b></div>
+<div class="ptx-muted">No fee schedule is active. The rate, currency conversion and payout method will be stated in the seller terms before any listing is charged or paid out.</div>
 </div>
 <div class="ptx-field" style="margin-top:12px"><label>Description</label>
 <textarea placeholder="Describe centering, whitening, scratches, dents, print lines and any other condition details..."></textarea></div>
@@ -1634,10 +1618,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <div>✓ Price is in USD</div>
 <div>✓ No external contact or off-platform payment information</div>
 </div>
-<div class="ptx-progress"><i></i></div>
-<p class="ptx-muted">Listing readiness: 72% · Complete all required information before submission.</p>
+<div class="ptx-progress"><i style="width:100%;background:#2b213c"></i></div>
+<p class="ptx-muted">Listings are not being accepted yet. Apply first; we open your seller account after review.</p>
 <button class="ptx-btn" onclick="ptxSubmitListing()">Submit for Review</button>
-<button class="ptx-btn alt" onclick="alert('Draft saved in demo')">Save Draft</button>
+<button class="ptx-btn alt" onclick="window.ptxIPGo?.('apply')">Open seller application</button>
 </section>
 <script>
 window.ptxPhoto=function(input,target){
@@ -1648,22 +1632,17 @@ window.ptxPhoto=function(input,target){
  }
 };
 window.ptxRecognize=function(){
- document.getElementById("ptxName").value="Pikachu ex";
- document.getElementById("ptxSet").value="Super Electric Breaker";
- document.getElementById("ptxNumber").value="132/106";
- alert("Demo analysis complete. Please verify every field against your card.");
-};
-window.ptxCalcSell=function(){
- const v=parseFloat(document.getElementById("ptxSellPrice").value)||0, fee=v*.05;
- document.getElementById("ptxFee").textContent=fee.toFixed(2)+" USD";
- document.getElementById("ptxProceeds").textContent=(v-fee).toFixed(2)+" USD";
+ if(window.ptxToast)window.ptxToast("Card recognition is not connected yet. Please type the card details yourself.");
+ else alert("Card recognition is not connected yet. Please type the card details yourself.");
 };
 window.ptxSubmitListing=function(){
  const name=document.getElementById("ptxName").value.trim();
  if(!name)return alert("Please enter the card name");
- alert("Demo: listing submitted for marketplace review.");
+ const price=parseFloat(document.getElementById("ptxSellPrice").value);
+ if(!price||price<=0)return alert("Please enter your price in USD");
+ const msg="Listings are not open yet. Send a seller application and we will contact you when your seller account is ready.";
+ if(window.ptxToast){window.ptxToast(msg);window.ptxIPGo?.("apply");}else alert(msg);
 };
-ptxCalcSell();
 </script>
 <style>
 .ptx-admin{background:linear-gradient(145deg,#161021,#0a0811);border:1px solid #4b386d;border-radius:20px;padding:16px;margin:14px 0}
@@ -1903,9 +1882,9 @@ window.ptxSendChat=function(){
 </style>
 <section class="ptx-home" id="ptxOfficialHome">
 <div class="ptx-hero">
-<div class="ptx-hero-badges"><span>🌎 GLOBAL MARKETPLACE</span><span>💵 USD SETTLEMENT</span><span>🛡️ BUYER PROTECTION</span></div>
+<div class="ptx-hero-badges"><span>🌎 GLOBAL MARKETPLACE</span><span>💵 USD PRICING</span><span>🔒 PAYMENTS NOT CONNECTED</span></div>
 <h1>CARDORA</h1>
-<p>Collect rare Pokémon cards. Buy from verified sellers. Sell your own cards. Everything in one global marketplace.</p>
+<p>Browse collectible Pokémon card listings and compare sellers. Seller applications are reviewed by hand. Card payments, refunds and seller payouts are not connected yet.</p>
 <div class="ptx-home-search">
 <input id="ptxHeroSearch" onkeydown="if(event.key==='Enter')ptxHeroGo()" placeholder="Search Pikachu, Umbreon, 151, SAR..."/>
 <button onclick="ptxHeroGo()">Search</button>
@@ -1920,22 +1899,17 @@ window.ptxSendChat=function(){
 <div>🎁<b>Promo</b><span class="ptx-muted">Limited cards</span></div>
 </div>
 <div class="ptx-home-banner">
-<div><div class="big">🔥 Hot Cards This Week</div><div class="ptx-muted">Popular cards from verified marketplace listings.</div></div>
+<div><div class="big">🔥 Hot Cards This Week</div><div class="ptx-muted">Live listings from the marketplace.</div></div>
 <button class="ptx-btn" onclick="window.ptxIPGo?.('market')">Shop Now</button>
 </div>
-<div class="ptx-title" style="margin-top:20px"><h2>🔥 Trending Cards</h2><span class="ptx-see">Updated Demo</span></div>
-<div class="ptx-home-products">
-<div class="ptx-hp"><div class="ptx-hp-art">⚡</div><h3>Pikachu ex</h3><div class="ptx-muted">SAR · Japanese</div><div class="price">39.99 USD</div></div>
-<div class="ptx-hp"><div class="ptx-hp-art">🌙</div><h3>Umbreon ex</h3><div class="ptx-muted">SAR · Japanese</div><div class="price">89.00 USD</div></div>
-<div class="ptx-hp"><div class="ptx-hp-art">🔥</div><h3>Charizard ex</h3><div class="ptx-muted">SIR · English</div><div class="price">54.50 USD</div></div>
-<div class="ptx-hp"><div class="ptx-hp-art">✨</div><h3>Eevee Promo</h3><div class="ptx-muted">Promo · English</div><div class="price">12.80 USD</div></div>
-</div>
-<div class="ptx-title" style="margin-top:20px"><h2>🛡️ Why Cardora?</h2></div>
+<div class="ptx-title" style="margin-top:20px"><h2>🔥 Live Cards</h2><span class="ptx-see">From marketplace listings</span></div>
+<div class="ptx-home-products" id="ptxHomeTrending"><div class="ptx-muted" style="padding:8px 0">Loading listings…</div></div>
+<div class="ptx-title" style="margin-top:20px"><h2>🛡️ What is real on Cardora today</h2></div>
 <div class="ptx-trust" style="margin-top:12px">
-<div><b>Verified Sellers</b><p class="ptx-muted">Seller and listing review tools.</p></div>
-<div><b>Secure Checkout</b><p class="ptx-muted">Payment-provider ready architecture.</p></div>
-<div><b>Order Protection</b><p class="ptx-muted">Payment → Shipping → Delivery → Settlement.</p></div>
-<div><b>Global Shipping</b><p class="ptx-muted">Tracked shipping information in orders.</p></div>
+<div><b>Hand-reviewed sellers</b><p class="ptx-muted">Every seller or agent application is checked by a person before approval.</p></div>
+<div><b>No payments yet</b><p class="ptx-muted">No card charge, bank transfer, refund or payout is processed in this build.</p></div>
+<div><b>Order status visible</b><p class="ptx-muted">Created orders appear in your account with their current status.</p></div>
+<div><b>Tracked shipping</b><p class="ptx-muted">Shipping and tracking details will be recorded on each order.</p></div>
 </div>
 <div class="ptx-home-banner">
 <div><div class="big">📸 Have cards to sell?</div><div class="ptx-muted">Upload your card, add details and submit it for review.</div></div>
@@ -1943,8 +1917,8 @@ window.ptxSendChat=function(){
 </div>
 </div>
 <div class="ptx-footer">
-<div><b>Cardora</b>Global collectible card marketplace demo.</div>
-<div><b>Marketplace</b>Buy Cards<br/>Sell Cards<br/>Shipping<br/>Buyer Protection</div>
+<div><b>Cardora</b>Global collectible card marketplace.<br/>Preview build: no payments are processed.</div>
+<div><b>Marketplace</b>Buy Cards<br/>Sell Cards<br/>Shipping<br/>Order status</div>
 <div><b>Community</b>Agent Program<br/>Support Center<br/>Trust &amp; Safety<br/>Report an Issue</div>
 <div><b>Important</b>Prototype only · No real payments are processed. Production launch requires approved payment provider, KYC/AML, legal and marketplace compliance review.</div>
 </div>
@@ -1971,7 +1945,7 @@ window.ptxHeroGo=function(){
 }
 </style>
 <section class="ptx-markethero">
-<div class="ptx-live"><i></i> VERIFIED MARKETPLACE</div>
+<div class="ptx-live"><i></i> MARKETPLACE LISTINGS</div>
 <h2 style="margin:8px 0">Find Your Next Treasure</h2>
 <p class="ptx-muted">Browse by rarity, language, collection and price — all displayed in USD.</p>
 <div class="ptx-chiprow">
@@ -2007,7 +1981,7 @@ window.ptxHeroGo=function(){
 <button class="ptx-hub-item hub-sell" onclick="ptxHubGo('ptxSellCard')"><b>＋</b><span>Sell</span></button>
 <button class="ptx-hub-item hub-cart" onclick="ptxHubCart()"><b>🛒</b><span>Cart</span><em id="ptxHubCartBadge">0</em></button>
 <button class="ptx-hub-item hub-account" onclick="ptxHubAccount()"><b>♙</b><span>Account</span></button>
-<button class="ptx-hub-balance" onclick="ptxHubWallet()"><b>💳</b><strong>411.00 USD</strong><span>Wallet</span><i>›</i></button>
+<button class="ptx-hub-balance" onclick="ptxHubWallet()"><b>💳</b><span>Wallet</span><i>›</i></button>
 <button aria-label="Close menu" class="ptx-hub-close" onclick="ptxToggleHub(false)">×</button>
 </div>
 <script>
@@ -2079,14 +2053,12 @@ window.ptxQuickFilter=function(v){
 <div class="ptx-loginbox" style="margin-top:14px">
 <h3>🌐 Language</h3>
 <div class="ptx-lang">
-<button onclick="ptxLang('English')">English</button><button onclick="ptxLang('简体中文')">简体中文</button>
-<button onclick="ptxLang('ไทย')">ไทย</button><button onclick="ptxLang('Bahasa Melayu')">Bahasa Melayu</button>
-<button onclick="ptxLang('日本語')">日本語</button><button onclick="ptxLang('한국어')">한국어</button>
-<button onclick="ptxLang('Tiếng Việt')">Tiếng Việt</button><button onclick="ptxLang('Filipino')">Filipino</button>
+<button onclick="ptxLang('English')" class="ptx-language-active">English</button>
 </div>
+<p class="ptx-muted" style="margin-top:8px">The site is English only for now. Simplified Chinese, Thai, Bahasa Melayu, Japanese, Korean, Vietnamese and Filipino are planned but not translated yet.</p>
 </div>
 <div class="ptx-loginbox" style="margin-top:14px">
-<div class="ptx-profile"><div class="ptx-avatar">⚡</div><div><b>PT Collector</b><div class="ptx-verified">Verified email</div><div class="ptx-muted">Member · USD Wallet</div></div></div>
+<div class="ptx-profile"><div class="ptx-avatar">👤</div><div><b>Not signed in</b><div class="ptx-muted">Sign in to manage your own account.</div></div></div>
 <div class="ptx-menu">
 <button onclick="ptxJump('ptxAccountCenter')">💰 Wallet &amp; Balance</button>
 <button onclick="ptxJump('ptxMarketplace')">❤️ My Favourites</button>
@@ -2404,18 +2376,18 @@ window.ptxQuickFilter=function(v){
 <div class="ptx-detail-layout">
 <div>
 <div class="ptx-detail-image"><div class="ptx-detail-card"><div class="ptx-detail-inner" id="ptxDetailArt"><span>⚡</span></div></div></div>
-<div class="ptx-flip"><button class="ptx-btn alt" onclick="ptxFlipCard()">↔ Front / Back</button><button class="ptx-btn alt" onclick="ptxToast('Demo: image zoom')">🔍 Zoom</button></div>
+<div class="ptx-flip"><button class="ptx-btn alt" onclick="ptxFlipCard()">↔ Front / Back</button><button class="ptx-btn alt" onclick="ptxToast('Image zoom is not connected yet.')">🔍 Zoom</button></div>
 </div>
 <div class="ptx-detail-info">
 <span class="ptx-tag" id="ptxDetailRarity">SAR</span><span class="ptx-tag" id="ptxDetailLang">Japanese</span><span class="ptx-tag">NM</span>
 <h2 id="ptxDetailName">Pikachu ex</h2><div class="ptx-muted" id="ptxDetailSet">Super Electric Breaker · 132/106</div>
 <div class="ptx-bigprice" id="ptxDetailPrice">39.99 USD</div>
-<div class="ptx-detail-row"><span>Seller</span><b id="ptxDetailSeller">TreasureSeller ✓</b></div>
-<div class="ptx-detail-row"><span>Rating</span><b>★ 4.98 · 286 orders</b></div>
-<div class="ptx-detail-row"><span>Shipping</span><b>From 3.99 USD</b></div>
-<div class="ptx-detail-row"><span>Buyer Protection</span><b class="ptx-good">Protected</b></div>
-<div class="ptx-detail-row"><span>Settlement</span><b>USD</b></div>
-<p class="ptx-muted">Photos, condition and card identity should be verified before purchase. Demo listing data is illustrative.</p>
+<div class="ptx-detail-row"><span>Seller</span><b id="ptxDetailSeller">Listed on Cardora</b></div>
+<div class="ptx-detail-row"><span>Rating</span><b>No reviews yet</b></div>
+<div class="ptx-detail-row"><span>Shipping</span><b>Agreed with the seller</b></div>
+<div class="ptx-detail-row"><span>Buyer Protection</span><b class="ptx-warn">Not offered yet</b></div>
+<div class="ptx-detail-row"><span>Price currency</span><b>USD</b></div>
+<p class="ptx-muted">Photos, condition and card identity must be checked before any purchase. Payments are not connected, so nothing can be bought on this site yet.</p>
 <button class="ptx-btn" onclick="ptxBuyNow()" style="width:100%">Buy Now · USD</button>
 <button class="ptx-btn alt" onclick="ptxModalAdd()" style="width:100%">🛒 Add to Cart</button>
 </div>
@@ -2423,8 +2395,8 @@ window.ptxQuickFilter=function(v){
 </div></div>
 <div class="ptx-checkout" id="ptxCheckoutModal">
 <div class="ptx-checkout-box">
-<div class="ptx-row"><h2>💳 Secure Checkout</h2><button class="ptx-close" onclick="ptxCloseCheckout()">×</button></div>
-<div class="ptx-form"><b id="ptxCheckoutItem">Pikachu ex · 39.99 USD</b><div class="ptx-muted">Seller: TreasureSeller</div></div>
+<div class="ptx-row"><h2>💳 Checkout preview</h2><button class="ptx-close" onclick="ptxCloseCheckout()">×</button></div>
+<div class="ptx-form"><b id="ptxCheckoutItem">Pikachu ex · 39.99 USD</b><div class="ptx-muted">No payment is taken. This preview only creates an order with PENDING status.</div></div>
 <div class="ptx-form"><label class="ptx-muted">Shipping Country</label><select><option>Malaysia</option><option>Thailand</option><option>Singapore</option><option>Japan</option><option>United States</option><option>Other</option></select></div>
 <div class="ptx-form"><label class="ptx-muted">Shipping Address</label><input placeholder="Full address"/></div>
 <div class="ptx-form"><label class="ptx-muted">Payment Method</label><select id="ptxPaymentMethod" onchange="ptxPaymentMethodChanged()">
@@ -2432,16 +2404,16 @@ window.ptxQuickFilter=function(v){
 <option value="paypal">PayPal — backup / subject to approval</option>
 <option value="manual">Manual payment — testing only</option>
 </select><div class="ptx-muted" id="ptxPaymentNote" style="margin-top:8px">Stripe Connect will be connected after the business/payment account is approved. No real payment is processed in this build.</div></div>
-<div class="ptx-form"><div class="ptx-detail-row"><span>Card</span><b id="ptxCOCard">39.99 USD</b></div><div class="ptx-detail-row"><span>Shipping</span><b>3.99 USD</b></div><div class="ptx-detail-row"><span>Total</span><b id="ptxCOTotal">43.98 USD</b></div></div>
-<div class="ptx-risk"><b>🔒 Buyer Protection</b><p class="ptx-muted">Payment is currently prototype-only. The order can be created with PENDING payment status, but no money is charged. Production payments will be processed only through an approved payment provider.</p></div>
+<div class="ptx-form"><div class="ptx-detail-row"><span>Card</span><b id="ptxCOCard">39.99 USD</b></div><div class="ptx-detail-row"><span>Shipping</span><b>Not priced yet</b></div><div class="ptx-detail-row"><span>Total</span><b id="ptxCOTotal">39.99 USD</b></div></div>
+<div class="ptx-risk"><b>🔒 Payments are not connected</b><p class="ptx-muted">No money is charged in this build. The order is created with PENDING status for testing only. Production payments will be processed only through an approved payment provider.</p></div>
 <button class="ptx-btn" onclick="ptxPlaceOrder()" style="width:100%">Create Order · Payment Pending</button>
 </div></div>
 <script>
 (function(){
-let current={id:1,name:"Pikachu ex",set:"Super Electric Breaker · 132/106",rarity:"SAR",lang:"Japanese",price:39.99,seller:"TreasureSeller",icon:"⚡"};
+let current={id:1,name:"Pikachu ex",set:"Super Electric Breaker · 132/106",rarity:"SAR",lang:"Japanese",price:39.99,seller:"",icon:"⚡"};
 let back=false;
 window.ptxOpenProduct=function(id){
- const data={1:["Pikachu ex","Super Electric Breaker · 132/106","SAR","Japanese",39.99,"TreasureSeller","⚡"],2:["Umbreon ex","Terastal Festival · 217/187","SAR","Japanese",89,"CardVault","🌙"],3:["Charizard ex","Obsidian Flames · 125/111","SIR","English",54.5,"JPCardHouse","🔥"],4:["Eevee Promo","Scarlet & Violet Promo","Promo","English",12.8,"TreasureSeller","✨"]}[id]||null;
+ const data={1:["Pikachu ex","Super Electric Breaker · 132/106","SAR","Japanese",39.99,"","⚡"],2:["Umbreon ex","Terastal Festival · 217/187","SAR","Japanese",89,"","🌙"],3:["Charizard ex","Obsidian Flames · 125/111","SIR","English",54.5,"","🔥"],4:["Eevee Promo","Scarlet & Violet Promo","Promo","English",12.8,"","✨"]}[id]||null;
  if(!data)return;
  current={id,name:data[0],set:data[1],rarity:data[2],lang:data[3],price:data[4],seller:data[5],icon:data[6]};
  document.getElementById("ptxDetailName").textContent=current.name;
@@ -2449,7 +2421,7 @@ window.ptxOpenProduct=function(id){
  document.getElementById("ptxDetailRarity").textContent=current.rarity;
  document.getElementById("ptxDetailLang").textContent=current.lang;
  document.getElementById("ptxDetailPrice").textContent=current.price.toFixed(2)+" USD";
- document.getElementById("ptxDetailSeller").textContent=current.seller+" ✓";
+ document.getElementById("ptxDetailSeller").textContent=current.seller||"Listed on Cardora";
  document.getElementById("ptxDetailArt").innerHTML="<span>"+current.icon+"</span>";
  window.__ptxCurrentPurchaseName=current.name;window.__ptxCurrentPurchasePrice=current.price;window.__ptxCurrentPurchaseRarity=current.rarity;window.__ptxCurrentPurchaseIcon=current.icon;window.__ptxCurrentPurchaseId=current.id;
  back=false; document.getElementById("ptxProductModal").classList.add("open");
@@ -2460,7 +2432,7 @@ window.ptxFlipCard=function(){back=!back;document.getElementById("ptxDetailArt")
 window.ptxBuyNow=function(){
  document.getElementById("ptxCheckoutItem").textContent=current.name+" · "+current.price.toFixed(2)+" USD";
  document.getElementById("ptxCOCard").textContent=current.price.toFixed(2)+" USD";
- document.getElementById("ptxCOTotal").textContent=(current.price+3.99).toFixed(2)+" USD";
+ document.getElementById("ptxCOTotal").textContent=current.price.toFixed(2)+" USD";
  document.getElementById("ptxCheckoutModal").classList.add("open");
  window.ptxRestorePaymentMethod();
 };
@@ -2645,7 +2617,7 @@ const db=[
 function render(list){const el=document.getElementById('ptxDbResults'); if(!el)return; el.innerHTML=list.length?list.map(p=>`<article class="ptx-db-card" onclick="ptxDbOpen(${p.id})"><div class="ptx-db-art">${p.icon}</div><div class="ptx-db-body"><span class="ptx-db-pill">${p.rarity}</span><span class="ptx-db-pill">${p.lang}</span><div class="ptx-db-no">${p.set} · #${p.no}</div><div class="ptx-db-name">${p.name}</div><div class="ptx-db-price">From ${p.price.toFixed(2)} USD</div></div></article>`).join(''):'<div class="ptx-db-empty">No cards found. Try another Pokémon name, set, number or rarity.</div>';}
 window.ptxDbFilter=function(){const q=(document.getElementById('ptxDbSearch').value||'').toLowerCase().trim(),set=document.getElementById('ptxDbSet').value,rar=document.getElementById('ptxDbRarity').value;render(db.filter(p=>(!q||`${p.name} ${p.set} ${p.no} ${p.rarity} ${p.lang}`.toLowerCase().includes(q))&&(!set||p.set===set)&&(!rar||p.rarity===rar)));};
 window.ptxDbOpen=function(id){const p=db.find(x=>x.id===id),d=document.getElementById('ptxDbDetail');if(!p||!d)return;d.classList.add('open');d.innerHTML=`<div><b>🎴 ${p.name}</b><div class="ptx-muted">${p.set} · #${p.no} · ${p.lang} · ${p.rarity}</div><b style="display:block;margin-top:5px;color:#f5c542">From ${p.price.toFixed(2)} USD</b></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="ptx-btn" onclick="ptxDbBuy(${p.id})">View & Buy</button><button class="ptx-btn alt" onclick="ptxDbCollect(${p.id})">♡ Save</button></div>`;};
-window.ptxDbBuy=function(id){const p=db.find(x=>x.id===id);if(!p)return;if(typeof ptxOpenProduct==='function' && [1,2,3,4].includes(id)){ptxOpenProduct(id);return;}ptxToast('Demo: opening '+p.name+' marketplace results');};
+window.ptxDbBuy=function(id){const p=db.find(x=>x.id===id);if(!p)return;ptxToast('Card detail and buying are not connected yet.');};
 window.ptxDbCollect=function(id){const p=db.find(x=>x.id===id);if(p)ptxToast('❤️ '+p.name+' saved to Favourites');};
 render(db);
 })();
@@ -3301,7 +3273,10 @@ const packs={
 const original=new Map();
 function walk(root){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(!n.nodeValue.trim())continue; if(n.parentElement && ['SCRIPT','STYLE','OPTION'].includes(n.parentElement.tagName))continue; original.set(n,n.nodeValue);}}
 function apply(lang){const dict=packs[lang]||packs.English; if(!original.size)walk(document.body); original.forEach((v,n)=>{const key=v.trim(); if(dict[key]) n.nodeValue=v.replace(key,dict[key]);}); document.documentElement.lang=lang; localStorage.setItem('ptxLanguage',lang); const sel=document.getElementById('ptxLanguageSelect'); if(sel)sel.value=lang; document.querySelectorAll('[onclick*="ptxLang("]').forEach(b=>b.classList.toggle('ptx-language-active',b.textContent.trim()===lang));}
-window.ptxLang=function(lang){apply(lang);};
+window.ptxLang=function(lang){
+ if(lang&&lang!=='English'&&window.ptxToast)window.ptxToast('Only English is available right now. Other languages are not translated yet.');
+ apply('English');
+};
 // Keep language controls reliable even when an element shares a legacy ID.
 document.addEventListener("click",function(ev){
   const btn=ev.target.closest("button[onclick^=\"ptxLang(\"]");
@@ -3622,7 +3597,7 @@ body.ptx-ip-open{overflow:hidden}
 <div aria-hidden="true" id="ptxIndependentShell">
 <div class="ptx-ip-wrap">
 <div class="ptx-ip-head"><div><div class="ptx-live"><i></i> Cardora</div><h1 class="ptx-ip-title" id="ptxIpTitle">Home</h1><div class="ptx-ip-sub" id="ptxIpSub">Independent page</div></div><button class="ptx-ip-close" onclick="ptxIPGo('home')">⌂ Home</button></div>
-<div class="ptx-ip-nav" id="ptxIpNav"><button data-ip="home" onclick="ptxIPGo('home')" type="button">⌂ Home</button><button data-ip="market" onclick="ptxIPGo('market')" type="button">⌕ Market</button><button data-ip="seller" onclick="ptxIPGo('seller')" type="button">＋ Sell</button><button data-ip="cart" onclick="ptxIPGo('cart')" type="button">🛒 Cart</button><button data-ip="orders" onclick="ptxIPGo('orders')" type="button">📦 Orders</button><button data-ip="wallet" onclick="ptxIPGo('wallet')" type="button">💳 Wallet</button><button data-ip="payments" onclick="ptxIPGo('payments')" type="button">🔐 Payment Safety</button><button data-ip="collection" onclick="ptxIPGo('collection')" type="button">🎴 Collection</button><button data-ip="account" onclick="ptxIPGo('account')" type="button">♙ Account</button><button data-ip="agent" onclick="ptxIPGo('agent')" type="button">🎖 Agent</button><button data-ip="admin" onclick="ptxIPGo('admin')" type="button">⚙️ Admin</button><button data-ip="support" onclick="ptxIPGo('support')" type="button">❔ Help</button></div>
+<div class="ptx-ip-nav" id="ptxIpNav"><button data-ip="home" onclick="ptxIPGo('home')" type="button">⌂ Home</button><button data-ip="market" onclick="ptxIPGo('market')" type="button">⌕ Market</button><button data-ip="seller" onclick="ptxIPGo('seller')" type="button">＋ Sell</button><button data-ip="apply" onclick="ptxIPGo('apply')" type="button">🤝 Join</button><button data-ip="cart" onclick="ptxIPGo('cart')" type="button">🛒 Cart</button><button data-ip="orders" onclick="ptxIPGo('orders')" type="button">📦 Orders</button><button data-ip="wallet" onclick="ptxIPGo('wallet')" type="button">💳 Wallet</button><button data-ip="payments" onclick="ptxIPGo('payments')" type="button">🔐 Payment Safety</button><button data-ip="collection" onclick="ptxIPGo('collection')" type="button">🎴 Collection</button><button data-ip="account" onclick="ptxIPGo('account')" type="button">♙ Account</button><button data-ip="agent" onclick="ptxIPGo('agent')" type="button">🎖 Agent</button><button data-ip="admin" onclick="ptxIPGo('admin')" type="button">⚙️ Admin</button><button data-ip="support" onclick="ptxIPGo('support')" type="button">❔ Help</button></div>
 <div id="ptxIpContent"><div class="ptx-real-page-content" id="ptxRealPageContent"></div></div>
 </div>
 </div>
@@ -4098,7 +4073,7 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
    if(updated!==n.nodeValue)n.nodeValue=updated;
  }
  function walk(root){if(!root)return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode()))convertTextNode(n)}
- function setCurrency(c){selected=rates[c]?c:'USD';walk(document.body);const note=document.getElementById('ptxCurrencyNote');if(note)note.textContent=selected==='USD'?'USD base prices · indicative estimates are off':'Indicative preview rate: 1 USD ≈ '+fmt(rates[selected],selected)+' '+selected+' · not live FX';document.documentElement.dataset.displayCurrency=selected;}
+ function setCurrency(c){selected=rates[c]?c:'USD';walk(document.body);const note=document.getElementById('ptxCurrencyNote');if(note)note.textContent=selected==='USD'?'USD base prices · indicative estimates are off':'Reference only: 1 USD ≈ '+fmt(rates[selected],selected)+' '+selected+' at a fixed rate (not a live quote, not used for settlement)';document.documentElement.dataset.displayCurrency=selected;}
  const sel=document.getElementById('ptxCurrencySelect');if(sel)sel.addEventListener('change',()=>setCurrency(sel.value));
  const observer=new MutationObserver(records=>{if(running)return;running=true;for(const r of records){if(r.type==='characterData')convertTextNode(r.target);else for(const node of r.addedNodes||[]){if(node.nodeType===Node.TEXT_NODE)convertTextNode(node);else if(node.nodeType===Node.ELEMENT_NODE)walk(node)}}running=false;});
  function init(){walk(document.body);observer.observe(document.body,{subtree:true,childList:true,characterData:true});setCurrency(sel?sel.value:'USD');}
@@ -4133,22 +4108,24 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
  const findText=phrase=>allSections.filter(el=>el.textContent.includes(phrase)).sort((a,b)=>a.textContent.length-b.textContent.length)[0]||null;
  const get=(id)=>byId(id);
  const groups={
-  home:[get('ptxOfficialHome'),findText('VERIFIED MARKETPLACE'),get('ptxQuickAccess'),get('ptxProductGallery'),findText('Collections Explore')],
-  market:[get('ptxMarketplace'),get('ptxMarketDetail'),get('ptxCardDetail'),get('ptxCardDatabase')],
+  home:[get('ptxOfficialHome'),findText('Find Your Next Treasure')],
+  market:[get('ptxMarketplace'),get('ptxCardDatabase')],
   sell:[get('ptxSellCard'),get('ptxSellerCenter')],
+  apply:[],
   cart:[get('ptxCartDrawer')],
   orders:[],
   wallet:[get('ptxDepositPanel'),findText('USD Transaction Ledger'),get('ptxAccountCenter')],
-  collection:[get('ptxMyCollection'),get('ptxCollectionBook'),get('ptxCollectorTools'),get('ptx-complete-hub')],
+  collection:[],
   account:[get('ptxAuthCenter'),get('ptxAccountCenter'),findText('KYC / Seller Verification'),findText('Agent Referral Center')],
-  support:[findText('Buyer Protection & Dispute'),get('ptxPlatformArchitecture'),get('ptxAiChat')],
-  agent:[document.querySelector('section.agent'),document.querySelector('section.agentdash')],
+  support:[findText('How an order is meant to work'),get('ptxPlatformArchitecture'),get('ptxAiChat')],
+  agent:[document.querySelector('section.agent')],
   admin:[get('ptxAdminReview')]
  };
  const titles={
   home:['Home','Welcome to Cardora','Browse the marketplace, continue collecting, or manage your account.'],
   market:['Market','Browse Pokémon cards','Search, compare card listings, and review card details in one place.'],
   sell:['Sell','Seller Center','Create listings and manage your active cards and sales.'],
+  apply:['Join','Become a Cardora seller or agent','Apply to list cards or bring buyers. Applications are reviewed by hand, usually within 2 working days.'],
   cart:['Cart','Your shopping cart','Review your selected cards before proceeding to checkout.'],
   orders:['Orders','Orders and delivery','Follow payment status, shipping updates, and order notifications.'],
   wallet:['Wallet','Payments and transaction history','Review local payment options and USD-based transaction records.'],
@@ -4156,7 +4133,7 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
   collection:['Collection','Your collection','Manage owned cards, collection progress, favourites, and saved cards.'],
   account:['Account','Profile and verification','Manage sign-in, profile details, language, and seller verification.'],
   support:['Help & Safety','Support and buyer protection','Find safety guidance and use the floating support assistant for common questions.'],
-  agent:['Agent','Agent Program dashboard','Referral performance, commissions, payouts and program rules.'],
+  agent:['Agent','Agent program','Apply to bring sellers and buyers. The program is not active yet and no commission is payable.'],
   admin:['Admin','Admin review center','Deposit and card review queues. Admin account required.']
  };
  // Hide the old all-in-one landing page; move each real feature section into a parked store.
@@ -4188,12 +4165,30 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
   if(page==='orders'){
     const live=document.createElement('div');live.id='ptxIpOrdersLive';host.appendChild(live);
   }
-  if(!nodes.length&&page!=='payments'&&page!=='orders'){const empty=document.createElement('div');empty.className='ptx-page-empty';empty.innerHTML='<h2>'+title+'</h2><p>This page is ready for its dedicated workflow. Some payment, shipping, and account functions still require production backend integration.</p>';host.appendChild(empty)}
+  if(page==='sell'){
+    const cta=document.createElement('div');cta.className='ptx-page-empty';
+    cta.innerHTML='<h2>🤝 Not a seller yet?</h2><p>Apply to sell cards or to become an agent. Applications are reviewed by hand, usually within 2 working days.</p><button class="ptx-ip-action primary" type="button" onclick="ptxIPGo(\'apply\')">Open application form</button>';
+    host.appendChild(cta);
+  }
+  if(page==='apply'){
+    const box=document.createElement('div');box.id='ptxApplyHost';
+    if(typeof window.ptxApplyMarkup==='function')box.innerHTML=window.ptxApplyMarkup();
+    host.appendChild(box);
+    if(typeof window.ptxBindApply==='function')window.ptxBindApply(box);
+  }
+  if(page==='collection'){
+    const box=document.createElement('div');box.className='ptx-page-empty';
+    box.innerHTML='<h2>🎴 Your collection</h2><p>Collection tracking is not connected yet, so nothing is stored against your account. No owned cards, values or set-completion figures are shown because we do not have real data for them.</p><p>Cards you order will appear under Orders once payments and delivery are live.</p><button class="ptx-ip-action primary" type="button" onclick="ptxIPGo(\'market\')">Browse cards</button>';
+    host.appendChild(box);
+  }
+  if(!nodes.length&&page!=='payments'&&page!=='orders'&&page!=='apply'&&page!=='collection'){const empty=document.createElement('div');empty.className='ptx-page-empty';empty.innerHTML='<h2>'+title+'</h2><p>This page is ready for its dedicated workflow. Some payment, shipping, and account functions still require production backend integration.</p>';host.appendChild(empty)}
+  if(page==='home'&&typeof window.ptxRenderHomeTrending==='function')window.ptxRenderHomeTrending();
   shell.classList.add('open');shell.setAttribute('aria-hidden','false');document.body.classList.add('ptx-ip-open');shell.scrollTop=0;
   if(page==='account'&&window.ptxRenderIndependentAccount)window.ptxRenderIndependentAccount();
   if(page==='orders'&&window.ptxLoadLiveOrders)window.ptxLoadLiveOrders();
   if(page==='cart'&&window.ptxRenderIndependentCart)window.ptxRenderIndependentCart();
   if(page==='admin'&&window.ptxLoadAdminDeposits)window.ptxLoadAdminDeposits();
+  if(page==='admin'&&window.ptxLoadAdminApplications)window.ptxLoadAdminApplications();
   // Keep the query string: OAuth callbacks arrive with ?code=&state= and must not be
   // erased before Supabase (or the explicit fallback exchange) reads them.
   try{history.replaceState(null,'',location.pathname+location.search+'#'+page)}catch(e){}
@@ -4265,9 +4260,13 @@ Notice: this is a preview website. Payments are not live, and I cannot access yo
     const title=document.getElementById('ptxIpTitle');if(title)title.textContent='Home';
     const sub=document.getElementById('ptxIpSub');if(sub)sub.textContent='Find what you need without scrolling through every feature.';
   };
-  // Ensure the initial homepage uses the compact layout after the router's first render.
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>window.ptxIPGo('home'),{once:true});
-  else window.ptxIPGo('home');
+  // Ensure the initial homepage uses the compact layout after the router's first render,
+  // but never override a #route deep link such as #apply.
+  const startRoute=(location.hash||'').replace(/^#/,'').toLowerCase();
+  if(!startRoute||startRoute==='home'){
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>window.ptxIPGo('home'),{once:true});
+    else window.ptxIPGo('home');
+  }
 })();
 </script>
 
@@ -4350,6 +4349,184 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
     }
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadStats);else loadStats();
+})();
+</script>
+<style id="ptx-apply-v1-style">
+#ptxApplyHost .ptx-apply{display:grid;gap:14px}
+.ptx-apply-hero{border:1px solid #3a2a4f;border-radius:16px;padding:18px;background:linear-gradient(135deg,#1a1030,#0d0914)}
+.ptx-apply-hero h2{margin:0 0 6px;font-size:22px}
+.ptx-apply-hero p{margin:0}
+.ptx-apply-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 12px}
+.ptx-apply-steps>div{display:flex;align-items:center;gap:10px;border:1px solid #3a2a4f;border-radius:12px;padding:10px;background:#140e22}
+.ptx-apply-steps b{width:26px;height:26px;flex:none;border-radius:50%;display:grid;place-items:center;background:#f5c542;color:#1a1120;font-size:13px}
+.ptx-apply-steps span{font-size:13px;color:#f8f5fb;line-height:1.3}
+.ptx-apply-steps small{color:#a99db9;font-size:11px}
+.ptx-apply-note{font-size:12px;color:#a99db9;line-height:1.55;margin:0;border-left:3px solid #6b4a9e;padding-left:10px}
+.ptx-apply-form{border:1px solid #3a2a4f;border-radius:16px;padding:18px;background:#100c18}
+.ptx-apply-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ptx-apply-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#c9c0d6}
+.ptx-apply-grid label.wide{grid-column:1/-1}
+.ptx-apply-grid input,.ptx-apply-grid select,.ptx-apply-grid textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px solid #44345b;background:#0a0710;color:#fff;font:inherit;font-size:14px}
+.ptx-apply-grid textarea{resize:vertical}
+.ptx-apply-check{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:#c9c0d6;margin:14px 0 0;line-height:1.45}
+.ptx-apply-check input{width:auto;margin-top:2px}
+.ptx-apply-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.ptx-apply-err{color:#ff9a9a;font-size:12px}
+.ptx-apply-ok{color:#7ee2a8;font-size:12px}
+.ptx-app-list{display:grid;gap:10px;margin-top:12px}
+.ptx-app-row{border:1px solid #3a2a4f;border-radius:12px;padding:12px;background:#140e22;display:grid;gap:4px;font-size:13px}
+.ptx-app-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ptx-app-role{font-size:11px;text-transform:uppercase;letter-spacing:.6px;border:1px solid #6b4a9e;border-radius:99px;padding:1px 8px;color:#cdb8ef}
+.ptx-app-msg{border-left:2px solid #44345b;padding-left:8px;color:#bdb4c9;line-height:1.5}
+.ptx-app-actions{margin-top:6px}
+.ptx-app-actions select{padding:7px 9px;border-radius:9px;border:1px solid #44345b;background:#0a0710;color:#fff;font:inherit;font-size:12px}
+@media(max-width:700px){.ptx-apply-grid{grid-template-columns:1fr}.ptx-apply-steps{grid-template-columns:1fr}}
+</style>
+<script id="ptx-apply-v1">(function(){
+ const esc=window.ptxEsc||function(v){return String(v==null?'':v)};
+ const val=(fd,k)=>{const v=String(fd.get(k)||'').trim();return v?v:null;};
+
+ window.ptxApplyMarkup=function(){
+  return '<div class="ptx-apply">'
+   +'<div class="ptx-apply-hero">'
+   +'<h2>🤝 Become a Cardora seller or agent</h2>'
+   +'<p class="ptx-muted">List your cards on Cardora, or join as an agent and bring buyers and sellers. Every application is reviewed by hand.</p>'
+   +'<div class="ptx-apply-steps">'
+   +'<div><b>1</b><span>Apply<small><br>Fill in the form</small></span></div>'
+   +'<div><b>2</b><span>Review<small><br>We contact you</small></span></div>'
+   +'<div><b>3</b><span>List<small><br>Add your cards</small></span></div>'
+   +'</div>'
+   +'<p class="ptx-apply-note">Card payments and seller payouts are not live yet. Applying now means you are verified and queued, so your cards can go live as soon as payments are connected.</p>'
+   +'</div>'
+   +'<form id="ptxApplyForm" class="ptx-apply-form" novalidate>'
+   +'<div class="ptx-apply-grid">'
+   +'<label>Full name *<input name="name" maxlength="80" autocomplete="name" required></label>'
+   +'<label>Email *<input name="email" type="email" maxlength="120" autocomplete="email" required></label>'
+   +'<label>WhatsApp *<input name="whatsapp" maxlength="30" placeholder="+60 12 345 6789" required></label>'
+   +'<label>City / country<input name="city" maxlength="80" placeholder="Kuala Lumpur, MY"></label>'
+   +'<label>I am applying as<select name="role"><option value="seller">Seller — I have cards to list</option><option value="agent">Agent — I bring buyers and sellers</option></select></label>'
+   +'<label>Cards in stock (approx.)<input name="card_count" type="number" min="0" max="100000" inputmode="numeric" placeholder="50"></label>'
+   +'<label class="wide">Shop or profile links<input name="shop_links" maxlength="400" placeholder="Shopee, Carousell, Instagram, Facebook page…"></label>'
+   +'<label class="wide">What do you sell?<input name="categories" maxlength="200" placeholder="Pokémon singles, sealed, graded slabs, Japanese cards…"></label>'
+   +'<label class="wide">Expected monthly sales<input name="monthly_volume" maxlength="120" placeholder="e.g. 40 cards per month"></label>'
+   +'<label class="wide">Anything else<textarea name="message" rows="3" maxlength="800" placeholder="Optional — tell us how you source cards or who your buyers are."></textarea></label>'
+   +'</div>'
+   +'<div style="position:absolute;left:-9999px;top:auto" aria-hidden="true"><label>Company<input name="company" tabindex="-1" autocomplete="off"></label></div>'
+   +'<label class="ptx-apply-check"><input type="checkbox" name="consent"> I agree to be contacted about this application and to Cardora seller rules.</label>'
+   +'<div class="ptx-apply-actions"><button class="ptx-ip-action primary" type="submit">Submit application</button><span id="ptxApplyStatus" class="ptx-muted" role="status"></span></div>'
+   +'</form></div>';
+ };
+
+ window.ptxBindApply=function(root){
+  const form=root&&root.querySelector('#ptxApplyForm'); if(!form||form.dataset.bound)return; form.dataset.bound='1';
+  const status=root.querySelector('#ptxApplyStatus');
+  const say=function(text,cls){if(status){status.textContent=text;status.className=cls||'ptx-muted';}};
+  form.addEventListener('submit',async function(e){
+   e.preventDefault();
+   const fd=new FormData(form);
+   if(String(fd.get('company')||'').trim()){form.reset();say('Application received.','ptx-apply-ok');return;}
+   const name=String(fd.get('name')||'').trim();
+   const email=String(fd.get('email')||'').trim();
+   const whatsapp=String(fd.get('whatsapp')||'').trim();
+   if(!name||!email||!whatsapp){say('Please fill in your name, email and WhatsApp number.','ptx-apply-err');return;}
+   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){say('That email address does not look right.','ptx-apply-err');return;}
+   if(!fd.get('consent')){say('Please tick the consent box so we can contact you.','ptx-apply-err');return;}
+   const btn=form.querySelector('button[type="submit"]'); if(btn)btn.disabled=true;
+   say('Sending…','ptx-muted');
+   try{
+    await window.ptxEnsureSupabase();
+    const rawCount=String(fd.get('card_count')||'').trim();
+    const n=rawCount?parseInt(rawCount,10):null;
+    const payload={
+      name:name, email:email, whatsapp:whatsapp,
+      city:val(fd,'city'),
+      role:(fd.get('role')==='agent'?'agent':'seller'),
+      shop_links:val(fd,'shop_links'),
+      card_count:(n===null||isNaN(n))?null:Math.max(0,Math.min(100000,n)),
+      categories:val(fd,'categories'),
+      monthly_volume:val(fd,'monthly_volume'),
+      message:val(fd,'message')
+    };
+    const r=await window.ptxSupabase.from('seller_applications').insert(payload);
+    if(r.error)throw r.error;
+    form.reset();
+    say('Application received. We will contact you within 2 working days.','ptx-apply-ok');
+   }catch(err){
+    console.error('seller application',err);
+    if(err&&err.code==='42P01')say('The application form is not connected yet. Please try again later.','ptx-apply-err');
+    else say('Could not send the application. Please try again.','ptx-apply-err');
+   }finally{ if(btn)btn.disabled=false; }
+  });
+ };
+
+ window.ptxLoadAdminApplications=async function(){
+  const box=document.getElementById('ptxIpAdminApplications'); if(!box)return;
+  box.innerHTML='<div class="ptx-page-empty"><h2>🤝 Seller applications</h2><p class="ptx-muted">Loading…</p></div>';
+  try{
+   await window.ptxEnsureSupabase();
+   const r=await window.ptxSupabase.from('seller_applications')
+     .select('id,created_at,name,email,whatsapp,city,role,shop_links,card_count,categories,monthly_volume,message,status')
+     .order('created_at',{ascending:false}).limit(100);
+   if(r.error)throw r.error;
+   const rows=r.data||[];
+   const head='<h2>🤝 Seller applications ('+rows.length+')</h2>';
+   if(!rows.length){box.innerHTML='<div class="ptx-page-empty">'+head+'<p class="ptx-muted">No applications yet. Share the Join page to start collecting sellers.</p></div>';return;}
+   const items=rows.map(function(a){
+    const when=a.created_at?new Date(a.created_at).toLocaleString():'';
+    const meta=[a.city,a.card_count?String(a.card_count)+' cards':null,a.monthly_volume,a.categories].filter(Boolean).map(esc).join(' · ');
+    return '<div class="ptx-app-row">'
+     +'<div class="ptx-app-top"><b>'+esc(a.name)+'</b><span class="ptx-app-role">'+esc(a.role)+'</span><span class="ptx-muted">'+esc(when)+'</span></div>'
+     +'<div class="ptx-muted">'+esc(a.email)+' · '+esc(a.whatsapp)+'</div>'
+     +(meta?'<div class="ptx-muted">'+meta+'</div>':'')
+     +(a.shop_links?'<div class="ptx-muted">'+esc(a.shop_links)+'</div>':'')
+     +(a.message?'<div class="ptx-app-msg">'+esc(a.message)+'</div>':'')
+     +'<div class="ptx-app-actions"><select onchange="ptxSetApplicationStatus(\''+esc(a.id)+'\',this.value)">'
+     +['new','contacted','approved','rejected'].map(function(s){return '<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s+'</option>'}).join('')
+     +'</select></div></div>';
+   }).join('');
+   box.innerHTML='<div class="ptx-page-empty">'+head+'<div class="ptx-app-list">'+items+'</div></div>';
+  }catch(e){
+   console.error('admin applications',e);
+   box.innerHTML='<div class="ptx-page-empty"><h2>🤝 Seller applications</h2><p class="ptx-muted">Not available yet. Run cardora_seller_applications.sql in Supabase, then reload.</p></div>';
+  }
+ };
+
+ window.ptxSetApplicationStatus=async function(id,status){
+  try{
+   await window.ptxEnsureSupabase();
+   const r=await window.ptxSupabase.from('seller_applications').update({status:status}).eq('id',id);
+   if(r.error)throw r.error;
+   if(window.ptxToast)window.ptxToast('Application marked '+status);
+  }catch(e){
+   console.warn('application status',e);
+   if(window.ptxToast)window.ptxToast('Could not update status');
+  }
+ };
+ window.ptxRenderHomeTrending=function(){
+  const wrap=document.getElementById('ptxHomeTrending');
+  if(!wrap)return;
+  const list=(window.ptxMarketplaceListings||[]).slice(0,4);
+  if(!list.length){
+   wrap.innerHTML='<div class="ptx-muted" style="padding:8px 0">No cards are listed right now. Check back soon, or apply to become a seller.</div>';
+   return;
+  }
+  const esc=window.ptxEsc||(v=>String(v??''));
+  wrap.innerHTML=list.map(function(p){
+   const meta=[p.rarity||'Card',p.lang||'—'].filter(Boolean).join(' · ');
+   return '<div class="ptx-hp"><div class="ptx-hp-art">'+esc(p.icon||'🎴')+'</div><h3>'+esc(p.name)+'</h3><div class="ptx-muted">'+esc(meta)+'</div><div class="price">'+Number(p.price||0).toFixed(2)+' '+esc(p.currency||'USD')+'</div></div>';
+  }).join('');
+ };
+ // The legacy single-page prototype (.app) still exists in the file but is no longer part
+ // of the product: it holds old demo modules (sealed-pack prototype, agent dashboard,
+ // order timeline) that must never be visible to visitors. Hide it after the router has
+ // moved the real sections into #ptxRealPageContent.
+ function ptxHideLegacyPage(){
+  const app=document.querySelector('.app');
+  const shell=document.getElementById('ptxIndependentShell');
+  if(app&&shell)app.style.display='none';
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(ptxHideLegacyPage,60);},{once:true});
+ else setTimeout(ptxHideLegacyPage,60);
 })();
 </script>
 </body></html>
