@@ -735,6 +735,12 @@ function ptxOAuthRedirectUrl(){
     return url.toString();
   }catch(e){return null;}
 }
+// The PKCE verifier lives in the localStorage of the origin that started the flow.
+// Vercel serves this build on several hostnames, so a callback that lands on a
+// different one cannot see it; recording the origin turns that into a readable error.
+const PTX_OAUTH_ORIGIN_KEY='cardora-oauth-origin-v1';
+function ptxReadOAuthOrigin(){try{return window.localStorage.getItem(PTX_OAUTH_ORIGIN_KEY)||'';}catch(e){return '';}}
+function ptxWriteOAuthOrigin(){try{window.localStorage.setItem(PTX_OAUTH_ORIGIN_KEY,window.location.origin);}catch(e){}}
 function ptxReadAuthCallback(){
   const search=new URLSearchParams(window.location.search||'');
   const hash=new URLSearchParams((window.location.hash||'').replace(/^#/,''));
@@ -760,7 +766,13 @@ function ptxAuthErrorMessage(callback){
 }
 function ptxAuthFailureHint(callback,err){
   const msg=String(err?.message||err||'');
-  if(/code verifier|pkce/i.test(msg)) return 'Google sign-in started in a different tab or browser profile, so the security check could not be completed. Click "Continue with Google" again and finish it in this same tab.';
+  if(/code verifier|pkce/i.test(msg)){
+    const started=ptxReadOAuthOrigin();
+    if(started&&started!==window.location.origin){
+      return 'Google sign-in started on '+started+' but finished on '+window.location.origin+'. Your browser treats those as two different sites, so the security check cannot match. Always use https://cardora-rose.vercel.app and sign in again there.';
+    }
+    return 'Google sign-in started in a different tab or browser profile, so the security check could not be completed. Click "Continue with Google" again and finish it in this same tab.';
+  }
   if(/expired|already used|invalid/i.test(msg)) return 'The Google sign-in code expired or was already used. Please start the sign-in again from this page.';
   if(/redirect/i.test(msg)) return 'Google sign-in failed because this page URL is not allowed in Supabase → Authentication → URL Configuration → Redirect URLs.';
   return 'Google sign-in failed: '+(msg||'unknown error');
@@ -1267,13 +1279,11 @@ html[data-ptx-auth="signed-out"] #ptxAccountCenter{display:none !important}
 <div class="ptx-label">Identity</div>
 <div class="ptx-value">Not verified</div>
 <p class="ptx-muted">Identity verification is not connected. No identity documents are collected in this build.</p>
-<button class="ptx-btn" onclick="alert('KYC is not connected in this build.')">Verification status</button>
 </div>
 <div class="ptx-card">
 <div class="ptx-label">Seller Trust</div>
 <div class="ptx-value">Not started</div>
 <p class="ptx-muted">Seller verification is required before higher-value listings or withdrawals once seller tools are enabled.</p>
-<button class="ptx-btn alt" onclick="alert('Seller verification is not connected in this build.')">Checklist</button>
 </div>
 </div>
 </section>
@@ -2879,6 +2889,17 @@ window.ptxGoogleAuth=async function(){
     return;
   }
   ptxSetAuthMessage(msgId,'Connecting to Google…',true);
+  try{
+    const existing=await ptxSupabase.auth.getSession();
+    if(existing&&existing.data&&existing.data.session){
+      ptxSetAuthMessage(msgId,'',true);
+      window.ptxCloseAuth?.();
+      ptxShowAuthSuccess();
+      setTimeout(()=>{try{window.ptxIPGo?.('account');}catch(e){}},60);
+      return;
+    }
+  }catch(e){}
+  ptxWriteOAuthOrigin();
   // A second click while the redirect is pending would replace the PKCE verifier of the
   // first attempt, which makes the returning code fail to exchange.
   const buttons=[...document.querySelectorAll('.ptx-google-btn')];
