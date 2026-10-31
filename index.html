@@ -771,6 +771,11 @@ function ptxAuthFailureHint(callback,err){
     if(started&&started!==window.location.origin){
       return 'Google sign-in started on '+started+' but finished on '+window.location.origin+'. Your browser treats those as two different sites, so the security check cannot match. Always use https://cardora-rose.vercel.app and sign in again there.';
     }
+    // The retry below can only ever see a spent verifier, because supabase-js consumed it on
+    // the first attempt; reporting that as a tab/profile problem blames the user for nothing.
+    if(/not found in storage/i.test(msg)){
+      return 'That sign-in link had already been used, so it cannot be exchanged a second time. Click "Continue with Google" to start a fresh sign-in.';
+    }
     return 'Google sign-in started in a different tab or browser profile, so the security check could not be completed. Click "Continue with Google" again and finish it in this same tab.';
   }
   if(/expired|already used|invalid/i.test(msg)) return 'The Google sign-in code expired or was already used. Please start the sign-in again from this page.';
@@ -962,12 +967,17 @@ async function ptxInitBackend(){
     return;
   }
   let authUiRefreshTimer=null;
+  // Every read of the persisted session can trigger a token refresh, and Supabase answers a
+  // refresh storm with 429 - which supabase-js treats as an invalid session and signs the user out.
+  let authUiLastRead=0;
   const refreshAuthUi=()=>{
+    if(Date.now()-authUiLastRead<30000) return;
     clearTimeout(authUiRefreshTimer);
     authUiRefreshTimer=setTimeout(async()=>{
+      authUiLastRead=Date.now();
       await ptxUpdateAuthUI();
       await ptxLoadWallet();
-    },150);
+    },400);
   };
   const start=async()=>{
     // Let Supabase finish processing an OAuth callback before reading the persisted session.
@@ -1027,9 +1037,10 @@ async function ptxInitBackend(){
     // Defer UI/data work out of the auth callback to avoid re-entrant Supabase calls.
     setTimeout(async()=>{
       // A stale INITIAL_SESSION(null) can arrive after an explicit exchange succeeded;
-      // re-read storage so a null event never flips a valid session back to signed-out.
-      let current=session??null;
-      if(!current){
+      // re-read storage for that one event only. Re-reading on SIGNED_OUT turns a single
+      // failed refresh into another refresh request, which is how a 429 becomes a loop.
+      let current=session||null;
+      if(!current&&event==='INITIAL_SESSION'){
         try{ current=(await ptxSupabase.auth.getSession()).data?.session||null; }catch(e){}
       }
       await ptxUpdateAuthUI(current);
@@ -1042,7 +1053,6 @@ async function ptxInitBackend(){
     },0);
   });
   window.addEventListener('pageshow',refreshAuthUi);
-  window.addEventListener('focus',refreshAuthUi);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshAuthUi();});
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',start,{once:true});
