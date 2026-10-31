@@ -1006,6 +1006,7 @@ async function loadListings(){
  }catch(e){console.warn('market listings load',e);render();updateCart();}
 }
 window.ptxGetMarketplaceProduct=function(id){return resolveProduct(id)||null;};
+window.__ptxProductsUnder10=function(){render(products.filter(p=>Number(p.price)<10));};
 window.ptxGetCartSnapshot=function(){return cart.map(x=>({...x}));};
 window.ptxGetCartTotal=function(){return Number(cart.reduce((a,x)=>a+x.price*x.qty,0).toFixed(2));};
 
@@ -1284,9 +1285,6 @@ window.ptxRejectDeposit=async function(id){
   try{ const {error}=await ptxSupabase.rpc('reject_wallet_deposit',{p_review_id:id}); if(error) throw error; alert('Deposit rejected.'); await ptxLoadAdminDeposits(); }
   catch(e){ alert(e.message||'Rejection failed.'); }
 };
-window.ptxApprove=function(name){alert("Demo: "+name+" approved and published to marketplace.");};
-window.ptxEdit=function(name){alert("Demo: request/edit workflow opened for "+name);};
-window.ptxReject=function(name){alert("Demo: "+name+" moved to rejected/review-notes queue.");};
 document.addEventListener('DOMContentLoaded',()=>{ ptxLoadAdminDeposits(); });
 </script>
 <style>
@@ -1310,8 +1308,6 @@ window.ptxTab=function(tab){
    if(e)e.style.display=(x===tab?"block":"none");
  });
 };
-window.ptxUser=function(x){alert("Demo: user control panel opened for "+x);};
-window.ptxOrder=function(x){alert("Demo: order operations opened for "+x);};
 </script>
 <style>
 .ptx-notify{background:linear-gradient(145deg,#171027,#0b0812);border:1px solid #4b376d;border-radius:20px;padding:16px;margin:14px 0}
@@ -1534,12 +1530,12 @@ window.ptxQuickFilter=function(v){
    s.value="";
    const list=window.__ptxProductsUnder10;
    if(list)list();
-   else {document.getElementById("ptxRarity").value="";window.ptxFilter&&ptxFilter();setTimeout(()=>ptxToast("Demo: under 10 USD filter selected"),100);}
+   else {document.getElementById("ptxRarity").value="";window.ptxFilter&&ptxFilter();}
  }else{
    document.getElementById("ptxRarity").value=v;
    window.ptxFilter&&ptxFilter();
  }
- ptxToast(v?("Filter: "+v):"Showing all cards");
+ ptxToast(v?("Filter: "+(v==="under10"?"under 10 USD":v)):"Showing all cards");
 };
 </script>
 <style>
@@ -1645,11 +1641,11 @@ window.ptxQuickFilter=function(v){
 </style>
 <section class="ptx-orderflow" id="ptxLiveOrderFlow">
 <h2>📦 How an order works</h2>
-<div class="ptx-row"><span class="ptx-muted">Pikachu ex · SAR · Japanese</span><b>43.98 USD</b></div>
+<div class="ptx-row"><span class="ptx-muted">This is an explanation of the intended flow, not one of your orders</span><b>&mdash;</b></div>
 <div class="ptx-flow">
-<div class="ptx-step active"><div class="ico">💳</div><b>Paid</b><div class="ptx-muted">USD received</div></div>
+<div class="ptx-step"><div class="ico">💳</div><b>Paid</b><div class="ptx-muted">USD received</div></div>
 <div class="ptx-step"><div class="ico">🔒</div><b>Held by platform</b><div class="ptx-muted">Escrow not active</div></div>
-<div class="ptx-step active"><div class="ico">📦</div><b>Shipped</b><div class="ptx-muted">Tracking added</div></div>
+<div class="ptx-step"><div class="ico">📦</div><b>Shipped</b><div class="ptx-muted">Tracking added</div></div>
 <div class="ptx-step"><div class="ico">🚚</div><b>Delivered</b><div class="ptx-muted">Awaiting receipt</div></div>
 <div class="ptx-step"><div class="ico">💰</div><b>Settlement disabled</b><div class="ptx-muted">Provider not configured</div></div>
 </div>
@@ -1657,10 +1653,7 @@ window.ptxQuickFilter=function(v){
 <div class="ptx-orderrow"><span>Tracking</span><b>Not assigned</b></div>
 <div class="ptx-orderrow"><span>Shipping</span><span>International Tracked</span></div>
 <div class="ptx-orderrow"><span>Buyer protection</span><span class="ptx-status">Not active yet</span></div>
-<div class="ptx-track"><i></i></div>
-<p class="ptx-muted">Demo timeline. In production, every state change is recorded by the backend and visible to both buyer and seller.</p>
-<button class="ptx-btn" onclick="ptxToast('Demo: delivery confirmation opened')">Confirm Received</button>
-<button class="ptx-btn alt" onclick="ptxToast('Demo: dispute form opened')">Report Issue</button>
+<p class="ptx-muted">No order is shown here. Your own orders appear in this section only after checkout, and in production every state change is recorded by the server and visible to both buyer and seller.</p>
 </div>
 </section>
 <style id="ptx-pokeball-hub-v1">
@@ -1876,16 +1869,16 @@ window.ptxQuickFilter=function(v){
 <div class="ptx-flip"><button class="ptx-btn alt" onclick="ptxFlipCard()">↔ Front / Back</button><button class="ptx-btn alt" onclick="ptxToast('Image zoom is not connected yet.')">🔍 Zoom</button><button class="ptx-btn alt" id="trixSaveBtn" onclick="ptxCollectionToggle()">♡ Save</button></div>
 </div>
 <div class="ptx-detail-info">
-<span class="ptx-tag" id="ptxDetailRarity">SAR</span><span class="ptx-tag" id="ptxDetailLang">Japanese</span><span class="ptx-tag">NM</span>
-<h2 id="ptxDetailName">Pikachu ex</h2><div class="ptx-muted" id="ptxDetailSet">Super Electric Breaker · printed number not verified</div>
-<div class="ptx-bigprice" id="ptxDetailPrice">39.99 USD</div>
-<div class="ptx-detail-row"><span>Seller</span><b id="ptxDetailSeller">Sample listing</b></div>
+<span class="ptx-tag" id="ptxDetailRarity">&mdash;</span><span class="ptx-tag" id="ptxDetailLang">&mdash;</span><span class="ptx-tag">Condition not published</span>
+<h2 id="ptxDetailName">No listing selected</h2><div class="ptx-muted" id="ptxDetailSet">Open a card from the marketplace to see its real details</div>
+<div class="ptx-bigprice" id="ptxDetailPrice">&mdash;</div>
+<div class="ptx-detail-row"><span>Seller</span><b id="ptxDetailSeller">No listing selected</b></div>
 <div class="ptx-detail-row"><span>Rating</span><b>No reviews yet</b></div>
 <div class="ptx-detail-row"><span>Shipping</span><b>Agreed with the seller</b></div>
 <div class="ptx-detail-row"><span>Buyer Protection</span><b class="ptx-warn">Not offered yet</b></div>
 <div class="ptx-detail-row"><span>Price currency</span><b>USD</b></div>
 <p class="ptx-muted">Photos, condition and card identity must be checked before any purchase. Payments are not connected, so nothing can be bought on this site yet.</p>
-<button class="ptx-btn" onclick="ptxBuyNow()" style="width:100%">Buy Now · USD</button>
+<button class="ptx-btn" onclick="ptxBuyNow()" style="width:100%">Buy Now</button>
 <button class="ptx-btn alt" onclick="ptxModalAdd()" style="width:100%">🛒 Add to Cart</button>
 </div>
 </div>
@@ -1893,7 +1886,7 @@ window.ptxQuickFilter=function(v){
 <div class="ptx-checkout" id="ptxCheckoutModal">
 <div class="ptx-checkout-box">
 <div class="ptx-row"><h2>💳 Checkout preview</h2><button class="ptx-close" onclick="ptxCloseCheckout()">×</button></div>
-<div class="ptx-form"><b id="ptxCheckoutItem">Pikachu ex · 39.99 USD</b><div class="ptx-muted">No payment is taken. This preview only creates an order with PENDING status.</div></div>
+<div class="ptx-form"><b id="ptxCheckoutItem">No card selected</b><div class="ptx-muted">No payment is taken. This preview only creates an order with PENDING status.</div></div>
 <div class="ptx-form"><label class="ptx-muted">Shipping Country</label><select><option>Malaysia</option><option>Thailand</option><option>Singapore</option><option>Japan</option><option>United States</option><option>Other</option></select></div>
 <div class="ptx-form"><label class="ptx-muted">Shipping Address</label><input placeholder="Full address"/></div>
 <div class="ptx-form"><label class="ptx-muted">Payment Method</label><select id="ptxPaymentMethod" onchange="ptxPaymentMethodChanged()">
@@ -1901,32 +1894,38 @@ window.ptxQuickFilter=function(v){
 <option value="paypal">PayPal — backup / subject to approval</option>
 <option value="manual">Manual payment — testing only</option>
 </select><div class="ptx-muted" id="ptxPaymentNote" style="margin-top:8px">Stripe Connect will be connected after the business/payment account is approved. No real payment is processed in this build.</div></div>
-<div class="ptx-form"><div class="ptx-detail-row"><span>Card</span><b id="ptxCOCard">39.99 USD</b></div><div class="ptx-detail-row"><span>Shipping</span><b>Not priced yet</b></div><div class="ptx-detail-row"><span>Total</span><b id="ptxCOTotal">39.99 USD</b></div></div>
+<div class="ptx-form"><div class="ptx-detail-row"><span>Card</span><b id="ptxCOCard">&mdash;</b></div><div class="ptx-detail-row"><span>Shipping</span><b>Not priced yet</b></div><div class="ptx-detail-row"><span>Total</span><b id="ptxCOTotal">&mdash;</b></div></div>
 <div class="ptx-risk"><b>🔒 Payments are not connected</b><p class="ptx-muted">No money is charged in this build. The order is created with PENDING status for testing only. Production payments will be processed only through an approved payment provider.</p></div>
 <button class="ptx-btn" onclick="ptxPlaceOrder()" style="width:100%">Create Order · Payment Pending</button>
 </div></div>
 <script>
 (function(){
-let current={id:1,name:"Pikachu ex",set:"Super Electric Breaker · not verified",rarity:"SAR",lang:"Japanese",price:39.99,seller:"",icon:"⚡"};
+let current={id:null,name:"No listing selected",set:"Open a card from the marketplace to see its real details",rarity:"\u2014",lang:"\u2014",price:0,seller:"",icon:"\ud83c\udfb4"};
 let back=false;
 window.ptxOpenProduct=function(id){
- const data={1:["Pikachu ex","Super Electric Breaker · not verified","SAR","Japanese",39.99,"","⚡"],2:["Umbreon ex","Terastal Festival · not verified","SAR","Japanese",89,"","🌙"],3:["Charizard ex","Obsidian Flames · not verified","SIR","English",54.5,"","🔥"],4:["Eevee Promo","Scarlet & Violet Promo","Promo","English",12.8,"","✨"]}[id]||null;
- if(!data)return;
- current={id,name:data[0],set:data[1],rarity:data[2],lang:data[3],price:data[4],seller:data[5],icon:data[6]};
+ const p=(id===null||id===undefined||id==="")?null:(typeof window.ptxGetMarketplaceProduct==="function"?window.ptxGetMarketplaceProduct(id):null);
+ if(p)current={id:p.id,name:p.name,set:p.set,rarity:p.rarity,lang:p.lang,price:Number(p.price)||0,seller:"",icon:p.icon||"\ud83c\udfb4"};
+ else current={id:null,name:"Listing not available",set:"This card is not an active marketplace listing",rarity:"\u2014",lang:"\u2014",price:0,seller:"",icon:"\ud83c\udfb4"};
  document.getElementById("ptxDetailName").textContent=current.name;
  document.getElementById("ptxDetailSet").textContent=current.set;
  document.getElementById("ptxDetailRarity").textContent=current.rarity;
  document.getElementById("ptxDetailLang").textContent=current.lang;
- document.getElementById("ptxDetailPrice").textContent=current.price.toFixed(2)+" USD";
- document.getElementById("ptxDetailSeller").textContent="Sample listing · not a real seller";
+ document.getElementById("ptxDetailPrice").textContent=current.id===null?"\u2014":current.price.toFixed(2)+" USD";
+ document.getElementById("ptxDetailSeller").textContent=current.id===null?"No listing selected":"Seller name is not published";
+ document.getElementById("ptxDetailArt").className="ptx-detail-inner";
  document.getElementById("ptxDetailArt").innerHTML="<span>"+current.icon+"</span>";
- window.__ptxCurrentPurchaseName=current.name;window.__ptxCurrentPurchasePrice=current.price;window.__ptxCurrentPurchaseRarity=current.rarity;window.__ptxCurrentPurchaseIcon=current.icon;window.__ptxCurrentPurchaseId=current.id;
+ window.__ptxCurrentPurchaseName=current.id===null?"":current.name;
+ window.__ptxCurrentPurchasePrice=current.id===null?0:current.price;
+ window.__ptxCurrentPurchaseRarity=current.id===null?"":current.rarity;
+ window.__ptxCurrentPurchaseIcon=current.id===null?"\ud83c\udfb4":current.icon;
+ window.__ptxCurrentPurchaseId=current.id;
  back=false; document.getElementById("ptxProductModal").classList.add("open");
 };
 window.__ptxSetCurrent=function(o){current=Object.assign({},current,o);};
 window.ptxCloseProduct=function(){document.getElementById("ptxProductModal").classList.remove("open")};
 window.ptxFlipCard=function(){back=!back;document.getElementById("ptxDetailArt").className=back?"ptx-detail-inner ptx-detail-back":"ptx-detail-inner";document.getElementById("ptxDetailArt").innerHTML=back?"<span>🔵</span>":"<span>"+current.icon+"</span>"};
 window.ptxBuyNow=function(){
+ if(current.id===null){if(typeof ptxToast==="function")ptxToast("No active listing is selected, so there is nothing to buy.");return;}
  document.getElementById("ptxCheckoutItem").textContent=current.name+" · "+current.price.toFixed(2)+" USD";
  document.getElementById("ptxCOCard").textContent=current.price.toFixed(2)+" USD";
  document.getElementById("ptxCOTotal").textContent=current.price.toFixed(2)+" USD";
@@ -1970,7 +1969,7 @@ window.ptxPlaceOrder=async function(){
    setTimeout(()=>{if(typeof ptxJump==='function')ptxJump('ptxLiveOrderFlow')},500);
  }catch(e){console.error('place order',e);alert(e?.message||'Unable to create order. Please sign in and try again.');}
 };
-window.ptxModalAdd=function(){if(window.ptxAdd)ptxAdd(current.id);ptxToast("Added to cart");};
+window.ptxModalAdd=function(){if(current.id===null){if(typeof ptxToast==="function")ptxToast("No active listing is selected.");return;}if(window.ptxAdd)ptxAdd(current.id);};
 })();
 </script>
 <style id="ptx-seller-center-v1">
@@ -2118,9 +2117,6 @@ window.ptxCollectionTab=function(btn,rarity){
     card.style.display=(rarity==='all'||card.dataset.rarity===rarity)?'block':'none';
   });
 };
-window.ptxAddToCollection=function(name){
-  ptxToast('Demo: '+name+' added to My Collection');
-};
 </script>
 <section class="ptx-book" id="ptxCollectionBook">
 <div class="ptx-booktop">
@@ -2139,7 +2135,7 @@ window.ptxAddToCollection=function(name){
  ];
  let page=0;
  window.ptxRenderBook=function(){const d=pages[page],g=document.getElementById('ptxBookGrid');if(!g)return;g.innerHTML=d.items.map(x=>`<div class="ptx-slot ${x[3]?'owned':'missing'}" onclick="ptxBookCard('${x[1]}','${x[3]?'Owned':'Not owned'}')"><span class="${x[3]?'ptx-owned-dot':''}"></span><div class="ptx-slot-art">${x[2]}</div><div class="ptx-slot-no">#${x[0]}</div><div class="ptx-slot-name">${x[1]}</div></div>`).join('');let owned=d.items.filter(x=>x[3]).length,total=d.items.length,p=Math.round(owned/total*100);document.getElementById('ptxBookTitle').textContent=d.set+' · Page '+(page+1);document.getElementById('ptxBookCount').textContent=owned+' / '+total+' cards owned';document.getElementById('ptxBookPercent').textContent=p+'%';document.getElementById('ptxBookProgress').style.width=p+'%';};
- window.ptxBookPrev=function(){page=(page-1+pages.length)%pages.length;ptxRenderBook()}; window.ptxBookNext=function(){page=(page+1)%pages.length;ptxRenderBook()}; window.ptxBookCard=function(name,state){ptxToast('🎴 '+name+' · '+state+(state==='Not owned'?' · Demo: View marketplace':' · In your Collection'))};
+ window.ptxBookPrev=function(){page=(page-1+pages.length)%pages.length;ptxRenderBook()}; window.ptxBookNext=function(){page=(page+1)%pages.length;ptxRenderBook()}; window.ptxBookCard=function(name,state){ptxToast('🎴 '+name+' · '+state)};
  document.addEventListener('DOMContentLoaded',ptxRenderBook);
 })();
 </script>
@@ -2215,7 +2211,7 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 <div class="ptx-orderflow-mini"><span class="active">1. Cart</span><span class="active">2. Checkout</span><span>3. Payment</span><span>4. Seller ships</span><span>5. Delivery</span><span>6. Settlement</span></div>
 <div id="ptxOrdersLive"><div class="ptx-orderbox"><b>My Orders</b><div class="ptx-muted" style="margin-top:6px">Tap Refresh to load your latest orders.</div></div></div></div>
 <div class="ptx-hub-view" id="ptxHubWallet"><div class="ptx-wallet-card"><small>PAYMENTS &amp; BALANCE</small><strong>Order-based</strong><div class="ptx-muted">Buyer payments are linked to specific marketplace orders. No buyer cash-out wallet is enabled.</div><div class="ptx-wallet-actions" style="margin-top:12px"><button class="ptx-btn" onclick="ptxHubOpen('market')">Shop Cards</button><button class="ptx-btn alt" onclick="ptxHubOpen('orders')">View Orders</button></div></div><div class="ptx-ledger"><div><span>Buyer payment</span><small>Would apply to a specific order. No payment rail is live yet.</small></div><div><span>Buyer refund</span><small>Returned through the original payment method when eligible.</small></div><div><span>Seller payout</span><small>Released only after eligible settlement and provider checks.</small></div></div></div>
-<div class="ptx-hub-view" id="ptxHubSeller"><div class="ptx-mini-grid"><div><b>Active Listings</b><strong>—</strong><small>Sign in to see your own listings</small></div><div><b>Pending Shipment</b><strong>—</strong><small>Nothing to ship yet</small></div><div><b>Available Balance</b><strong id="ptxSellerAvailable">0.00 USD</strong><small>After eligible settlements</small></div></div><div class="ptx-seller-compare"><div class="ptx-compare-head"><b>Seller tools</b><span class="ptx-chip">Settlement not connected yet</span></div><button class="ptx-btn" onclick="ptxToast('Demo: create listing')">＋ Create Listing</button> <button class="ptx-btn alt" onclick="ptxHubOpen('pools')">🎴 Manage Card Pools</button> <button class="ptx-btn alt" onclick="ptxSellerRequestPayout()">Request Payout</button> <button class="ptx-btn alt" onclick="ptxToast('Demo: verification center')">Verification</button></div></div>
+<div class="ptx-hub-view" id="ptxHubSeller"><div class="ptx-mini-grid"><div><b>Active Listings</b><strong>—</strong><small>Sign in to see your own listings</small></div><div><b>Pending Shipment</b><strong>—</strong><small>Nothing to ship yet</small></div><div><b>Available Balance</b><strong id="ptxSellerAvailable">0.00 USD</strong><small>After eligible settlements</small></div></div><div class="ptx-seller-compare"><div class="ptx-compare-head"><b>Seller tools</b><span class="ptx-chip">Settlement not connected yet</span></div><button class="ptx-btn" onclick="ptxToast('Listing creation is not open yet: a seller must be approved and each card must pass the authenticity check first.')">＋ Create Listing</button> <button class="ptx-btn alt" onclick="ptxHubOpen('pools')">🎴 Manage Card Pools</button> <button class="ptx-btn alt" onclick="ptxSellerRequestPayout()">Request Payout</button> <button class="ptx-btn alt" onclick="ptxToast('Verification is not open yet: no identity, stock or condition check can be completed on this site today.')">Verification</button></div></div>
 <div class="ptx-hub-view" id="ptxHubAccount"><div id="ptxAccountLive"><div class="ptx-account-card"><div class="ptx-avatar">CA</div><div><b>Trixovel Collector</b><small>Account information</small></div><span class="ptx-chip">Signed In</span></div></div><div class="ptx-mini-grid"><div><b>📦 Orders</b><small>View your purchases</small></div><div><b>💳 Payments</b><small>Order-based payments</small></div><div><b>🏪 Seller</b><small>Seller Center &amp; payout</small></div></div><button class="ptx-btn alt" onclick="ptxHubOpen('orders')">📦 My Orders</button> <button class="ptx-btn alt" onclick="ptxHubOpen('wallet')">💳 Payments</button> <button class="ptx-btn alt" onclick="ptxLogout()">Sign out</button></div>
 <div class="ptx-hub-view" id="ptxHubSafety"><div class="ptx-wallet-card"><small>SAFETY &amp; SUPPORT</small><strong>On-platform Trading</strong><div class="ptx-muted">Keep payments, order communication and disputes on-platform. Do not send funds directly to another user outside approved checkout.</div></div><div class="ptx-ledger"><div><span>Order records</span><small>Order status, shipping and dispute notes are kept with the order.</small></div><div><span>Seller verification</span><small>Seller identity and payout eligibility may require provider/platform verification.</small></div><div><span>Suspicious activity</span><small>Transactions may be reviewed, restricted or cancelled under applicable rules.</small></div></div><button class="ptx-btn alt" onclick="ptxIPGo('support')">Open Trust &amp; Safety Center</button></div>
 </section>
@@ -2747,7 +2743,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     const binder=document.getElementById('ptxBinder'); if(!binder)return;
     const el=document.createElement('div'); el.className='ptx-owned ptx-owned-new'; el.dataset.rarity=String(card.rarity||'').toLowerCase();
     el.innerHTML='<span class="ptx-owned-badge">'+(card.rarity||'CARD')+'</span><div class="ptx-owned-art">'+(card.icon||'🎴')+'</div><div class="ptx-owned-name">'+card.name+'</div><div class="ptx-owned-meta">Purchased · '+Number(card.price||0).toFixed(2)+' USD</div>';
-    if(card.id) el.onclick=function(){ptxOpenProduct(card.id)}; else el.onclick=function(){ptxToast('Demo: '+card.name+' is now in your collection');};
+    if(card.id) el.onclick=function(){ptxOpenProduct(card.id)}; else el.onclick=function(){if(typeof ptxToast==='function')ptxToast('This card is not linked to a listing, so it cannot be opened.');};
     binder.prepend(el);
     const live=document.getElementById('ptxCollectionLive');
     if(live) live.innerHTML='<span>🎉 <b>'+card.name+'</b> has been added to your Collection</span><small>Saved on this device only</small>';
@@ -3015,7 +3011,7 @@ body.ptx-ip-open{overflow:hidden}
   nav(page); const t=titles[page]||titles.home; document.getElementById('ptxIpTitle').textContent=t[0];document.getElementById('ptxIpSub').textContent=t[1];
   let h='';
   if(page==='home') h=`<div class="ptx-ip-grid">${card('🛒 Market','Browse Pokémon cards, compare sellers, country and shipping route.','Open Market',"ptxIPGo('market')",true)}${card('📦 Orders','See your purchases, order status, tracking and delivery progress.','My Orders',"ptxIPGo('orders')")} ${card('💳 Wallet','View payment records and balance. Production payments will use an approved payment provider.','Open Wallet',"ptxIPGo('wallet')")} ${card('🏪 Seller','Manage listings, seller information and card pools.','Seller Center',"ptxIPGo('seller')")}</div>`;
-  if(page==='market') h=`<div class="ptx-ip-card"><h3>🛒 Marketplace</h3><div class="ptx-ip-muted">Search and compare listings without scrolling through unrelated sections.</div><div class="ptx-ip-list"><div class="ptx-ip-row"><span><b>⚡ Pikachu ex SAR</b><br><small>Sample listing · no real seller</small></span><b>39.99 USD</b></div><div class="ptx-ip-row"><span><b>🌙 Umbreon ex</b><br><small>Sample listing · no real seller</small></span><b>89.00 USD</b></div></div></div>`;
+  if(page==='market') h=`<div class="ptx-ip-card"><h3>🛒 Marketplace</h3><div class="ptx-ip-muted">Search and compare listings without scrolling through unrelated sections.</div><div class="ptx-ip-list"><div class="ptx-ip-row"><span><b>Live marketplace listings</b><br><small>Cards and prices appear here only from real approved listings in the marketplace database.</small></span><b>&mdash;</b></div></div></div>`;
   if(page==='cart') h=`<div class="ptx-ip-card">
     <h3>🛒 Your Cart</h3>
     <div id="ptxIndependentCartItems"></div>
@@ -3025,7 +3021,7 @@ body.ptx-ip-open{overflow:hidden}
   if(page==='orders') h=`<div class="ptx-ip-grid">${card('📦 My Orders','Orders created from checkout will appear here with status and tracking.','Refresh Orders',"if(window.ptxHubRefresh)ptxHubRefresh()")}${card('🚚 Shipping','Each order can show seller country, shipping origin, buyer destination and estimated delivery time.','Open Market',"ptxIPGo('market')")}</div>`;
   if(page==='wallet') h=`<div class="ptx-ip-grid">${card('💰 Balance','No real wallet balance is maintained in this preview. Your balance will only be shown when backed by verified server-side ledger records.','Payment Safety',"ptxIPGo('payments')",true)}${card('💳 Payments','Trixovel does not currently charge cards or move money in this preview.','Payment Policy',"ptxIPGo('payments')")}</div><div class="ptx-ip-card" style="margin-top:12px"><h3>Transaction History</h3><div class="ptx-ip-muted">No live payment records are connected. A real transaction will appear only after the payment provider webhook is verified server-side.</div><div class="ptx-ip-list" style="margin-top:12px"><div class="ptx-ip-row"><span><b>Created</b><br><small>Order record exists; no payment confirmation yet.</small></span><span class="ptx-chip">Not paid</span></div><div class="ptx-ip-row"><span><b>Processing</b><br><small>Provider is processing the payment; do not treat as settled.</small></span><span class="ptx-chip">Pending</span></div><div class="ptx-ip-row"><span><b>Paid</b><br><small>Only after signed provider event is verified and reconciled.</small></span><span class="ptx-chip">Server verified</span></div></div></div>`;
   if(page==='payments') h=`<div class="ptx-ip-card"><h3>🔐 Trixovel Payment &amp; Payout Safety Policy</h3><p class="ptx-ip-muted">This page explains the intended safety rules. The current preview does not collect or transfer money; no payment, refund or payout is completed by this page.</p><div class="ptx-ip-list"><div class="ptx-ip-row"><span><b>1. Approved payment channels</b><br><small>Buyers must pay through a payment provider enabled for their country. Do not send money directly to another user or to an account shared in chat.</small></span></div><div class="ptx-ip-row"><span><b>2. Currency and final amount</b><br><small>Product prices use USD as the base display. Before checkout, the production system must disclose the charge currency, exchange-rate source and timestamp, fees, shipping, taxes and final amount. USD and USDT are different.</small></span></div><div class="ptx-ip-row"><span><b>3. Payment status</b><br><small>Created → Pending → Processing → Paid / Failed / Canceled. Only a server-verified provider event can mark an order Paid. A screenshot, browser message or client request is not proof of payment.</small></span></div><div class="ptx-ip-row"><span><b>4. Refunds and disputes</b><br><small>Refunds follow the published refund rules and provider capabilities. A refund is not complete until the provider confirms it; disputes and chargebacks are recorded and reconciled.</small></span></div><div class="ptx-ip-row"><span><b>5. Seller payouts</b><br><small>Seller payout requests require account verification, eligibility checks, balance reconciliation and provider approval. Statuses: Requested → Under review → Approved → Processing → Paid, or Rejected / Failed / Canceled. This preview cannot send a payout.</small></span></div><div class="ptx-ip-row"><span><b>6. Records and support</b><br><small>Each real transaction must have a unique provider reference, idempotency key, timestamps and an auditable ledger entry. Contact support through the platform if a status appears incorrect.</small></span></div></div><p class="ptx-ip-muted" style="margin-top:12px"><b>Launch notice:</b> Real payments and seller payouts remain disabled until a provider is selected, merchant eligibility is approved, server-side adapters and signed webhook verification are implemented, and end-to-end tests pass.</p></div><div class="ptx-ip-card" style="margin-top:12px"><h3>Transaction Status Reference</h3><div class="ptx-ip-list"><div class="ptx-ip-row"><span><b>Pending</b><br><small>Order created; provider has not confirmed payment.</small></span><span class="ptx-chip">No funds confirmed</span></div><div class="ptx-ip-row"><span><b>Paid</b><br><small>Provider webhook signature, amount, currency and order reference verified by server.</small></span><span class="ptx-ip-chip">Verified only</span></div><div class="ptx-ip-row"><span><b>Refund pending</b><br><small>Refund request sent; provider confirmation still required.</small></span><span class="ptx-ip-chip">In progress</span></div><div class="ptx-ip-row"><span><b>Payout pending</b><br><small>Seller payout requested but not yet transferred.</small></span><span class="ptx-ip-chip">Not paid</span></div></div></div>`;
-  if(page==='seller') h=`<div class="ptx-ip-grid">${card('🏪 Seller Dashboard','Manage your listings, orders, shipping origin and seller profile.','My Listings',"alert('Seller listing manager')",true)}${card('🎴 Card Pools','Create physical collectible pools with inventory, card tiers, quantities and disclosed odds.','Card Pools',"alert('Card Pool Manager')")}${card('📍 Shipping Origin','Seller country and shipping origin are used for marketplace delivery information.','Seller Profile',"ptxIPGo('account')")}</div>`;
+  if(page==='seller') h=`<div class="ptx-ip-grid">${card('🏪 Seller Dashboard','Manage your listings, orders, shipping origin and seller profile.','My Listings',"ptxToast('Seller listing manager is not open yet: you need an approved seller account before you can publish a listing.')",true)}${card('🎴 Card Pools','Create physical collectible pools with inventory, card tiers, quantities and disclosed odds.','Card Pools',"ptxToast('Card pools are not open yet: a pool needs real inventory held as listed stock and admin approval.')")}${card('📍 Shipping Origin','Seller country and shipping origin are used for marketplace delivery information.','Seller Profile',"ptxIPGo('account')")}</div>`;
   if(page==='collection') h=`<div class="ptx-ip-card"><h3>🎴 My Collection</h3><div class="ptx-ip-muted">Your saved cards and collection progress will appear here when collection data is connected to your account.</div><div class="ptx-ip-row" style="margin-top:12px"><span><b>Saved cards</b><br><small>No live collection records connected in this preview.</small></span><span class="ptx-ip-chip">Empty</span></div><button class="ptx-ip-action primary" onclick="ptxIPGo('market')">Browse Market</button></div>`;
   if(page==='account') h=`<div id="ptxIndependentAccount">
     <div class="ptx-ip-card">
@@ -3141,7 +3137,7 @@ body.ptx-ip-open{overflow:hidden}
   grid.innerHTML=arr.length?arr.map(x=>`<article class="ptx-market-item" onclick="if(!event.target.closest('button'))ptxOpenMarketDetail('${x.id}')">
    <div class="ptx-market-art">${x.icon}</div>
    <div class="ptx-market-meta"><div><h3 style="margin:0 0 4px">${esc(x.name)}</h3><div class="ptx-muted">${esc(x.set)} · ${esc(x.condition)}</div></div><span class="ptx-market-chip">${esc(x.rarity)}</span></div>
-   <div class="ptx-market-line">Sample listing - no real seller, no committed shipping time or stock</div>
+   <div class="ptx-market-line">Seller is not named publicly · no shipping time or stock guarantee until payments go live</div>
    <div class="ptx-market-meta" style="margin-top:10px"><span class="ptx-market-price">${x.price.toFixed(2)} USD</span><span class="ptx-muted">Physical card</span></div>
    <div class="ptx-market-actions"><button class="ptx-ip-action" onclick="ptxFullMarketAdd('${x.id}')">Add to Cart</button><button class="ptx-ip-action primary" onclick="ptxFullMarketBuy('${x.id}')">Buy Now</button></div>
   </article>`).join(''):'<div class="ptx-market-empty" style="grid-column:1/-1">No cards are listed right now. Sellers join from the Sell page, and each listing appears here only after it passes the authenticity check.</div>';
@@ -3282,7 +3278,7 @@ window.ptxRenderIndependentCart=function(){
       <div><small>Stock</small>${esc(x.stock??'—')}</div>
     </div>
     <div class="ptx-md-route">
-      <b>Listing source</b><br>Sample listing<br><span class="ptx-md-muted">Not a verified seller. No identity, stock or condition check has been performed.</span>
+      <b>Listing source</b><br>Marketplace listing<br><span class="ptx-md-muted">Seller identity, stock and condition are not verified on this site yet.</span>
       <hr style="border:0;border-top:1px solid #33253f;margin:10px 0">
       <b>Shipping</b><br>Not committed<br><span class="ptx-md-muted">Rate, carrier and delivery time are set by a real seller only after payments go live.</span>
     </div>
