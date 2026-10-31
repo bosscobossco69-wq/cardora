@@ -161,7 +161,6 @@ img, video, iframe, canvas, svg { max-width:100%; }
 <button onclick="ptxJump('ptxOfficialHome')">Home</button>
 <button onclick="ptxJump('ptxMarketplace')">Market</button>
 <button onclick="ptxJump('ptxSellCard')">Sell</button>
-<button onclick="ptxJump('cardoraSealedCenter')">Sealed Packs</button>
 <button onclick="ptxJump('ptxAccountCenter')">Wallet</button>
 <button onclick="ptxJump('ptxBattleArena')">⚔️ Battle</button>
 <button id="ptxHeaderAuthButton" onclick="ptxOpenAuth('login')">Sign in</button>
@@ -239,7 +238,7 @@ img, video, iframe, canvas, svg { max-width:100%; }
 <div class="ptx-toast" id="ptxToast"></div>
 <script>
 window.ptxJump=function(id){
- const route={ptxOfficialHome:'home',ptxMarketplace:'market',ptxMarketDetail:'market',ptxCardDetail:'market',ptxCardDatabase:'market',ptxSellCard:'sell',ptxSellerCenter:'sell',cardoraSealedCenter:'sell',ptxAccountCenter:'account',ptxAuthCenter:'account',ptxLiveOrderFlow:'orders',ptxNotifications:'orders',ptxBattleArena:'support',ptxDepositPanel:'wallet'}[id];
+ const route={ptxOfficialHome:'home',ptxMarketplace:'market',ptxMarketDetail:'market',ptxCardDetail:'market',ptxCardDatabase:'market',ptxSellCard:'sell',ptxSellerCenter:'sell',ptxAccountCenter:'account',ptxAuthCenter:'account',ptxLiveOrderFlow:'orders',ptxNotifications:'orders',ptxBattleArena:'support',ptxDepositPanel:'wallet'}[id];
  if(route&&typeof window.ptxIPGo==='function'){window.ptxIPGo(route);return;}
  const e=document.getElementById(id);
  if(e)e.scrollIntoView({behavior:"smooth",block:"start"});
@@ -252,345 +251,7 @@ window.ptxToast=function(msg){
 // Escape every database/user supplied string before it goes into innerHTML.
 window.ptxEsc=function(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));};
 </script>
-<div class="app">
-<header><div class="logo">🎴 Trixovel</div><div class="pill">🌐 EN / 中文</div></header>
-<section class="hero">
-<div>✨ GLOBAL CARD COLLECTION</div><h1>Collect Your Luck</h1>
-<p>AR • SAR • SIR • PROMO<br/>Every pack contains a physical collectible.</p>
-<button class="btn" onclick="openPack('Rare Treasure')">OPEN A PACK</button>
-</section>
-<h2>🔥 Hot Collections</h2>
-<div class="grid">
-<div class="card"><div class="art">⚡</div><div class="tag">RARE TREASURE</div><div class="price">9.99 USD</div><button class="buy" onclick="openPack('Rare Treasure')">Open</button></div>
-<div class="card"><div class="art">💎</div><div class="tag">PREMIUM SAR</div><div class="price">19.99 USD</div><button class="buy" onclick="openPack('Premium SAR')">Open</button></div>
-<div class="card"><div class="art">🎁</div><div class="tag">STARTER PACK</div><div class="price">2.99 USD</div><button class="buy" onclick="openPack('Starter Pack')">Open</button></div>
-<div class="card"><div class="art">🌟</div><div class="tag">SPECIAL COLLECTION</div><div class="price">49.99 USD</div><button class="buy" onclick="openPack('Special Collection')">Open</button></div>
-</div>
-<h2>✏️ Edit / Create Listing</h2>
-<section class="editlisting">
-<div class="detailbox">
-<div class="muted">CARD PHOTOS</div>
-<div class="photo-grid">
-<div class="photo">📷<br/>Front Photo<br/><span class="hint">Clear, full card</span></div>
-<div class="photo">📷<br/>Back Photo<br/><span class="hint">Clear, full card</span></div>
-</div>
-</div>
-<div class="detailbox">
-<label class="muted">Card Name</label><input id="editName" value="Pikachu SAR"/>
-<label class="muted">Set / Card Number</label><input value="Mega Evolution · 087/165"/>
-<label class="muted">Language</label><select><option>Japanese</option><option>English</option><option>Chinese</option><option>Korean</option></select>
-<label class="muted">Condition</label><select><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option></select>
-<label class="muted">Price (USD)</label><input id="editPrice" min="0" oninput="calcSeller()" step="0.01" type="number" value="38"/>
-<label class="muted">Quantity</label><input min="1" type="number" value="1"/>
-<label class="muted">Description</label><textarea placeholder="Describe centering, whitening, scratches and any defects..." rows="4">Near Mint. Please review photos carefully before purchase.</textarea>
-</div>
-<div class="detailbox">
-<b>💵 Seller Earnings Calculator</b>
-<div class="calc">
-<div class="calcrow"><span>Listing price</span><b id="calcPrice">38.00 USD</b></div>
-<div class="calcrow"><span>Platform fee (5%)</span><b id="calcFee">-1.90 USD</b></div>
-<div class="calcrow"><span>Estimated seller proceeds</span><b class="profit" id="calcNet">36.10 USD</b></div>
-<div class="hint">This is a demo estimate. Actual payment, shipping, taxes and other applicable costs depend on the final production setup.</div>
-</div>
-</div>
-<div class="notice">🛡️ Listing review: accurate photos, card details and condition descriptions help protect both buyers and sellers.</div>
-<button class="btn" onclick="saveListing()" style="width:100%;margin-top:12px">Save &amp; Submit for Review</button>
-</section>
-<h2>🛍️ Marketplace</h2>
-<section class="market">
-<div class="search"><input id="searchCard" oninput="filterMarket()" placeholder="Search Pokémon cards..."/><button class="smallbtn">🔎</button></div>
-<div class="filters"><span class="filter">All</span><span class="filter">SAR</span><span class="filter">AR</span><span class="filter">SIR</span><span class="filter">Promo</span><span class="filter">Under 10 USD</span></div>
-<div id="marketList">
-<div class="marketcard" data-name="pikachu sar"><div class="thumb">⚡</div><div class="marketinfo"><b>Pikachu SAR</b><div class="seller">Japanese · Near Mint</div><div class="marketprice">38.00 USD</div><button class="smallbtn" onclick="buyCard('Pikachu SAR',38)">Buy Now</button></div></div>
-<div class="marketcard" data-name="charizard sir"><div class="thumb">🔥</div><div class="marketinfo"><b>Charizard SIR</b><div class="seller">English · Near Mint</div><div class="marketprice">72.00 USD</div><button class="smallbtn" onclick="buyCard('Charizard SIR',72)">Buy Now</button></div></div>
-<div class="marketcard" data-name="eevee promo"><div class="thumb">✨</div><div class="marketinfo"><b>Eevee Promo</b><div class="seller">Japanese · Excellent</div><div class="marketprice">12.50 USD</div><button class="smallbtn" onclick="buyCard('Eevee Promo',12.5)">Buy Now</button></div></div>
-</div>
-</section>
-<h2>📚 Card Catalog</h2>
-<section class="catalog">
-<div class="search"><input id="catalogSearch" oninput="catalogFilter()" placeholder="Search name, set or number..."/><button class="smallbtn">🔎</button></div>
-<div class="chips">
-<button onclick="setFilter('all')">All</button><button onclick="setFilter('SAR')">SAR</button><button onclick="setFilter('SIR')">SIR</button><button onclick="setFilter('AR')">AR</button><button onclick="setFilter('Promo')">Promo</button><button onclick="setFilter('Under10')">&lt; 10 USD</button>
-</div>
-<div class="sortbar"><span class="muted" id="resultCount">6 listings</span><select onchange="sortCatalog(this.value)"><option value="featured">Featured</option><option value="low">Price: Low</option><option value="high">Price: High</option></select></div>
-<div class="cataloggrid" id="catalogGrid">
-<div class="catcard" data-price="38" data-rarity="SAR" data-search="pikachu sar mega evolution 123">
-<div class="catimg">⚡</div><div class="catmeta"><div class="rarity">SAR · Japanese · NM</div><b>Pikachu SAR</b><div class="muted">Mega Evolution · #123</div><div class="catprice">38.00 USD</div><button class="smallbtn" onclick="buyCard('Pikachu SAR',38)">Buy</button></div></div>
-<div class="catcard" data-price="72" data-rarity="SIR" data-search="charizard sir scarlet violet 189">
-<div class="catimg">🔥</div><div class="catmeta"><div class="rarity">SIR · English · NM</div><b>Charizard SIR</b><div class="muted">Scarlet &amp; Violet · #189</div><div class="catprice">72.00 USD</div><button class="smallbtn" onclick="buyCard('Charizard SIR',72)">Buy</button></div></div>
-<div class="catcard" data-price="8.5" data-rarity="AR" data-search="eevee ar japanese 78">
-<div class="catimg">✨</div><div class="catmeta"><div class="rarity">AR · Japanese · NM</div><b>Eevee AR</b><div class="muted">Special Set · #078</div><div class="catprice">8.50 USD</div><button class="smallbtn" onclick="buyCard('Eevee AR',8.5)">Buy</button></div></div>
-<div class="catcard" data-price="12.5" data-rarity="Promo" data-search="eevee promo japanese">
-<div class="catimg">🌟</div><div class="catmeta"><div class="rarity">PROMO · Japanese · EX</div><b>Eevee Promo</b><div class="muted">Promo · Limited</div><div class="catprice">12.50 USD</div><button class="smallbtn" onclick="buyCard('Eevee Promo',12.5)">Buy</button></div></div>
-<div class="catcard" data-price="6.99" data-rarity="AR" data-search="pikachu ar english">
-<div class="catimg">⚡</div><div class="catmeta"><div class="rarity">AR · English · NM</div><b>Pikachu AR</b><div class="muted">Base Set · #045</div><div class="catprice">6.99 USD</div><button class="smallbtn" onclick="buyCard('Pikachu AR',6.99)">Buy</button></div></div>
-<div class="catcard" data-price="49.99" data-rarity="SAR" data-search="mew sar japanese">
-<div class="catimg">💎</div><div class="catmeta"><div class="rarity">SAR · Japanese · NM</div><b>Mew SAR</b><div class="muted">Special Set · #101</div><div class="catprice">49.99 USD</div><button class="smallbtn" onclick="buyCard('Mew SAR',49.99)">Buy</button></div></div>
-</div>
-<div class="empty" id="catalogEmpty">No matching cards found.</div>
-</section>
-<h2>🎴 Card Details</h2>
-<section class="detail">
-<div class="back">← Marketplace</div>
-<div class="detailhero">⚡</div>
-<div class="detailbox">
 
-<h2 style="margin:6px 0">Pikachu SAR</h2>
-<div class="muted">Japanese · Near Mint</div>
-<div class="total">38.00 USD</div>
-<div class="row"><span>Seller</span><b>Sample seller</b></div>
-<div class="row"><span>Shipping</span><b>From 4.99 USD</b></div>
-<div class="row"><span>Buyer protection</span><b>Not active yet</b></div>
-<button class="btn" onclick="showCheckout('Pikachu SAR',38)" style="width:100%;margin-top:14px">Buy Now · 38.00 USD</button>
-</div>
-</section>
-<h2>💼 Sell Your Card</h2>
-<div class="sellbox">
-<div class="muted">LIST YOUR PHYSICAL POKÉMON CARD</div>
-<div class="field"><label>Card Name</label><input id="sellName" placeholder="e.g. Pikachu SAR"/></div>
-<div class="field"><label>Set / Card Number</label><input id="sellSet" placeholder="e.g. Mega Evolution / 087/165"/></div>
-<div class="field"><label>Language</label><select><option>Japanese</option><option>English</option><option>Chinese</option><option>Korean</option></select></div>
-<div class="field"><label>Condition</label><select><option>Near Mint</option><option>Excellent</option><option>Good</option><option>Played</option></select></div>
-<div class="field"><label>Price (USD)</label><input id="sellPrice" min="0" placeholder="38.00" step="0.01" type="number"/></div>
-<div class="upload" style="border:1px solid #594078;background:#171025;color:#d9c8f0;padding:12px;border-radius:10px">📷 Photo uploads disabled · Use Sealed Pack Center for live scanning</div>
-<div class="fee">Illustrative platform fee: <b>5% demo only</b><br/>Example only: 100 USD sale → estimated seller proceeds 95 USD before shipping, payment costs, taxes or other disclosed charges. Final fee schedule is not active until published and accepted.</div>
-<button class="btn" onclick="submitListing()" style="width:100%">Submit Listing</button>
-</div>
-<h2>🏪 Seller Inventory <small style="font-size:12px;color:#f0c66a">Sample UI · not live data</small></h2>
-<section class="inventory">
-<div class="sellerbar">
-<div class="muted">SELLER CENTER</div>
-<div style="display:flex;justify-content:space-between;align-items:center"><b>TreasureSeller01</b><span class="status">Sample seller</span></div>
-<div class="muted" style="margin-top:7px">Example layout only — this is not a real account and no sales are attached to it.</div>
-</div>
-<div class="search"><input id="invSearch" oninput="filterInventory()" placeholder="Search my listings..."/><button class="smallbtn">＋ New</button></div>
-<div class="detailbox" style="padding:8px">
-<table class="invtable" id="invTable">
-<thead><tr><th>Card</th><th>Price</th><th>Status</th><th>Views</th><th>Actions</th></tr></thead>
-<tbody>
-<tr data-name="pikachu sar"><td><div style="display:flex;gap:7px;align-items:center"><div class="miniart">⚡</div><div><b>Pikachu SAR</b><br/><span class="muted">NM · JP</span></div></div></td><td>38 U</td><td class="live">Live</td><td>—</td><td><div class="invactions"><button onclick="editListing('Pikachu SAR')">Edit</button><button onclick="toggleListing(this)">Pause</button></div></td></tr>
-<tr data-name="charizard sir"><td><div style="display:flex;gap:7px;align-items:center"><div class="miniart">🔥</div><div><b>Charizard SIR</b><br/><span class="muted">NM · EN</span></div></div></td><td>72 U</td><td class="pending">Review</td><td>—</td><td><div class="invactions"><button onclick="editListing('Charizard SIR')">Edit</button></div></td></tr>
-<tr data-name="eevee promo"><td><div style="display:flex;gap:7px;align-items:center"><div class="miniart">✨</div><div><b>Eevee Promo</b><br/><span class="muted">EX · JP</span></div></div></td><td>12.5 U</td><td class="off">Paused</td><td>—</td><td><div class="invactions"><button onclick="toggleListing(this)">Resume</button><button onclick="editListing('Eevee Promo')">Edit</button></div></td></tr>
-</tbody>
-</table>
-</div>
-</section>
-<section id="cardoraSealedCenter">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
-    <div><div class="ptx-live"><i></i> SELLER INVENTORY · PROTOTYPE</div><h2 style="margin:8px 0 4px">📦 Sealed Pokémon Pack Center</h2><div class="cs-muted">实时扫描入口 · 密封库存 · 订单演示 · 记录保存在本浏览器</div></div>
-    <span class="cs-badge">LOCAL TEST MODE · NO PAYMENTS</span>
-  </div>
-  <div class="cs-notice" style="margin:12px 0"><b>验证说明：</b>本原型不提供照片上传。摄像头扫描/条码识别只用于记录产品识别信息，不等于官方真伪鉴定。当前数据保存在此浏览器，不会同步到其他设备或服务器。</div>
-  <div class="cs-statrow">
-    <div class="cs-stat"><span class="cs-muted">可售密封库存</span><b id="csAvailable">0</b></div>
-    <div class="cs-stat"><span class="cs-muted">已锁定 / 处理中</span><b id="csReserved">0</b></div>
-    <div class="cs-stat"><span class="cs-muted">开包记录</span><b id="csOpened">0</b></div>
-  </div>
-  <div class="cs-grid">
-    <div class="cs-panel">
-      <h3 style="margin:0 0 6px">1. 实时扫描登记</h3><div class="cs-muted">使用摄像头扫描包装条码（支持的浏览器会尝试 Barcode Detection API）。不支持时，可用演示扫描测试流程。</div>
-      <video id="csVideo" class="cs-camera" playsinline muted></video>
-      <canvas id="csCanvas" class="cs-hidden"></canvas>
-      <div class="cs-field"><label for="csSeller">卖家显示名称</label><input id="csSeller" value="DemoSeller01" maxlength="60" /></div>
-      <div class="cs-field"><label for="csProduct">产品名称 / 系列</label><input id="csProduct" placeholder="例如 Pokémon Booster Pack" maxlength="120" /></div>
-      <div class="cs-field"><label for="csCode">包装条码 / 产品编号</label><input id="csCode" placeholder="扫描后自动填入，或输入编号" maxlength="100" /></div>
-      <div class="cs-field"><label for="csQty">数量（包）</label><input id="csQty" type="number" min="1" max="500" value="1" /></div>
-      <div class="cs-field"><label for="csPrice">每包售价（MYR）</label><input id="csPrice" type="number" min="0.01" step="0.01" value="19.90" /></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="cs-btn primary" id="csStartCamera">启动摄像头</button><button class="cs-btn" id="csStopCamera" disabled>停止扫描</button><button class="cs-btn" id="csDemoScan">演示扫描（测试）</button></div>
-      <div id="csScanStatus" class="cs-status" role="status" aria-live="polite">尚未扫描。演示扫描会明确标记为 DEMO，不会被当作真伪验证。</div>
-      <button class="cs-btn primary" id="csRegister" style="width:100%;margin-top:10px">登记密封库存</button>
-    </div>
-    <div class="cs-panel">
-      <h3 style="margin:0 0 6px">2. 交易模式</h3><div class="cs-muted">两种模式共享库存，但状态和交付记录分开处理。</div>
-      <div class="cs-tabs"><button class="cs-btn" id="csModeSealed" aria-pressed="true">整包密封销售</button><button class="cs-btn" id="csModeOpen" aria-pressed="false">卖家开包抽卡</button></div>
-      <div id="csSealedInfo"><div class="cs-badge">模式 A · SEALED PACK</div><p class="cs-muted">买家购买完整原厂密封卡包；卖家出货前核对库存编号。此处只创建本地演示订单，不会收款或联系物流。</p></div>
-      <div id="csOpenInfo" class="cs-hidden"><div class="cs-badge">模式 B · OPENING RECORD</div><p class="cs-muted">随机抽卡暂不开放真实付费抽取。可测试“开始开包”记录；系统会把密封库存改为开包处理中，保存时间和订单号，但不会生成假中奖结果。</p></div>
-      <div class="cs-field"><label for="csInventorySelect">选择一包库存</label><select id="csInventorySelect"><option value="">请先登记密封库存</option></select></div>
-      <div class="cs-field"><label for="csBuyer">测试买家名称</label><input id="csBuyer" placeholder="例如 DemoBuyer" maxlength="60" /></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="cs-btn primary" id="csCreateOrder">创建演示订单</button><button class="cs-btn" id="csStartOpening">开始开包记录</button><button class="cs-btn" id="csFinishOpening" disabled>完成开包记录</button></div>
-      <div id="csOrderStatus" class="cs-status" role="status" aria-live="polite">未创建订单。</div>
-      <div class="cs-notice" style="margin-top:12px">真实付款、自动平台手续费、卖家订阅扣款、服务器时间戳和跨设备库存尚未接通。不要根据此原型转账。</div>
-    </div>
-  </div>
-  <div class="cs-panel" style="margin-top:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h3 style="margin:0">3. 库存和审计记录</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="cs-btn" id="csExport">导出 CSV</button><button class="cs-btn" id="csReset">重置本地测试数据</button></div></div>
-    <div class="cs-tablewrap" style="margin-top:10px"><table class="cs-table"><thead><tr><th>库存 ID</th><th>产品 / 编号</th><th>卖家</th><th>价格</th><th>状态</th><th>扫描时间</th><th>操作</th></tr></thead><tbody id="csInventoryBody"><tr><td colspan="7" class="cs-muted">还没有登记库存。</td></tr></tbody></table></div>
-    <h3 style="margin:18px 0 6px">操作记录</h3><div class="cs-tablewrap"><table class="cs-table"><thead><tr><th>时间</th><th>事件</th><th>参考编号</th><th>详情</th></tr></thead><tbody id="csAuditBody"><tr><td colspan="4" class="cs-muted">暂无记录。</td></tr></tbody></table></div>
-  </div>
-</section>
-
-<h2>📊 Seller Dashboard</h2>
-<section class="dash">
-<div class="stats">
-<div class="stat"><div class="muted">Active Listings</div><strong>—</strong></div>
-<div class="stat"><div class="muted">Sold</div><strong>—</strong></div>
-<div class="stat"><div class="muted">Pending Shipment</div><strong>—</strong></div>
-<div class="stat"><div class="muted">Revenue</div><strong>—</strong></div>
-</div>
-<div class="wallet" style="margin:12px 0"><div class="muted">Seller Settlement Balance</div><div class="balance">Not connected</div><span class="status">No real seller funds or payout balance in this preview</span></div>
-<div class="wallet" style="margin:12px 0"><b>Recent Orders</b><p class="muted">Sign in to see your own orders. Nothing is listed here unless it belongs to your account.</p></div>
-</section>
-<h2>👤 Account</h2>
-<section class="auth" id="ptxUnifiedAccount">
-<div class="authbox" id="ptxSignedOutCard">
-<div class="profile"><div class="avatar">🎴</div><div><b>Trixovel</b><div class="muted">Global Collector Account</div></div></div>
-<p class="muted" style="margin:12px 0">Use the secure account window for both sign in and registration.</p>
-<button class="btn" onclick="ptxOpenAuth('login')" style="width:100%">Sign In</button>
-<button class="btn" onclick="ptxOpenAuth('register')" style="width:100%;margin-top:10px">Create Account</button>
-</div>
-<div class="authbox" id="ptxSignedInCard" style="display:none">
-<div class="profile"><div class="avatar">👤</div><div><b data-ptx-user-name="">Member</b><div class="muted">Signed in account</div></div></div>
-<div class="ptx-card" style="margin-top:12px"><div class="muted">Email</div><b data-ptx-user-email="">—</b></div>
-<div style="display:flex;gap:8px;margin-top:12px">
-<button class="btn" onclick="window.ptxIPGo?.('account')" style="flex:1">Account Center</button>
-<button class="btn" onclick="ptxLogout()" style="flex:1">Sign Out</button>
-</div>
-</div>
-<div class="authbox" style="margin-top:12px">
-<b>🏪 Become a Seller</b>
-<p class="muted">List your own eligible collectibles for buyers in supported countries. Sellers are responsible for accurate listings and fulfilment.</p>
-<div class="sellersteps">
-<div class="step"><b>1. Verify your account</b><span class="muted">Email and required identity/business checks.</span></div>
-<div class="step"><b>2. Create your seller profile</b><span class="muted">Set display name, country and shipping origin.</span></div>
-<div class="step"><b>3. Scan and register inventory</b><span class="muted">Photo uploads are disabled for verification. Use live scanning and register accurate product details.</span></div>
-<div class="step"><b>4. Review</b><span class="muted">Listing is reviewed before it becomes visible to buyers.</span></div>
-</div>
-<button class="btn" onclick="ptxOpenAuth('register')" style="width:100%;margin-top:14px">Create account to apply</button>
-</div>
-</section>
-<h2>🤝 Agent / Affiliate Program</h2>
-<section class="agent">
-<div class="agenthero">
-<div>🌎 GROW THE POKÉMON COMMUNITY</div>
-<h2>Become an Official Agent</h2>
-<p class="muted">Invite genuine collectors and sellers. The program is not active yet: no commission is earned, tracked or payable until payments and payouts are live.</p>
-<button class="btn" onclick="window.ptxIPGo?.('apply')">Apply Now</button>
-</div>
-<div class="agentbox">
-<b>💰 How commission will work</b>
-<div class="agentsteps">
-<div class="agentstep"><b>1. Apply</b><span class="agentnote">Submit your agent application and complete any required verification.</span></div>
-<div class="agentstep"><b>2. Share</b><span class="agentnote">Share your official referral link or code with genuine customers.</span></div>
-<div class="agentstep"><b>3. Customer trades</b><span class="agentnote">Commission is generated only from eligible completed marketplace transactions, according to the published program terms.</span></div>
-<div class="agentstep"><b>4. Settlement</b><span class="agentnote">Approved commission becomes available according to the program's settlement schedule.</span></div>
-</div>
-</div>
-<div class="agentbox" id="agentApply">
-<b>📝 Agent application</b>
-<p class="agentnote">Applications are collected through the Trixovel application form and reviewed by hand. Choose "Agent" when you fill it in.</p>
-<button class="btn" onclick="window.ptxIPGo?.('apply')" style="width:100%;margin-top:10px">Open application form</button>
-</div>
-<div class="agentbox">
-<b>🛡️ Agent Program Rules</b>
-<p class="agentnote">No self-referrals, fake accounts, wash trading, spam, misleading income claims, or off-platform payment arrangements. Commission can be withheld or reversed for refunded, disputed, fraudulent or otherwise ineligible transactions.</p>
-</div>
-</section>
-<h2>📈 Agent Dashboard</h2>
-<section class="agentdash">
-<div class="agentbox"><b>Not available yet</b>
-<p class="agentnote">Your referral link, qualified transactions, commission balance and payout history will appear here once the Agent Program is switched on server-side. Until then no referral is tracked, no commission accrues, and nothing is payable.</p>
-</div>
-</section>
-<h2>🚨 Trust &amp; Safety Center</h2>
-<section class="report">
-<div class="reportcard">
-<b>Report a User / Listing</b>
-<p class="muted">Report suspected scams, prohibited contact sharing, counterfeit cards, misleading listings or off-platform payment requests.</p>
-<label class="muted">Report type</label>
-<select class="reportselect" id="reportType">
-<option>Off-platform contact</option>
-<option>Suspected scam</option>
-<option>Counterfeit / authenticity concern</option>
-<option>Misleading listing</option>
-<option>Off-platform payment request</option>
-<option>Harassment</option>
-</select>
-<label class="muted">Details</label>
-<textarea id="reportDetails" placeholder="Describe what happened..."></textarea>
-<button class="btn" onclick="submitReport()" style="width:100%;margin-top:10px">Submit Report</button>
-</div>
-<div class="reportcard">
-<b>🔎 Automated Risk Signals</b>
-<div class="case"><div class="casehead"><span>Contact information detected</span><span class="danger">High</span></div><span class="muted">WhatsApp / Telegram / phone / external links</span></div>
-<div class="case"><div class="casehead"><span>External payment request</span><span class="danger">High</span></div><span class="muted">User asks for payment outside approved checkout</span></div>
-<div class="case"><div class="casehead"><span>Listing mismatch</span><span class="warn">Review</span></div><span class="muted">Description, photos or condition may require manual review</span></div>
-</div>
-<div class="reportcard">
-<b>⚖️ Dispute Process</b>
-<div class="case"><div class="casehead"><span>1. Report</span><span class="safe2">Open</span></div><span class="muted">Buyer or seller submits evidence.</span></div>
-<div class="case"><div class="casehead"><span>2. Review</span><span class="safe2">Platform</span></div><span class="muted">Support reviews messages, payment and shipping records.</span></div>
-<div class="case"><div class="casehead"><span>3. Resolution</span><span class="safe2">Decision</span></div><span class="muted">Trixovel may help coordinate disputes. Seller obligations, mandatory consumer rights, provider chargebacks and any applicable refund duties still apply; Trixovel does not promise that refunds are never available.</span></div>
-</div>
-</section>
-<h2>🛡️ Marketplace Safety Rules</h2>
-<section class="safety">
-<div class="rule"><b>🚫 No private contact details</b><span class="muted">Users may not post or exchange WhatsApp numbers, Telegram usernames/links, phone numbers, personal emails, QR codes or other off-platform contact details to arrange transactions.</span></div>
-<div class="rule"><b>💬 Keep transactions on-platform</b><span class="muted">Keep offers, order communication, payment status and dispute evidence in Trixovel. Actual payment processing will only be enabled through a vetted provider.</span></div>
-<div class="rule"><b>💰 No off-platform payment</b><span class="muted">Do not ask another user to send USD or money directly to a personal wallet/account outside an approved checkout flow.</span></div>
-<div class="rule"><b>🛡️ Why?</b><span class="muted">Keeping communication and payment on-platform helps protect buyers and sellers and gives the platform an auditable transaction record.</span></div>
-<div class="chatbox">
-<b>Off-platform contact filter — active on this site</b>
-<p class="muted">Type a message the way a scammer would write it. Trixovel strips contact and payment details before delivery — try it here first.</p>
-<textarea id="moderationText" placeholder="Try: 'Add me on WhatsApp 012-345 6789 and pay my Maybank account directly…'"></textarea>
-<button class="btn" onclick="moderateMessage()" style="width:100%;margin-top:10px">Run the filter</button>
-<div class="modresult" id="modResult"></div>
-<p class="muted" style="margin-top:10px;font-size:11px">Automatic removal applies to messages, listing descriptions and seller applications. Sellers who repeatedly try to move a deal off-platform lose listing access.</p>
-</div>
-</section>
-<h2>📦 Orders &amp; Shipping <small style="font-size:12px;color:#f0c66a">Sample UI · not live data</small></h2>
-<section class="orders">
-<div class="ordercard">
-<div class="ordertop"><div><div class="muted">SAMPLE ORDER · no real buyer or payment</div><b>Pikachu SAR</b><div class="muted">38.00 USD + 4.99 USD shipping</div></div><span class="status">Shipped</span></div>
-<div class="timeline">
-<div class="tl"><span class="dot"></span><div><b>Sample status: pending</b><span class="muted">Illustrative UI only · not a real payment</span></div></div>
-<div class="tl"><span class="dot"></span><div><b>Seller shipped</b><span class="muted">19 Sep · 14:40</span><div class="tracking">Tracking: DEMO123456 · DHL</div></div></div>
-<div class="tl"><span class="dot off"></span><div><b>Delivered</b><span class="muted">Waiting for delivery</span></div></div>
-<div class="tl"><span class="dot off"></span><div><b>Settlement released</b><span class="muted">After eligible order completion</span></div></div>
-</div>
-<div class="orderactions"><button onclick="alert('Demo tracking page')">Track Package</button><button onclick="alert('Demo support page')">Contact Support</button></div>
-</div>
-<div class="ordercard">
-<div class="ordertop"><div><div class="muted">SAMPLE ORDER · no real buyer or payment</div><b>Eevee Promo</b><div class="muted">12.50 USD</div></div><span class="status">Delivered</span></div>
-<div class="timeline">
-<div class="tl"><span class="dot"></span><div><b>Delivered</b><span class="muted">18 Sep · 16:22</span></div></div>
-<div class="tl"><span class="dot"></span><div><b>Buyer confirmation window</b><span class="muted">Active</span></div></div>
-</div>
-<div class="orderactions"><button onclick="alert('Demo order confirmation')">Confirm Received</button><button onclick="alert('Demo dispute page')">Report Issue</button></div>
-</div>
-<div class="detailbox">
-<b>🏪 Seller Shipping Center</b>
-<div class="muted" style="margin:6px 0 12px">Sample UI — no real orders are waiting for shipment.</div>
-<div class="adminrow"><span>Sample · Charizard SIR</span><button class="smallbtn" onclick="alert('Demo: add tracking')">Add Tracking</button></div>
-<div class="adminrow"><span>Sample · Mew SAR</span><button class="smallbtn" onclick="alert('Demo: add tracking')">Add Tracking</button></div>
-<div class="adminrow"><span>Sample · Pikachu AR</span><button class="smallbtn" onclick="alert('Demo: add tracking')">Add Tracking</button></div>
-</div>
-</section>
-<h2>🛡️ Seller Protection</h2>
-<div class="wallet">
-<div>🔎 Card review</div>
-<div class="muted">Listings can be reviewed for authenticity, condition and photo quality.</div><br/>
-<div>📦 Buyer protection</div>
-<div class="muted">Any delayed settlement or buyer-protection hold will only be offered if the selected payment provider and applicable law permit it. No escrow or held funds are active in this preview.</div>
-</div>
-<section class="checkout" id="checkout">
-<div class="muted">SECURE DEMO CHECKOUT</div>
-<h2 id="checkoutName" style="margin:5px 0">Pikachu SAR</h2>
-<div class="row"><span>Card</span><b id="checkoutPrice">38.00 USD</b></div>
-<label class="muted">Shipping country</label>
-<select><option>Malaysia</option><option>Thailand</option><option>Singapore</option><option>Japan</option><option>United States</option></select>
-<label class="muted">Shipping address</label>
-<input placeholder="Demo address"/>
-<div class="row"><span>Item</span><b id="itemCost">38.00 USD</b></div>
-<div class="row"><span>Shipping</span><b>4.99 USD</b></div>
-<div class="total" id="checkoutTotal">42.99 USD</div>
-<div class="notice">PREVIEW ONLY. No payment is collected. Local payment methods, payment verification, shipping integrations and seller payouts are not connected. Do not transfer money based on this preview. Refund/dispute handling must follow the final seller terms, payment-provider rules and applicable law.</div>
-<button class="btn" onclick="placeOrder()" style="width:100%;margin-top:12px">Confirm Demo Order</button>
-</section>
-<h2>👛 Wallet</h2>
-<div class="wallet"><div class="muted">Available Balance</div><div class="balance" id="ptxLiveBalance">— USD</div><button class="btn" onclick="document.getElementById('ptxDepositPanel')?.scrollIntoView({behavior:'smooth'})">＋ Deposit</button><div class="muted" id="ptxBalanceNote" style="margin-top:8px">Demo ledger · withdrawals are not enabled.</div></div>
-<h2>🎴 My Collection</h2>
-<div class="grid"><div class="card"><div class="art">⚡</div><div class="tag">DEMO CARD</div><div class="price">38.00 USD</div></div><div class="card"><div class="art">✨</div><div class="tag">AR DEMO</div><div class="price">12.50 USD</div></div></div>
-</div>
 <!-- Trixovel Privacy, Marketplace Terms & Fees Center (preview policy draft) -->
 <style>
 #cardoraPolicyLaunch{position:fixed;right:var(--ca-dock-r);bottom:calc(var(--ca-dock-b) + var(--ca-dock-step));z-index:9998;border:1px solid #6d55a0;border-radius:999px;background:#25163e;color:#fff;padding:10px 14px;font:700 12px system-ui;box-shadow:0 8px 26px #0006;cursor:pointer}
@@ -653,41 +314,19 @@ function cardoraClosePolicy(){const el=document.getElementById('cardoraPolicyBac
 document.addEventListener('keydown',function(e){if(e.key==='Escape')cardoraClosePolicy()});
 </script>
 
-<div class="modal" id="modal"><div class="modalbox"><div class="muted" id="packname">RARE TREASURE</div><div class="pack" id="pack">🎴</div><h2 style="margin:8px 0">Ready to Open?</h2><p class="muted">Demo mode. No real payment or random draw is performed.</p><button class="btn" onclick="closePack()">Back to Shop</button></div></div>
 <script>
-function openPack(name){document.getElementById('packname').textContent=name.toUpperCase();document.getElementById('modal').style.display='flex'}
-function closePack(){document.getElementById('modal').style.display='none'}
 
-function submitListing(){
-  const name=document.getElementById('sellName').value.trim();
-  const price=parseFloat(document.getElementById('sellPrice').value);
-  if(!name || !price || price<=0){alert('Please enter the card name and a valid USD price.');return}
-  alert('Demo listing submitted for review: '+name+' — '+price.toFixed(2)+' USD');
-}
 
-function filterMarket(){
- const q=document.getElementById('searchCard').value.toLowerCase();
- document.querySelectorAll('#marketList .marketcard').forEach(x=>x.style.display=x.dataset.name.includes(q)?'flex':'none');
-}
-function buyCard(name,price){
- alert('Demo checkout: '+name+' — '+price.toFixed(2)+' USD. No real payment is connected.');
-}
 
-function showCheckout(name,price){
- document.getElementById('checkoutName').textContent=name;
- document.getElementById('checkoutPrice').textContent=price.toFixed(2)+' USD';
- document.getElementById('itemCost').textContent=price.toFixed(2)+' USD';
- document.getElementById('checkoutTotal').textContent=(price+4.99).toFixed(2)+' USD';
- document.getElementById('checkout').style.display='block';
- document.getElementById('checkout').scrollIntoView({behavior:'smooth'});
-}
-function placeOrder(){alert('Demo order created. No real payment was processed.');}
 
-function authTab(tab,btn){
- document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
- document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
- document.getElementById('registerForm').style.display=tab==='register'?'block':'none';
-}
+
+
+
+
+
+
+
+
 
 const PTX_SUPABASE_URL='https://crqqockaetgacddxkqpb.supabase.co';
 const PTX_SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNycXFvY2thZXRnYWNkZHhrcXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4NDQwOTQsImV4cCI6MjEwNTQyMDA5NH0.2OlGiOeE8vcFwWgLt5tO8BVZfi1V-YO-aeywFdi5oEs';
@@ -827,20 +466,9 @@ async function ptxCurrentUser(){
   return user;
 }
 
-function ptxDepositMsg(msg,error=false){
-  const el=document.getElementById('ptxDepositMessage'); if(!el)return;
-  el.textContent=msg; el.style.color=error?'#ff9a9a':'#8ee7b4';
-}
 
-async function ptxSubmitDeposit(){
-  ptxDepositMsg('Demo mode: real deposits, TXIDs and payment screenshots are disabled on this public build.', true);
-  const proof=document.getElementById('ptxDepositProof');
-  const txid=document.getElementById('ptxDepositTxid');
-  const amount=document.getElementById('ptxDepositAmount');
-  if(proof) proof.value='';
-  if(txid) txid.value='';
-  if(amount) amount.value='';
-}
+
+
 
 let ptxWalletLoadInFlight=false;
 async function ptxLoadWallet(){
@@ -1062,67 +690,23 @@ async function ptxInitBackend(){
 }
 ptxInitBackend();
 
-function demoLogin(){ptxOpenAuth('login');}
-function demoRegister(){ptxOpenAuth('register');}
 
-function apiDemo(endpoint){
- const out=document.getElementById('apiResult');
- const samples={
- '/marketplace/listings':{status:200,data:{items:[{id:'L-1001',card:'Pikachu SAR',price_usd:38,status:'active'}]}},
- '/seller/listings':{status:201,data:{listing_id:'L-1009',status:'pending_review'}},
- '/orders':{status:201,data:{order_id:'TX-18493',status:'awaiting_payment'}},
- '/orders/TX-18492':{status:200,data:{order_id:'TX-18492',status:'shipped',tracking:'DEMO123456'}}
- };
- out.textContent=JSON.stringify(samples[endpoint],null,2);
-}
+
+
+
 
 let currentFilter='all';
-function catalogFilter(){renderCatalog()}
-function setFilter(f){currentFilter=f;renderCatalog()}
-function sortCatalog(mode){
- const grid=document.getElementById('catalogGrid'), cards=[...grid.children];
- cards.sort((a,b)=>mode==='low'?+a.dataset.price-+b.dataset.price:mode==='high'?+b.dataset.price-+a.dataset.price:0);
- cards.forEach(c=>grid.appendChild(c)); renderCatalog();
-}
-function renderCatalog(){
- const q=(document.getElementById('catalogSearch').value||'').toLowerCase();
- let shown=0;
- document.querySelectorAll('#catalogGrid .catcard').forEach(c=>{
-   const matchText=c.dataset.search.includes(q);
-   const matchFilter=currentFilter==='all'||c.dataset.rarity===currentFilter||(currentFilter==='Under10'&&+c.dataset.price<10);
-   c.style.display=matchText&&matchFilter?'block':'none'; if(matchText&&matchFilter)shown++;
- });
- document.getElementById('resultCount').textContent=shown+' listings';
- document.getElementById('catalogEmpty').style.display=shown?'none':'block';
-}
 
-function filterInventory(){
- const q=(document.getElementById('invSearch').value||'').toLowerCase();
- document.querySelectorAll('#invTable tbody tr').forEach(r=>r.style.display=r.dataset.name.includes(q)?'table-row':'none');
-}
-function editListing(name){alert('Demo edit page: '+name+'\
-You would edit photos, price, condition and shipping settings here.');}
-function toggleListing(btn){
- const row=btn.closest('tr'), status=row.children[2], now=status.textContent.trim();
- if(now==='Live'){status.textContent='Paused';status.className='off';btn.textContent='Resume'}
- else if(now==='Paused'){status.textContent='Live';status.className='live';btn.textContent='Pause'}
-}
 
-function calcSeller(){
- const p=parseFloat(document.getElementById('editPrice').value)||0, fee=p*.05, net=p-fee;
- document.getElementById('calcPrice').textContent=p.toFixed(2)+' USD';
- document.getElementById('calcFee').textContent='-'+fee.toFixed(2)+' USD';
- document.getElementById('calcNet').textContent=net.toFixed(2)+' USD';
-}
-function saveListing(){
- const nameEl=document.getElementById('editName'), priceEl=document.getElementById('editPrice');
- const name=(nameEl&&nameEl.value||'').trim(), price=parseFloat((priceEl&&priceEl.value)||'0')||0;
- if(!name||price<=0){alert('Please enter a card name and valid price.');return}
- const desc=document.getElementById('editDesc');
- const gate=cardoraGateText(desc&&desc.value,'listing description');
- if(!gate.ok)return;
- alert('Saved locally for review — listings are not published yet. Send a seller application to open a seller account.');
-}
+
+
+
+
+
+
+
+
+
 
 window.cardoraScanContact=function(text){
  const t=String(text||'');
@@ -1196,41 +780,16 @@ window.cardoraScanVisibleFields=function(root){
  });
 }
 
-function moderateMessage(){
- const box=document.getElementById('moderationText'), result=document.getElementById('modResult');
- if(!box||!result)return;
- const r=window.cardoraScanContact(box.value);
- result.style.display='block';
- if(r.blocked){
-  result.className='modresult blocked';
-  result.innerHTML='🚫 Blocked by the off-platform contact filter.<br>This message contains '+r.hits.map(function(h){return h.label}).join(', ')+'.<br>What Trixovel shows the other user instead: <b>'+cardoraEsc(r.masked)+'</b><br>Never arrange payment outside Trixovel. There is no order record, no shipping proof and no refund path once money leaves the platform.';
- }else{
-  result.className='modresult safe';
-  result.innerHTML='✓ No off-platform contact details found.<br>Trixovel removes phone numbers, emails, messaging handles, links, bank accounts and QR codes before a message is delivered. The filter also runs on listing descriptions and seller applications.';
- }
-}
+
 
 function cardoraEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-function submitReport(){
- const type=document.getElementById('reportType').value;
- const detail=document.getElementById('reportDetails').value.trim();
- if(!detail){alert('Please provide a short description.');return}
- alert('Demo report submitted: '+type+'\
-Case ID: SAFE-DEMO-001');
-}
 
 
-function copyReferral(){
- const input=document.querySelector('.agentbox input[readonly]');
- if(navigator.clipboard){navigator.clipboard.writeText(input.value).then(()=>alert('Link copied. Referral tracking is not switched on yet, so this link does not earn commission.')).catch(()=>alert('Copy the link yourself — referral tracking is not switched on yet.'));}else alert('Copy the link yourself — referral tracking is not switched on yet.');
-}
 
-function submitAgent(){
- const name=document.getElementById('agentName').value.trim();
- if(!name){alert('Please enter a display name.');return}
- alert('Agent applications are not being accepted yet. The Agent Program opens after seller listings go live, so nothing was submitted.');
-}
+
+
+
 </script>
 <style>
 .ptx-panel{background:linear-gradient(145deg,#171126,#0d0a18);border:1px solid #3b2b5e;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 8px 28px rgba(0,0,0,.22)}
@@ -4122,54 +3681,7 @@ Two honest limits: this is a preview site, so no payment is live, and I cannot s
 </script>
 
 
-<script>
-(function(){
- const STORE='cardora_sealed_prototype_v3';
- let state={inventory:[],audit:[],orders:[],mode:'sealed',activeOrder:null,stream:null,scanTimer:null};
- const $=id=>document.getElementById(id);
- const now=()=>new Date().toISOString();
- const localTime=v=>{try{return new Date(v).toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return v||'—'}};
- const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- function save(){try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){setStatus('本地保存失败：浏览器可能禁止本地存储。',true)}}
- function load(){try{const x=JSON.parse(localStorage.getItem(STORE)||'null');if(x&&Array.isArray(x.inventory)&&Array.isArray(x.audit))state={...state,...x,stream:null,scanTimer:null};}catch(e){}}
- function audit(event,ref,detail){state.audit.unshift({time:now(),event,ref,detail});if(state.audit.length>250)state.audit.length=250;save();render();}
- function setStatus(msg,err=false){$('csScanStatus').textContent=msg;$('csScanStatus').style.color=err?'#ffaaaa':'#bca7d5'}
- function setOrderStatus(msg,err=false){$('csOrderStatus').textContent=msg;$('csOrderStatus').style.color=err?'#ffaaaa':'#bca7d5'}
- function render(){
-   const available=state.inventory.filter(x=>x.status==='SEALED_AVAILABLE').length;
-   const reserved=state.inventory.filter(x=>['RESERVED','OPENING'].includes(x.status)).length;
-   $('csAvailable').textContent=available;$('csReserved').textContent=reserved;$('csOpened').textContent=state.inventory.filter(x=>x.status==='OPENED').length;
-   const sel=$('csInventorySelect'),prev=sel.value;sel.innerHTML='<option value="">选择可用密封库存</option>'+state.inventory.filter(x=>['SEALED_AVAILABLE','RESERVED','OPENING'].includes(x.status)).map(x=>`<option value="${esc(x.id)}">${esc(x.id)} · ${esc(x.product)} · ${esc(x.status)} · RM${Number(x.price).toFixed(2)}</option>`).join('');if([...sel.options].some(o=>o.value===prev))sel.value=prev;
-   const body=$('csInventoryBody');body.innerHTML=state.inventory.length?state.inventory.slice().reverse().map(x=>`<tr><td><b>${esc(x.id)}</b><br><span class="cs-muted">${esc(x.scanType)}</span></td><td>${esc(x.product)}<br><span class="cs-muted">${esc(x.code||'No code')}</span></td><td>${esc(x.seller)}</td><td>RM${Number(x.price).toFixed(2)}<br><span class="cs-muted">${x.qty} pack(s)</span></td><td>${esc(x.status)}</td><td>${esc(localTime(x.scannedAt))}</td><td><button class="cs-btn" data-release="${esc(x.id)}" ${x.status==='RESERVED'?'':'disabled'}>释放锁定</button> <button class="cs-btn" data-quarantine="${esc(x.id)}" ${['SEALED_AVAILABLE','QUARANTINED'].includes(x.status)?'':'disabled'}>${x.status==='QUARANTINED'?'解除隔离':'隔离'}</button></td></tr>`).join(''):'<tr><td colspan="7" class="cs-muted">还没有登记库存。</td></tr>';
-   $('csAuditBody').innerHTML=state.audit.length?state.audit.slice(0,80).map(a=>`<tr><td>${esc(localTime(a.time))}</td><td>${esc(a.event)}</td><td>${esc(a.ref||'—')}</td><td>${esc(a.detail||'')}</td></tr>`).join(''):'<tr><td colspan="4" class="cs-muted">暂无记录。</td></tr>';
-   $('csStartOpening').disabled=state.mode!=='open'||!state.inventory.some(x=>x.id===sel.value&&x.status==='RESERVED')||!state.activeOrder;
-   $('csFinishOpening').disabled=!state.activeOrder||state.activeOrder.status!=='OPENING';
- }
- function mode(v){state.mode=v;$('csModeSealed').setAttribute('aria-pressed',String(v==='sealed'));$('csModeOpen').setAttribute('aria-pressed',String(v==='open'));$('csSealedInfo').classList.toggle('cs-hidden',v!=='sealed');$('csOpenInfo').classList.toggle('cs-hidden',v!=='open');render();}
- async function stopCamera(){if(state.scanTimer){clearInterval(state.scanTimer);state.scanTimer=null}if(state.stream){state.stream.getTracks().forEach(t=>t.stop());state.stream=null}$('csVideo').srcObject=null;$('csVideo').style.display='none';$('csStartCamera').disabled=false;$('csStopCamera').disabled=true;}
- async function startCamera(){
-   if(!navigator.mediaDevices?.getUserMedia){setStatus('此环境不支持摄像头。请使用 HTTPS/localhost 和较新的浏览器，或用演示扫描测试。',true);return}
-   try{state.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});const v=$('csVideo');v.srcObject=state.stream;v.style.display='block';await v.play();$('csStartCamera').disabled=true;$('csStopCamera').disabled=false;
-     if(!('BarcodeDetector' in window)){setStatus('摄像头已开启，但此浏览器不支持内建条码识别。请停止摄像头后使用兼容扫码库，或点击演示扫描测试流程。');return}
-     let detector;try{detector=new BarcodeDetector({formats:['qr_code','ean_13','ean_8','upc_a','upc_e','code_128']})}catch(e){detector=new BarcodeDetector()}
-     setStatus('摄像头运行中：将包装条码放入镜头。识别成功只表示读到代码，不表示已验证真伪。');state.scanTimer=setInterval(async()=>{try{if(v.readyState<2)return;const codes=await detector.detect(v);if(codes.length&&codes[0].rawValue){$('csCode').value=codes[0].rawValue;setStatus('已读取条码：'+codes[0].rawValue+'。请核对产品信息后手动登记。');await stopCamera();}}catch(e){}},700);
-   }catch(e){await stopCamera();setStatus('无法启动摄像头：'+(e.message||'请检查浏览器权限并确保使用 HTTPS/localhost。'),true)}
- }
- function demoScan(){const code='DEMO-'+Math.random().toString(36).slice(2,8).toUpperCase();$('csCode').value=code;if(!$('csProduct').value.trim())$('csProduct').value='Pokémon Booster Pack (Demo)';setStatus('演示扫描成功：'+code+'。此编号为虚构测试值，不能证明商品真伪。');state.lastScanType='DEMO';}
- function register(){const seller=$('csSeller').value.trim(),product=$('csProduct').value.trim(),code=$('csCode').value.trim(),qty=Number($('csQty').value),price=Number($('csPrice').value);if(!seller||!product||!Number.isInteger(qty)||qty<1||qty>500||!Number.isFinite(price)||price<=0){setStatus('请填写卖家、产品、有效数量和价格。',true);return}if(!code){setStatus('请先实时扫描条码，或点击演示扫描完成测试。',true);return}
-   const scanType=code.startsWith('DEMO-')?'DEMO SCAN':'CAMERA / MANUAL CODE';const batch= 'CP-'+Date.now().toString(36).toUpperCase();const ts=now();for(let i=0;i<qty;i++){const id='CINV-'+Math.random().toString(36).slice(2,8).toUpperCase()+'-'+(i+1);state.inventory.push({id,batch,seller,product,code,price,qty:1,status:'SEALED_AVAILABLE',scannedAt:ts,scanType,verification:'PRODUCT IDENTIFICATION ONLY'});}
-   audit('SEALED_INVENTORY_REGISTERED',batch,`${seller}: ${product}; qty=${qty}; code=${code}; scan=${scanType}; product authenticity not confirmed`);setStatus(`已登记 ${qty} 包库存。状态为 SEALED_AVAILABLE；这不是官方真伪认证。`);$('csCode').value='';$('csQty').value='1';render();}
- function createOrder(){const id=$('csInventorySelect').value,buyer=$('csBuyer').value.trim()||'DemoBuyer';const item=state.inventory.find(x=>x.id===id);if(!item){setOrderStatus('请选择一包库存。',true);return}if(item.status!=='SEALED_AVAILABLE'){setOrderStatus('该库存当前不可下单。',true);return}item.status='RESERVED';const order={id:'CDO-'+Date.now().toString(36).toUpperCase(),inventoryId:item.id,buyer,seller:item.seller,mode:state.mode,status:state.mode==='sealed'?'DEMO_ORDER_RESERVED':'RESERVED_FOR_OPENING',createdAt:now(),price:item.price};state.orders.push(order);state.activeOrder=order;audit(state.mode==='sealed'?'DEMO_SEALED_ORDER_CREATED':'DEMO_RANDOM_DRAW_ORDER_CREATED',order.id,`buyer=${buyer}; inventory=${item.id}; price=RM${item.price.toFixed(2)}; no payment processed`);setOrderStatus(`演示订单 ${order.id} 已创建并锁定库存。没有收款。`);render();}
- function startOpening(){const order=state.activeOrder;if(!order||state.mode!=='open'){setOrderStatus('请切换到卖家开包抽卡模式并创建演示订单。',true);return}const item=state.inventory.find(x=>x.id===order.inventoryId);if(!item||item.status!=='RESERVED'){setOrderStatus('订单库存状态不正确，无法开包。',true);return}item.status='OPENING';order.status='OPENING';order.openingStartedAt=now();audit('OPENING_STARTED',order.id,`inventory=${item.id}; server-side timestamp is not available in local prototype`);setOrderStatus('开包事件已记录。此原型不生成中奖结果；请在现实产品中添加可信开包证据及审核流程。');render();}
- function finishOpening(){const order=state.activeOrder;if(!order||order.status!=='OPENING'){setOrderStatus('没有正在处理的开包订单。',true);return}const item=state.inventory.find(x=>x.id===order.inventoryId);if(!item){setOrderStatus('找不到对应库存。',true);return}item.status='OPENED';order.status='OPENED_PENDING_CARD_RESULTS';order.openedAt=now();audit('OPENING_COMPLETED',order.id,`inventory=${item.id}; result card details not recorded in prototype`);setOrderStatus('已完成开包状态记录。卡片明细、真实支付与发货尚未接通。');render();}
- function exportCSV(){const rows=[['inventory_id','batch_id','seller','product','code','price_myr','status','scanned_at','scan_type','verification']];state.inventory.forEach(x=>rows.push([x.id,x.batch,x.seller,x.product,x.code,x.price,x.status,x.scannedAt,x.scanType,x.verification]));const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='cardora-inventory-demo.csv';a.click();URL.revokeObjectURL(url);}
- function reset(){if(!confirm('只清除本浏览器的 Trixovel 演示库存和审计记录？'))return;stopCamera();state={inventory:[],audit:[],orders:[],mode:'sealed',activeOrder:null,stream:null,scanTimer:null};save();mode('sealed');render();setStatus('本地测试数据已重置。');setOrderStatus('未创建订单。');}
- document.addEventListener('click',e=>{const r=e.target.closest('[data-release]');if(r){const x=state.inventory.find(i=>i.id===r.dataset.release);if(x&&x.status==='RESERVED'){x.status='SEALED_AVAILABLE';audit('RESERVATION_RELEASED',x.id,'Inventory returned to available stock');render()}}const q=e.target.closest('[data-quarantine]');if(q){const x=state.inventory.find(i=>i.id===q.dataset.quarantine);if(x&&['SEALED_AVAILABLE','QUARANTINED'].includes(x.status)){x.status=x.status==='QUARANTINED'?'SEALED_AVAILABLE':'QUARANTINED';audit(x.status==='QUARANTINED'?'INVENTORY_QUARANTINED':'QUARANTINE_RELEASED',x.id,'Manual local prototype action');render()}}});
- $('csStartCamera').addEventListener('click',startCamera);$('csStopCamera').addEventListener('click',stopCamera);$('csDemoScan').addEventListener('click',demoScan);$('csRegister').addEventListener('click',register);$('csModeSealed').addEventListener('click',()=>mode('sealed'));$('csModeOpen').addEventListener('click',()=>mode('open'));$('csCreateOrder').addEventListener('click',createOrder);$('csStartOpening').addEventListener('click',startOpening);$('csFinishOpening').addEventListener('click',finishOpening);$('csExport').addEventListener('click',exportCSV);$('csReset').addEventListener('click',reset);
- load();mode(state.mode||'sealed');render();
- window.cardoraSealedTest={getState:()=>JSON.parse(JSON.stringify(state)),demoScan,register,createOrder,startOpening,finishOpening,reset};
-})();
-</script>
+
 <style id="ptx-auth-layout-fix">
 /* The account router forces every section visible with !important. These rules win
    with higher specificity so the real auth state decides which card is shown. */
