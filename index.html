@@ -609,7 +609,7 @@ window.ptxEsc=function(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp
   <div class="cp-note"><b>No money passes through Trixovel.</b> Payments, wallets, deposits, escrow, refunds and seller payouts are not enabled. If anyone tells you to send money to a “Trixovel” bank account, QR code or e-wallet in order to buy, reserve or verify a card, that is not us — stop and report it from this site.</div>
   <nav><button type="button" onclick="document.getElementById('cpPrivacy').scrollIntoView({behavior:'smooth'})">Privacy</button><button type="button" onclick="document.getElementById('cpMarketplace').scrollIntoView({behavior:'smooth'})">Marketplace Terms</button><button type="button" onclick="document.getElementById('cpFees').scrollIntoView({behavior:'smooth'})">Fees & Revenue</button><button type="button" onclick="document.getElementById('cpSafety').scrollIntoView({behavior:'smooth'})">Payment Safety</button><button type="button" onclick="document.getElementById('cpRights').scrollIntoView({behavior:'smooth'})">Data Requests</button></nav>
   <section id="cpPrivacy"><h3>1. Privacy &amp; personal data (Malaysia PDPA 2010 notice)</h3>
-   <p>We collect only what is needed to run the site: your email address and display name when you create an account, the listings and messages you choose to publish, and standard security logs. Sign-in uses Google or email verification, so Google supplies us with your email address and profile name. Your data is stored with our database host, Supabase, which processes it on our behalf.</p>
+   <p>We collect only what is needed to run the site: your email address and display name when you create an account, the listings and messages you choose to publish, and standard security logs. Sign-in currently uses Google, so Google supplies us with your email address and profile name. Your data is stored with our database host, Supabase, which processes it on our behalf.</p>
    <ul>
     <li><b>We never ask for, and never store,</b> full payment-card numbers, bank login credentials, passwords or one-time passcodes. Do not send those to anyone, including anyone claiming to be “support”.</li>
     <li><b>No advertising or marketing cookies are running today.</b> If we add an ad network or analytics later, this section is updated first and a consent notice is shown.</li>
@@ -1528,7 +1528,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </div>
 <div class="ptx-ai">
 <b>🔎 How Trixovel checks a card before it goes live</b>
-<p class="ptx-muted">Trixovel does not run its own image-matching service, so authenticity rests on evidence you supply: front and back photos of the physical card, a printed card number that is arithmetically possible for its set, and a scan taken with the official Pokémon TCG app on your phone. The three checks below are mandatory.</p>
+<p class="ptx-muted">Trixovel does not run its own image-matching service, so authenticity rests on evidence you supply: front and back photos of the physical card, the printed card number together with the set named on the card, and a scan taken with the official Pokémon TCG app on your phone. The three checks below are mandatory.</p>
 <button class="ptx-btn alt" onclick="document.getElementById('ptxAuthGate').scrollIntoView({behavior:'smooth',block:'center'});window.ptxRunAuthChecks&&ptxRunAuthChecks()">Go to the authenticity checks</button>
 </div>
 <div class="ptx-fields" style="margin-top:14px">
@@ -2793,34 +2793,36 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 </div>
 <div class="ptx-auth-view active" id="ptxAuthLogin">
 <button class="ptx-google-btn" onclick="ptxGoogleAuth()" type="button"><span class="ptx-google-icon">G</span><span>Continue with Google</span></button>
-<div class="ptx-or"><span></span><b>OR</b><span></span></div>
+<div class="ptx-auth-note">Email codes are not available yet: this project cannot deliver verification mail, so Google is the only sign-in method that works today.</div>
+<div class="ptx-auth-note" id="ptxLoginMessage" style="min-height:20px"></div>
+<div data-ca-email-auth="off" style="display:none">
 <label>Email</label>
 <input autocomplete="email" id="ptxModalLoginEmail" placeholder="you@example.com" type="email"/>
 <button class="ptx-auth-main" id="ptxLoginEmailSend" onclick="ptxSendOtp('login')" type="button">Send verification code</button>
-<div class="ptx-auth-note" id="ptxLoginMessage" style="min-height:20px"></div>
 <div id="ptxLoginOtpArea" style="display:none">
 <label>Verification code (6–8 digits)</label>
 <input autocomplete="one-time-code" id="ptxModalLoginOtp" inputmode="numeric" maxlength="8" placeholder="12345678"/>
 <button class="ptx-auth-main" onclick="ptxVerifyOtp('login')" type="button">Verify &amp; Sign in</button>
 </div>
-<div class="ptx-auth-note">No password and no clickable email link required.</div>
+</div>
 <div class="ptx-auth-note">New to Trixovel?</div>
 <button class="ptx-auth-switch" onclick="ptxOpenAuth('register')" type="button">Create account</button>
 </div>
 <div class="ptx-auth-view" id="ptxAuthRegister">
-<div class="ptx-register-subtitle">Create your account with email verification — no password needed.</div>
+<div class="ptx-register-subtitle">Create your account with Google — no password needed.</div>
 <button class="ptx-google-btn" onclick="ptxGoogleAuth()" type="button"><span class="ptx-google-icon">G</span><span>Continue with Google</span></button>
-<div class="ptx-or"><span></span><b>OR</b><span></span></div>
+<div class="ptx-auth-note">Email codes are not available yet: this project cannot deliver verification mail. Sign up with Google instead.</div>
+<div class="ptx-auth-note" id="ptxRegisterMessage" style="min-height:20px"></div>
+<div data-ca-email-auth="off" style="display:none">
 <label>Email</label>
 <input autocomplete="email" id="ptxModalRegisterEmail" placeholder="you@example.com" type="email"/>
 <button class="ptx-auth-main" id="ptxRegisterEmailSend" onclick="ptxSendOtp('register')" type="button">Send verification code</button>
-<div class="ptx-auth-note" id="ptxRegisterMessage" style="min-height:20px"></div>
 <div id="ptxRegisterOtpArea" style="display:none">
 <label>Verification code (6–8 digits)</label>
 <input autocomplete="one-time-code" id="ptxModalRegisterOtp" inputmode="numeric" maxlength="8" placeholder="12345678"/>
 <button class="ptx-auth-main" onclick="ptxVerifyOtp('register')" type="button">Verify &amp; Create account</button>
 </div>
-<div class="ptx-auth-note">We'll email you an 8-digit code. No password and no link required.</div>
+</div>
 <div class="ptx-auth-note">By continuing, you agree to the Terms of Service and Privacy Policy.</div>
 <div class="ptx-auth-note">Already have an account?</div>
 <button class="ptx-auth-switch" onclick="ptxOpenAuth('login')" type="button">Sign in</button>
