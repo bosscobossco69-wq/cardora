@@ -244,6 +244,7 @@ window.ptxJump=function(id){
  const e=document.getElementById(id);
  if(e)e.scrollIntoView({behavior:"smooth",block:"start"});
 };
+window.ptxCopyEmail=function(btn){var e="nkj30733838@gmail.com";var done=function(ok){if(window.ptxToast)ptxToast(ok?"Email copied: "+e:"Copy failed - please select it by hand");if(btn&&ok)btn.textContent="copied";};var fb=function(){try{var t=document.createElement('textarea');t.value=e;t.setAttribute('readonly','');t.style.position='fixed';t.style.top='-1000px';document.body.appendChild(t);t.select();var ok=document.execCommand('copy');t.remove();return ok;}catch(x){return false;}};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(e).then(function(){done(true)},function(){done(fb());});}else{done(fb());}};
 window.ptxToast=function(msg){
  const e=document.getElementById("ptxToast");e.textContent=msg;e.classList.add("show");
  clearTimeout(window.__ptxToast);window.__ptxToast=setTimeout(()=>e.classList.remove("show"),1800);
@@ -1457,7 +1458,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <div>
 <span class="ptx-tag">SAR</span><span class="ptx-tag">Japanese</span><span class="ptx-tag">NM</span>
 <h1>Pikachu ex</h1>
-<p class="ptx-muted">Super Electric Breaker · Card #132/106</p>
+<p class="ptx-muted">Sample card · printed details not verified</p>
 <div class="ptx-price">39.99 USD</div>
 <div class="ptx-line"><b>Seller</b><br/>Sample seller — ratings and order counts are not published before launch</div>
 <div class="ptx-line"><b>Buyer Protection</b><br/><span class="ptx-muted">Payment held according to settlement rules until the order is completed.</span></div>
@@ -1550,7 +1551,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <h3>🛡️ Authenticity gate — required for every listing</h3>
 <div class="ptx-authgate" id="ptxAuthGate">
 <div class="ptx-gatestep"><b>1 · Photos of the physical card</b><span class="ptx-muted">Front and back are both required. A back photo catches reprints and wrong-stock prints, which a front photo alone cannot.</span><span class="ptx-gatestate" id="ptxGatePhotos">not filled</span></div>
-<div class="ptx-gatestep"><b>2 · Printed number must be possible</b><span class="ptx-muted">"012/078" means card 12 of a 78-card set. A number higher than the set size — the well-known "132/106" Pikachu — cannot exist on a genuine Pokémon card and is rejected on entry.</span><span class="ptx-gatestate" id="ptxGateNumber">not checked</span></div>
+<div class="ptx-gatestep"><b>2 · Printed number must be consistent</b><span class="ptx-muted">"012/078" means card 12 of a 78-card set. Genuine sets also print secret rares above the set total, so a number larger than the total is not proof of a fake — arithmetic on its own cannot verify a card. Step 3 is what makes a listing reviewable. <a href="pokemon-card-numbers-explained.html" target="_blank" rel="noopener" style="color:#ffd35a;text-decoration:underline">Why a number alone cannot verify a card →</a></span><span class="ptx-gatestate" id="ptxGateNumber">not checked</span></div>
 <div class="ptx-gatestep"><b>3 · Official Pokémon TCG app scan</b><span class="ptx-muted">Open the official Pokémon TCG app on your phone, tap Scan, point it at the card, and check that the app recognises the same name, set and number you typed. Trixovel cannot see the card, so the app scan is the reference a human reviewer compares your entry against.</span><span class="ptx-gatestate" id="ptxGateScan">not declared</span></div>
 <label class="ptx-gatecheck"><input id="ptxAckScan" type="checkbox"/> I scanned this exact physical card with the official Pokémon TCG app and it recognised the name, set and number I entered.</label>
 <label class="ptx-gatecheck"><input id="ptxAckOwn" type="checkbox"/> Both photos are of this card in my possession, unedited — not a stock photo, a screenshot or another seller's image.</label>
@@ -1589,8 +1590,9 @@ window.ptxParseCardNumber=function(value){
  if(!m)return {state:'format',reason:'“'+s+'” is not a card/total number. Genuine Pokémon cards print the card number followed by the set size, e.g. 012/078.'};
  const n=Number(m[1]),t=Number(m[2]);
  if(t===0)return {state:'format',reason:'The set size reads as zero — copy the number exactly as printed.'};
- if(n>t)return {state:'impossible',n:n,t:t,reason:'“'+n+'/'+t+'” cannot be genuine: card '+n+' of a '+t+'-card set does not exist. This exact pattern is the most common counterfeit tell.'};
- return {state:'ok',n:n,t:t,reason:'Number is arithmetically possible for a '+t+'-card set.'};
+ if(n===0)return {state:'format',reason:'Printed card numbers start at 1 — copy the number exactly as printed.'};
+ if(n>t)return {state:'secret',n:n,t:t,reason:'“'+n+'/'+t+'” is above the '+t+'-card set total. Genuine sets print secret rares this way, so the number alone neither proves nor disproves the card — the app scan in step 3 is what a reviewer compares it against.'};
+ return {state:'ok',n:n,t:t,reason:'Number is within the printed set total.'};
 };
 window.ptxAuthIssues=function(){
  const out=[];
@@ -1600,8 +1602,8 @@ window.ptxAuthIssues=function(){
  cardoraSetGate('ptxGatePhotos',photosOk,photosOk?'front + back added':'front and back both required');
  if(!photosOk)out.push('Upload both a front and a back photo of the physical card.');
  const num=window.ptxParseCardNumber(v('ptxNumber'));
- const numOk=num.state==='ok';
- cardoraSetGate('ptxGateNumber',numOk,numOk?'possible':'rejected');
+ const numOk=num.state==='ok'||num.state==='secret';
+ cardoraSetGate('ptxGateNumber',numOk,num.state==='secret'?'secret rare · scan decides':'possible');
  if(!numOk)out.push(num.reason);
  if(!v('ptxName').trim())out.push('Enter the card name exactly as printed.');
  if(!v('ptxSet').trim())out.push('Enter the set name printed at the bottom of the card.');
@@ -1892,9 +1894,9 @@ window.ptxSendChat=function(){
 </div>
 <div class="ptx-footer">
 <div><b>Trixovel</b>Global collectible card marketplace.<br/>Trixovel does not sell cards and does not process payments — every listing is offered by an independent seller.<br/>Agent Program · Support Center · Trust &amp; Safety · Report an Issue</div>
-<div><b>Marketplace</b>Buy Cards<br/>Sell Cards<br/>Shipping<br/>Order status</div>
+<div><b>Marketplace</b><a href="#market" style="color:inherit;text-decoration:underline">Buy Cards</a><br/><a href="#sell" style="color:inherit;text-decoration:underline">Sell Cards</a><br/>Shipping<br/><a href="#orders" style="color:inherit;text-decoration:underline">Order status</a><br/><a href="how-to-spot-a-fake-pokemon-card.html" style="color:#ffd35a;text-decoration:underline">Spot a fake card</a><br/><a href="pokemon-card-numbers-explained.html" style="color:#ffd35a;text-decoration:underline">Card numbers explained</a></div>
 <div><b>Legal</b><span style="cursor:pointer;text-decoration:underline" onclick="cardoraOpenPolicy()">Privacy Policy</span><br/><span style="cursor:pointer;text-decoration:underline" onclick="cardoraOpenPolicy()">Marketplace Terms</span><br/><span style="cursor:pointer;text-decoration:underline" onclick="cardoraOpenPolicy()">Fees &amp; Commission</span><br/><span style="cursor:pointer;text-decoration:underline" onclick="cardoraOpenPolicy()">Refunds &amp; Disputes</span><br/><span style="cursor:pointer;text-decoration:underline" onclick="cardoraOpenPolicy()">Data Requests</span></div>
-<div><b>Contact</b>Email: <a href="mailto:nkj30733838@gmail.com" style="color:#ffd35a;text-decoration:none">nkj30733838@gmail.com</a><br/>Run by an individual · Malaysia<br/>Not a registered company — and no payments are processed<br/><span style="color:#7d7488">If fees are ever introduced, the payment provider, refund window and seller payout terms are published here first.</span></div>
+<div><b>Contact</b>Email: <a href="mailto:nkj30733838@gmail.com" style="color:#ffd35a;text-decoration:none">nkj30733838@gmail.com</a> <button type="button" onclick="ptxCopyEmail(this)" style="background:#21183a;color:#cbb8e6;border:1px solid #4a3670;border-radius:7px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px">copy</button><br/>Run by an individual · Malaysia<br/>Not a registered company — and no payments are processed<br/><span style="color:#7d7488">If fees are ever introduced, the payment provider, refund window and seller payout terms are published here first.</span></div>
 </div>
 </section>
 <script>
@@ -2307,15 +2309,15 @@ window.ptxQuickFilter=function(v){
 <div class="ptx-card-grid">
 <article class="ptx-realcard">
 <div class="ptx-card-art"><div class="ptx-card-frame"><div class="ptx-card-inner"><div class="ptx-card-name">Pikachu ex</div><div class="ptx-mon">⚡</div><div class="ptx-rarity">SAR</div></div></div></div>
-<div class="ptx-card-body"><h3>Pikachu ex</h3><div class="ptx-meta"><span>Japanese</span><span>NM</span><span>132/106</span></div><div class="ptx-card-price">39.99 USD</div><div class="ptx-sellerline">Sample listing · not a real seller</div><div class="ptx-buyrow"><button class="ptx-btn" onclick="ptxAdd(1)">Add</button><button class="ptx-btn alt" onclick="ptxOpenProduct(1)">Details</button></div></div>
+<div class="ptx-card-body"><h3>Pikachu ex</h3><div class="ptx-meta"><span>Japanese</span><span>NM</span><span>Sample</span></div><div class="ptx-card-price">39.99 USD</div><div class="ptx-sellerline">Sample listing · not a real seller</div><div class="ptx-buyrow"><button class="ptx-btn" onclick="ptxAdd(1)">Add</button><button class="ptx-btn alt" onclick="ptxOpenProduct(1)">Details</button></div></div>
 </article>
 <article class="ptx-realcard">
 <div class="ptx-card-art"><div class="ptx-card-frame"><div class="ptx-card-inner"><div class="ptx-card-name">Umbreon ex</div><div class="ptx-mon">🌙</div><div class="ptx-rarity">SAR</div></div></div></div>
-<div class="ptx-card-body"><h3>Umbreon ex</h3><div class="ptx-meta"><span>Japanese</span><span>NM</span><span>217/187</span></div><div class="ptx-card-price">89.00 USD</div><div class="ptx-sellerline">Sample listing · not a real seller</div><div class="ptx-buyrow"><button class="ptx-btn" onclick="ptxAdd(2)">Add</button><button class="ptx-btn alt" onclick="ptxOpenProduct(2)">Details</button></div></div>
+<div class="ptx-card-body"><h3>Umbreon ex</h3><div class="ptx-meta"><span>Japanese</span><span>NM</span><span>Sample</span></div><div class="ptx-card-price">89.00 USD</div><div class="ptx-sellerline">Sample listing · not a real seller</div><div class="ptx-buyrow"><button class="ptx-btn" onclick="ptxAdd(2)">Add</button><button class="ptx-btn alt" onclick="ptxOpenProduct(2)">Details</button></div></div>
 </article>
 <article class="ptx-realcard">
 <div class="ptx-card-art"><div class="ptx-card-frame"><div class="ptx-card-inner"><div class="ptx-card-name">Charizard ex</div><div class="ptx-mon">🔥</div><div class="ptx-rarity">SIR</div></div></div></div>
-<div class="ptx-card-body"><h3>Charizard ex</h3><div class="ptx-meta"><span>English</span><span>NM</span><span>125/111</span></div><div class="ptx-card-price">54.50 USD</div><div class="ptx-sellerline">Sample listing · not a real seller</div><div class="ptx-buyrow"><button class="ptx-btn" onclick="ptxAdd(3)">Add</button><button class="ptx-btn alt" onclick="ptxOpenProduct(3)">Details</button></div></div>
+<div class="ptx-card-body"><h3>Charizard ex</h3><div class="ptx-meta"><span>English</span><span>NM</span><span>Sample</span></div><div class="ptx-card-price">54.50 USD</div><div class="ptx-sellerline">Sample listing · not a real seller</div><div class="ptx-buyrow"><button class="ptx-btn" onclick="ptxAdd(3)">Add</button><button class="ptx-btn alt" onclick="ptxOpenProduct(3)">Details</button></div></div>
 </article>
 <article class="ptx-realcard">
 <div class="ptx-card-art"><div class="ptx-card-frame"><div class="ptx-card-inner"><div class="ptx-card-name">Eevee</div><div class="ptx-mon">✨</div><div class="ptx-rarity">PROMO</div></div></div></div>
@@ -2354,7 +2356,7 @@ window.ptxQuickFilter=function(v){
 </div>
 <div class="ptx-detail-info">
 <span class="ptx-tag" id="ptxDetailRarity">SAR</span><span class="ptx-tag" id="ptxDetailLang">Japanese</span><span class="ptx-tag">NM</span>
-<h2 id="ptxDetailName">Pikachu ex</h2><div class="ptx-muted" id="ptxDetailSet">Super Electric Breaker · 132/106</div>
+<h2 id="ptxDetailName">Pikachu ex</h2><div class="ptx-muted" id="ptxDetailSet">Super Electric Breaker · printed number not verified</div>
 <div class="ptx-bigprice" id="ptxDetailPrice">39.99 USD</div>
 <div class="ptx-detail-row"><span>Seller</span><b id="ptxDetailSeller">Sample listing</b></div>
 <div class="ptx-detail-row"><span>Rating</span><b>No reviews yet</b></div>
@@ -2384,10 +2386,10 @@ window.ptxQuickFilter=function(v){
 </div></div>
 <script>
 (function(){
-let current={id:1,name:"Pikachu ex",set:"Super Electric Breaker · 132/106",rarity:"SAR",lang:"Japanese",price:39.99,seller:"",icon:"⚡"};
+let current={id:1,name:"Pikachu ex",set:"Super Electric Breaker · not verified",rarity:"SAR",lang:"Japanese",price:39.99,seller:"",icon:"⚡"};
 let back=false;
 window.ptxOpenProduct=function(id){
- const data={1:["Pikachu ex","Super Electric Breaker · 132/106","SAR","Japanese",39.99,"","⚡"],2:["Umbreon ex","Terastal Festival · 217/187","SAR","Japanese",89,"","🌙"],3:["Charizard ex","Obsidian Flames · 125/111","SIR","English",54.5,"","🔥"],4:["Eevee Promo","Scarlet & Violet Promo","Promo","English",12.8,"","✨"]}[id]||null;
+ const data={1:["Pikachu ex","Super Electric Breaker · not verified","SAR","Japanese",39.99,"","⚡"],2:["Umbreon ex","Terastal Festival · not verified","SAR","Japanese",89,"","🌙"],3:["Charizard ex","Obsidian Flames · not verified","SIR","English",54.5,"","🔥"],4:["Eevee Promo","Scarlet & Violet Promo","Promo","English",12.8,"","✨"]}[id]||null;
  if(!data)return;
  current={id,name:data[0],set:data[1],rarity:data[2],lang:data[3],price:data[4],seller:data[5],icon:data[6]};
  document.getElementById("ptxDetailName").textContent=current.name;
@@ -2530,7 +2532,7 @@ window.ptxModalAdd=function(){if(window.ptxAdd)ptxAdd(current.id);ptxToast("Adde
 <section class="ptx-db" id="ptxCardDatabase">
 <div class="ptx-db-head"><div><h2>🔎 Pokémon Card Database</h2><div class="ptx-muted">Search by Pokémon, set, card number or rarity. This is a fixed 12-card reference set used to check listings — it is not a live catalogue and not every card in the world is in it.</div></div><span class="ptx-tag">REFERENCE SET · 12 CARDS</span></div>
 <div class="ptx-db-tools">
-<input id="ptxDbSearch" oninput="ptxDbFilter()" placeholder="Pikachu / 132 / 151 / SAR"/>
+<input id="ptxDbSearch" oninput="ptxDbFilter()" placeholder="Pikachu / 151 / SAR"/>
 <select id="ptxDbSet" onchange="ptxDbFilter()"><option value="">All Sets</option><option>151</option><option>Terastal Festival</option><option>Scarlet &amp; Violet</option><option>Super Electric Breaker</option><option>Obsidian Flames</option></select>
 <select id="ptxDbRarity" onchange="ptxDbFilter()"><option value="">All Rarity</option><option>SAR</option><option>SIR</option><option>AR</option><option>Promo</option></select>
 </div>
@@ -2540,22 +2542,22 @@ window.ptxModalAdd=function(){if(window.ptxAdd)ptxAdd(current.id);ptxToast("Adde
 <script>
 (function(){
 const db=[
-{id:1,name:'Pikachu ex',set:'Super Electric Breaker',no:'132/106',rarity:'SAR',lang:'Japanese',price:39.99,icon:'⚡'},
-{id:2,name:'Umbreon ex',set:'Terastal Festival',no:'217/187',rarity:'SAR',lang:'Japanese',price:89,icon:'🌙'},
-{id:3,name:'Charizard ex',set:'Obsidian Flames',no:'125/111',rarity:'SIR',lang:'English',price:54.5,icon:'🔥'},
-{id:4,name:'Eevee',set:'Scarlet & Violet',no:'Promo 12',rarity:'Promo',lang:'English',price:12.8,icon:'✨'},
-{id:5,name:'Psyduck',set:'151',no:'175/165',rarity:'AR',lang:'Japanese',price:8.9,icon:'💧'},
-{id:6,name:'Mew ex',set:'151',no:'183/165',rarity:'SAR',lang:'Chinese',price:28.6,icon:'💖'},
-{id:7,name:'Gengar ex',set:'Terastal Festival',no:'128/106',rarity:'SIR',lang:'Japanese',price:62,icon:'👻'},
-{id:8,name:'Bulbasaur',set:'151',no:'166/165',rarity:'AR',lang:'Japanese',price:14.5,icon:'🌱'},
-{id:9,name:'Squirtle',set:'151',no:'170/165',rarity:'AR',lang:'Japanese',price:16.2,icon:'🐢'},
-{id:10,name:'Miraidon ex',set:'Scarlet & Violet',no:'244/198',rarity:'SIR',lang:'English',price:31.5,icon:'⚙️'},
-{id:11,name:'Pikachu',set:'Scarlet & Violet',no:'173/165',rarity:'AR',lang:'Japanese',price:21.9,icon:'⚡'},
-{id:12,name:'Greninja ex',set:'Scarlet & Violet',no:'214/167',rarity:'SIR',lang:'English',price:47.8,icon:'🐸'}
+{id:1,name:'Pikachu ex',set:'Super Electric Breaker',no:'',rarity:'SAR',lang:'Japanese',price:null,icon:'⚡'},
+{id:2,name:'Umbreon ex',set:'Terastal Festival',no:'',rarity:'SAR',lang:'Japanese',price:null,icon:'🌙'},
+{id:3,name:'Charizard ex',set:'Obsidian Flames',no:'',rarity:'SIR',lang:'English',price:null,icon:'🔥'},
+{id:4,name:'Eevee',set:'Scarlet & Violet',no:'',rarity:'Promo',lang:'English',price:null,icon:'✨'},
+{id:5,name:'Psyduck',set:'151',no:'',rarity:'AR',lang:'Japanese',price:null,icon:'💧'},
+{id:6,name:'Mew ex',set:'151',no:'',rarity:'SAR',lang:'Chinese',price:null,icon:'💖'},
+{id:7,name:'Gengar ex',set:'Terastal Festival',no:'',rarity:'SIR',lang:'Japanese',price:null,icon:'👻'},
+{id:8,name:'Bulbasaur',set:'151',no:'',rarity:'AR',lang:'Japanese',price:null,icon:'🌱'},
+{id:9,name:'Squirtle',set:'151',no:'',rarity:'AR',lang:'Japanese',price:null,icon:'🐢'},
+{id:10,name:'Miraidon ex',set:'Scarlet & Violet',no:'',rarity:'SIR',lang:'English',price:null,icon:'⚙️'},
+{id:11,name:'Pikachu',set:'Scarlet & Violet',no:'',rarity:'AR',lang:'Japanese',price:null,icon:'⚡'},
+{id:12,name:'Greninja ex',set:'Scarlet & Violet',no:'',rarity:'SIR',lang:'English',price:null,icon:'🐸'}
 ];
-function render(list){const el=document.getElementById('ptxDbResults'); if(!el)return; el.innerHTML=list.length?list.map(p=>`<article class="ptx-db-card" onclick="ptxDbOpen(${p.id})"><div class="ptx-db-art">${p.icon}</div><div class="ptx-db-body"><span class="ptx-db-pill">${p.rarity}</span><span class="ptx-db-pill">${p.lang}</span><div class="ptx-db-no">${p.set} · #${p.no}</div><div class="ptx-db-name">${p.name}</div><div class="ptx-db-price">From ${p.price.toFixed(2)} USD</div></div></article>`).join(''):'<div class="ptx-db-empty">No cards found. Try another Pokémon name, set, number or rarity.</div>';}
+function render(list){const el=document.getElementById('ptxDbResults'); if(!el)return; el.innerHTML=list.length?list.map(p=>`<article class="ptx-db-card" onclick="ptxDbOpen(${p.id})"><div class="ptx-db-art">${p.icon}</div><div class="ptx-db-body"><span class="ptx-db-pill">${p.rarity}</span><span class="ptx-db-pill">${p.lang}</span><div class="ptx-db-no">${p.set}</div><div class="ptx-db-name">${p.name}</div><div class="ptx-db-price">Price feed not connected</div></div></article>`).join(''):'<div class="ptx-db-empty">No cards found. Try another Pokémon name, set, number or rarity.</div>';}
 window.ptxDbFilter=function(){const q=(document.getElementById('ptxDbSearch').value||'').toLowerCase().trim(),set=document.getElementById('ptxDbSet').value,rar=document.getElementById('ptxDbRarity').value;render(db.filter(p=>(!q||`${p.name} ${p.set} ${p.no} ${p.rarity} ${p.lang}`.toLowerCase().includes(q))&&(!set||p.set===set)&&(!rar||p.rarity===rar)));};
-window.ptxDbOpen=function(id){const p=db.find(x=>x.id===id),d=document.getElementById('ptxDbDetail');if(!p||!d)return;d.classList.add('open');d.innerHTML=`<div><b>🎴 ${p.name}</b><div class="ptx-muted">${p.set} · #${p.no} · ${p.lang} · ${p.rarity}</div><b style="display:block;margin-top:5px;color:#f5c542">From ${p.price.toFixed(2)} USD</b></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="ptx-btn" onclick="ptxDbBuy(${p.id})">View & Buy</button><button class="ptx-btn alt" onclick="ptxDbCollect(${p.id})">♡ Save</button></div>`;};
+window.ptxDbOpen=function(id){const p=db.find(x=>x.id===id),d=document.getElementById('ptxDbDetail');if(!p||!d)return;d.classList.add('open');d.innerHTML=`<div><b>🎴 ${p.name}</b><div class="ptx-muted">${p.set} · ${p.lang} · ${p.rarity}</div><b style="display:block;margin-top:5px;color:#f5c542">Price feed not connected</b></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="ptx-btn" onclick="ptxDbBuy(${p.id})">View & Buy</button><button class="ptx-btn alt" onclick="ptxDbCollect(${p.id})">♡ Save</button></div>`;};
 window.ptxDbBuy=function(id){const p=db.find(x=>x.id===id);if(!p)return;ptxToast('Card detail and buying are not connected yet.');};
 window.ptxDbCollect=function(id){const p=db.find(x=>x.id===id);if(p)ptxToast('❤️ '+p.name+' saved to Favourites');};
 render(db);
@@ -2667,7 +2669,7 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 </div>
 <div class="ptx-hub-view active" id="ptxHubMarket">
 <div class="ptx-seller-compare">
-<div class="ptx-compare-head"><div><b>⚡ Pikachu ex SAR</b><small>SV · 132/106 · Near Mint</small></div><span class="ptx-chip">Sample offers</span></div>
+<div class="ptx-compare-head"><div><b>⚡ Pikachu ex SAR</b><small>Sample offer · no verified seller</small></div><span class="ptx-chip">Sample offers</span></div>
 <div class="ptx-offer"><div><b>39.99 USD</b><small>Sample offer · not a real seller</small></div><span>No shipping committed</span><button class="ptx-btn" onclick="ptxHubBuy('Pikachu ex SAR',39.99,'SAR','⚡',1)">Buy</button></div>
 <div class="ptx-offer"><div><b>42.50 USD</b><small>Sample offer · not a real seller</small></div><span>No shipping committed</span><button class="ptx-btn alt" onclick="ptxHubBuy('Pikachu ex SAR',42.5,'SAR','⚡',1)">Buy</button></div>
 <div class="ptx-offer"><div><b>45.00 USD</b><small>Sample offer · not a real seller</small></div><span>No shipping committed</span><button class="ptx-btn alt" onclick="ptxHubBuy('Pikachu ex SAR',45,'SAR','⚡',1)">Buy</button></div>
@@ -3215,11 +3217,11 @@ document.addEventListener("DOMContentLoaded",async()=>{
 <script>
 (function(){
   const owned = [
-    {name:'Pikachu ex',rarity:'SAR',meta:'SV · 132/106 · 39.99 USD',icon:'⚡',price:39.99,id:1},
+    {name:'Pikachu ex',rarity:'SAR',meta:'Sample offer · price not connected',icon:'⚡',price:39.99,id:1},
     {name:'Charizard ex',rarity:'SIR',meta:'SV · 223/197 · 74.50 USD',icon:'🔥',price:74.5,id:3},
     {name:'Mew ex',rarity:'AR',meta:'151 · 183/165 · 22.00 USD',icon:'✨',price:22,id:null},
     {name:'Eevee Promo',rarity:'PROMO',meta:'Promo · 12 · 8.90 USD',icon:'🦊',price:8.9,id:4},
-    {name:'Umbreon ex',rarity:'SAR',meta:'TF · 217/187 · 89.00 USD',icon:'🌙',price:89,id:2}
+    {name:'Umbreon ex',rarity:'SAR',meta:'Sample offer · price not connected',icon:'🌙',price:89,id:2}
   ];
   let purchasedCount=0, purchasedValue=0;
   window.ptxAddPurchasedCard=function(card){
@@ -4116,6 +4118,7 @@ Two honest limits: this is a preview site, so no payment is live, and I cannot s
  window.ptxHubCart=function(){show('cart')};
  window.ptxHubAccount=function(){show('account')};
  window.ptxHubWallet=function(){show('wallet')};
+ window.addEventListener('hashchange',function(){var p=(location.hash||'').replace(/^#/,'');if(/^(home|market|sell|orders|cart|account|apply|collection|support|pools|payments|admin)$/.test(p))show(p);});
  // Keep the global AI launcher available regardless of the selected page.
  const ai=get('ptxAiChat'); if(ai && ai.parentElement!==document.body)document.body.appendChild(ai);
  const launcher=get('ptxAiLauncher'); if(launcher && launcher.parentElement!==document.body)document.body.appendChild(launcher);
