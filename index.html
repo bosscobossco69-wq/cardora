@@ -2631,29 +2631,20 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 </div>
 <div class="ptx-hub-view active" id="ptxHubMarket">
 <div class="ptx-seller-compare">
-<div class="ptx-compare-head"><div><b>⚡ Pikachu ex SAR</b><small>Sample offer · no verified seller</small></div><span class="ptx-chip">Sample offers</span></div>
-<div class="ptx-offer"><div><b>39.99 USD</b><small>Sample offer · not a real seller</small></div><span>No shipping committed</span><button class="ptx-btn" onclick="ptxHubBuy('Pikachu ex SAR',39.99,'SAR','⚡',1)">Buy</button></div>
-<div class="ptx-offer"><div><b>42.50 USD</b><small>Sample offer · not a real seller</small></div><span>No shipping committed</span><button class="ptx-btn alt" onclick="ptxHubBuy('Pikachu ex SAR',42.5,'SAR','⚡',1)">Buy</button></div>
-<div class="ptx-offer"><div><b>45.00 USD</b><small>Sample offer · not a real seller</small></div><span>No shipping committed</span><button class="ptx-btn alt" onclick="ptxHubBuy('Pikachu ex SAR',45,'SAR','⚡',1)">Buy</button></div>
+<div class="ptx-compare-head"><div><b>Seller offers</b><small>Nothing to compare yet</small></div><span class="ptx-chip">Live listings only</span></div>
+<div class="ptx-offer"><div><b>No offers are published</b><small>A price appears here only after a seller is approved and their card passes the authenticity check.</small></div><span>Payments are not connected yet</span></div>
 </div>
-<div class="ptx-mini-grid"><div><b>🛡 Buyer Protection</b><small>Not active yet: no payment provider is connected, so Trixovel holds no funds.</small></div><div><b>🔒 Secure Settlement</b><small>USD demo wallet; production uses a compliant provider.</small></div><div><b>🌎 Global Shipping</b><small>Shipping terms are agreed with each seller once listings go live.</small></div></div>
+<div class="ptx-mini-grid"><div><b>🛡 Buyer Protection</b><small>Not active yet: no payment provider is connected, so Trixovel holds no funds.</small></div><div><b>🔒 Settlement</b><small>No wallet or balance exists today. A licensed payment provider must be connected before any sale can be completed.</small></div><div><b>🌎 Shipping</b><small>Shipping terms are agreed with each seller once listings go live.</small></div></div>
 </div>
 <div class="ptx-hub-view" id="ptxHubPools">
 <div class="ptx-pool-hero">
-<div><span class="ptx-kicker">PHYSICAL COLLECTIBLE POOLS</span><h3>🎴 Random Card Pools</h3><p>Each pool contains real listed inventory. Every draw removes one card from the remaining pool, so the displayed quantities and odds change after each draw.</p></div>
-<span class="ptx-chip">Demo inventory · No cash-out</span>
+<div><span class="ptx-kicker">PHYSICAL COLLECTIBLE POOLS</span><h3>🎴 Random Card Pools</h3><p>A pool would contain real cards already held as listed inventory. Every draw would remove one card from the remaining pool, so quantities and odds change after each draw.</p></div>
+<span class="ptx-chip">Not open yet · No inventory</span>
 </div>
 <div class="ptx-pool-grid" id="ptxPoolGrid"></div>
 <div class="ptx-pool-layout">
 <div class="ptx-pool-panel"><div class="ptx-compare-head"><b>Seller Pool Manager</b><span class="ptx-chip">Admin review required</span></div>
-<div class="ptx-pool-form">
-<input id="ptxPoolName" placeholder="Pool name e.g. Premium Japanese Mix"/>
-<input id="ptxPoolPrice" min="0.01" placeholder="Price per draw" step="0.01" type="number"/>
-<input id="ptxPoolTotal" min="1" placeholder="Total cards" step="1" type="number"/>
-<select id="ptxPoolTier"><option>Premium</option><option>Standard</option><option>Starter</option></select>
-<button class="ptx-btn" onclick="ptxCreatePoolDemo()">＋ Create Pool (Demo)</button>
-</div>
-<div class="ptx-muted" style="margin-top:8px">Seller must provide actual card inventory, tier, quantity, photos and shipping origin before a pool can go live.</div>
+<div class="ptx-muted" style="margin-top:8px">Pool creation is not open yet. A seller must first send us real card inventory, tier, quantity, photos and shipping origin, and the pool only appears here after admin approval.</div>
 </div>
 <div class="ptx-pool-panel"><div class="ptx-compare-head"><b>Pool Rules</b><span class="ptx-chip">Transparent odds</span></div>
 <div class="ptx-rule-list"><div>1. Physical cards only — no cash-equivalent prize.</div><div>2. Remaining quantity and estimated odds are visible.</div><div>3. Each completed draw records pool, card, seller and time.</div><div>4. Refunds follow the original payment method when eligible.</div><div>5. Seller payouts happen through the approved marketplace payment flow.</div></div>
@@ -3191,13 +3182,6 @@ document.addEventListener("DOMContentLoaded",async()=>{
 </style>
 <script>
 (function(){
-  const owned = [
-    {name:'Pikachu ex',rarity:'SAR',meta:'Sample offer · price not connected',icon:'⚡',price:39.99,id:1},
-    {name:'Charizard ex',rarity:'SIR',meta:'SV · 223/197 · 74.50 USD',icon:'🔥',price:74.5,id:3},
-    {name:'Mew ex',rarity:'AR',meta:'151 · 183/165 · 22.00 USD',icon:'✨',price:22,id:null},
-    {name:'Eevee Promo',rarity:'PROMO',meta:'Promo · 12 · 8.90 USD',icon:'🦊',price:8.9,id:4},
-    {name:'Umbreon ex',rarity:'SAR',meta:'Sample offer · price not connected',icon:'🌙',price:89,id:2}
-  ];
   let purchasedCount=0, purchasedValue=0;
   window.ptxAddPurchasedCard=function(card){
     purchasedCount++; purchasedValue += Number(card.price||0);
@@ -3206,11 +3190,8 @@ document.addEventListener("DOMContentLoaded",async()=>{
     el.innerHTML='<span class="ptx-owned-badge">'+(card.rarity||'CARD')+'</span><div class="ptx-owned-art">'+(card.icon||'🎴')+'</div><div class="ptx-owned-name">'+card.name+'</div><div class="ptx-owned-meta">Purchased · '+Number(card.price||0).toFixed(2)+' USD</div>';
     if(card.id) el.onclick=function(){ptxOpenProduct(card.id)}; else el.onclick=function(){ptxToast('Demo: '+card.name+' is now in your collection');};
     binder.prepend(el);
-    const stats=document.querySelectorAll('#ptxMyCollection .ptx-cstat b');
-    if(stats[0]) stats[0].textContent=48+purchasedCount;
-    if(stats[1]) stats[1].textContent=(1286.5+purchasedValue).toFixed(2);
     const live=document.getElementById('ptxCollectionLive');
-    if(live) live.innerHTML='<span>🎉 <b>'+card.name+'</b> has been added to your Collection</span><small>+'+Number(card.price||0).toFixed(2)+' USD estimated value</small>';
+    if(live) live.innerHTML='<span>🎉 <b>'+card.name+'</b> has been added to your Collection</span><small>Saved on this device only</small>';
     if(live) live.style.display='flex';
     ptxToast('🎴 '+card.name+' added to My Collection');
   };
@@ -3367,12 +3348,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
     }catch(e){console.warn('seller summary',e);}
   };
   window.ptxSellerRequestPayout=function(){
-    window.ptxToast?.('Demo: payout is available only after eligible seller settlement and provider verification.');
+    window.ptxToast?.('Payouts are not connected yet: no request was created and no money moved. Seller settlement requires a licensed payment provider.');
   };
 
   window.ptxLoadAccountSummary=async function(){
     const box=document.getElementById('ptxAccountLive'); if(!box)return;
-    try{await ensure();const user=await ptxCurrentUser();const name=user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split('@')[0]||'Member';box.innerHTML=`<div class="ptx-account-card"><div class="ptx-avatar">CA</div><div><b>${esc(name)}</b><small>${esc(user.email||'')} · Signed in</small></div><span class="ptx-chip">Verified Email</span></div>`;}catch(e){box.innerHTML='<div class="ptx-v5-empty">Please sign in to view your account.</div>';}
+    try{await ensure();const user=await ptxCurrentUser();const name=user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split('@')[0]||'Member';const verified=!!(user.confirmed_at||user.email_confirmed_at||user.email_verified);box.innerHTML=`<div class="ptx-account-card"><div class="ptx-avatar">CA</div><div><b>${esc(name)}</b><small>${esc(user.email||'')} · Signed in${verified?' · email confirmed by provider':''}</small></div>${verified?'<span class="ptx-chip">Email verified</span>':'<span class="ptx-chip">Email not verified</span>'}</div>`;}catch(e){box.innerHTML='<div class="ptx-v5-empty">Please sign in to view your account.</div>';}
   };
 
   window.ptxHubRefresh=async function(silent){
@@ -3408,23 +3389,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
 </style>
 <script>
 (function(){
-  const pools=[
-    {id:'POOL-PREMIUM-001',name:'Premium Japanese Mix',seller:'Sample seller',price:19.99,total:100,items:[
-      {tier:'SIR',name:'Umbreon ex Special Illustration Rare',qty:2,icon:'🌙'},
-      {tier:'SAR',name:'Pikachu ex Special Art Rare',qty:8,icon:'⚡'},
-      {tier:'AR',name:'Psyduck Art Rare',qty:20,icon:'💧'},
-      {tier:'SR',name:'Full Art Trainer',qty:30,icon:'✨'},
-      {tier:'R',name:'Rare Holo',qty:40,icon:'⭐'}]},
-    {id:'POOL-STANDARD-001',name:'Collector Starter Pool',seller:'Sample seller',price:8.90,total:50,items:[
-      {tier:'SAR',name:'Special Art Rare',qty:1,icon:'🌟'},
-      {tier:'AR',name:'Art Rare',qty:5,icon:'🎨'},
-      {tier:'SR',name:'Full Art',qty:14,icon:'✨'},
-      {tier:'R',name:'Rare Holo',qty:30,icon:'⭐'}]}
-  ];
+  const pools=[];
   function esc(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
   function remaining(pool){return pool.items.reduce((n,x)=>n+Math.max(0,x.qty),0)}
   function render(){
     const grid=document.getElementById('ptxPoolGrid');if(!grid)return;
+    if(!pools.length){grid.innerHTML='<div class="ptx-pool-empty" style="grid-column:1/-1">No card pools are open. A pool can go live only when a seller has shipped real inventory to us and admin review has approved it, which has not happened yet.</div>';return;}
     grid.innerHTML=pools.map(p=>{const rem=remaining(p);const odds=p.items.map(x=>{const pct=rem?x.qty/rem*100:0;return `<div><b>${esc(x.tier)}</b>${x.qty} left<br>${pct.toFixed(1)}%</div>`}).join('');return `<div class="ptx-pool-card"><div class="ptx-pool-meta"><div><h4>${esc(p.name)}</h4><small>Sample pack · contents are illustrative, not stock</small></div><span class="ptx-pool-price">${p.price.toFixed(2)} USD</span></div><div class="ptx-pool-bar"><span style="width:${Math.max(0,Math.min(100,rem/p.total*100))}%"></span></div><div class="ptx-pool-odds">${odds}</div><button class="ptx-btn" ${rem?'':'disabled'} onclick="ptxDrawPool('${p.id}')">🎴 Draw 1 Card</button></div>`}).join('');
   }
   window.ptxDrawPool=function(id){
@@ -3434,13 +3404,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     const pulls=JSON.parse(localStorage.getItem('ptxDemoPulls')||'[]');pulls.unshift({pool:p.name,tier:chosen.tier,card:chosen.name,time:new Date().toLocaleString()});localStorage.setItem('ptxDemoPulls',JSON.stringify(pulls.slice(0,20)));
     render();renderPulls();window.ptxToast?.(`🎴 You pulled ${chosen.tier}: ${chosen.name}`);
   };
-  window.ptxCreatePoolDemo=function(){
-    const name=document.getElementById('ptxPoolName')?.value.trim();const price=Number(document.getElementById('ptxPoolPrice')?.value);const total=Number(document.getElementById('ptxPoolTotal')?.value);const tier=document.getElementById('ptxPoolTier')?.value;
-    if(!name||!price||!total){window.ptxToast?.('Enter pool name, price and total cards.');return;}
-    pools.push({id:'POOL-DEMO-'+Date.now(),name,seller:'Demo Seller',price,total,items:[{tier: tier==='Premium'?'SAR':'AR',name:'Seller-supplied featured card',qty:Math.max(1,Math.floor(total*.1)),icon:'🎴'},{tier:'SR',name:'Seller-supplied full art',qty:Math.max(1,Math.floor(total*.3)),icon:'✨'},{tier:'R',name:'Seller-supplied rare',qty:Math.max(0,total-Math.max(1,Math.floor(total*.1))-Math.max(1,Math.floor(total*.3))),icon:'⭐'}]});
-    render();window.ptxToast?.('Pool created in demo mode. It is not live until inventory and admin review are completed.');
-  };
-  function renderPulls(){const box=document.getElementById('ptxPoolPulls');if(!box)return;const pulls=JSON.parse(localStorage.getItem('ptxDemoPulls')||'[]');box.innerHTML='<b>My Pulls</b>'+(pulls.length?pulls.map(x=>`<div class="ptx-pull"><span>🎴 <b>${esc(x.tier)}</b> · ${esc(x.card)}<br><small class="ptx-muted">${esc(x.pool)}</small></span><small>${esc(x.time)}</small></div>`).join(''):'<div class="ptx-muted" style="margin-top:8px">No demo pulls yet.</div>');}
+  function renderPulls(){const box=document.getElementById('ptxPoolPulls');if(!box)return;const pulls=JSON.parse(localStorage.getItem('ptxDemoPulls')||'[]');box.innerHTML='<b>My Pulls</b>'+(pulls.length?pulls.map(x=>`<div class="ptx-pull"><span>🎴 <b>${esc(x.tier)}</b> · ${esc(x.card)}<br><small class="ptx-muted">${esc(x.pool)}</small></span><small>${esc(x.time)}</small></div>`).join(''):'<div class="ptx-muted" style="margin-top:8px">No pulls yet.</div>');}
   document.addEventListener('DOMContentLoaded',function(){render();renderPulls();});
 })();
 </script>
