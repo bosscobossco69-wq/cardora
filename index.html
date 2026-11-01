@@ -3739,6 +3739,14 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
 .ptx-app-msg{border-left:2px solid #44345b;padding-left:8px;color:#bdb4c9;line-height:1.5}
 .ptx-app-actions{margin-top:6px}
 .ptx-app-actions select{padding:7px 9px;border-radius:9px;border:1px solid #44345b;background:#0a0710;color:#fff;font:inherit;font-size:12px}
+.ptx-apply-fees{margin-top:14px;border:1px solid #3a2a4f;border-radius:14px;padding:14px;background:#140e22}
+.ptx-apply-fee-head{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:#f5c542;margin-bottom:6px}
+.ptx-apply-fee-body p{margin:0 0 6px;font-size:13px;line-height:1.55;color:#e7e1ef}
+.ptx-apply-fee-note{font-size:12px;color:#a99db9;margin:6px 0 0}
+.ptx-apply-fee-note a{color:#f5c542}
+.ptx-apply-kyc{margin-top:14px;border-left:3px solid #6b4a9e;padding:10px 12px;background:#140e22;border-radius:0 12px 12px 0}
+.ptx-apply-kyc b{font-size:13px;color:#f8f5fb}
+.ptx-apply-kyc p{margin:6px 0 0;font-size:12px;line-height:1.55;color:#a99db9}
 @media(max-width:700px){.ptx-apply-grid{grid-template-columns:1fr}.ptx-apply-steps{grid-template-columns:1fr}}
 </style>
 <script id="ptx-apply-v1">(function(){
@@ -3752,10 +3760,22 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
    +'<p class="ptx-muted">List your cards on Trixovel, or join as an agent and bring buyers and sellers. Every application is reviewed by hand.</p>'
    +'<div class="ptx-apply-steps">'
    +'<div><b>1</b><span>Apply<small><br>Fill in the form</small></span></div>'
-   +'<div><b>2</b><span>Review<small><br>We contact you</small></span></div>'
+   +'<div><b>2</b><span>Review<small><br>Checks, then a person</small></span></div>'
    +'<div><b>3</b><span>List<small><br>Add your cards</small></span></div>'
    +'</div>'
    +'<p class="ptx-apply-note">Card payments and seller payouts are not live yet. Applying now puts your cards in the review queue. Approval happens after the business is activated, so no listing and no payment is promised.</p>'
+   +'</div>'
+   +'<div class="ptx-apply-fees">'
+   +'<div class="ptx-apply-fee-head" id="ptxApplyFeeHead">Fees as a seller</div>'
+   +'<div class="ptx-apply-fee-body" data-role="seller">'
+   +'<p>Current platform commission: <b>0%</b>. Applying costs nothing and there is nothing to pay today, because card payments and payouts are not connected yet.</p>'
+   +'<p>When fees start, the planned seller commission is <b>5%</b> of the sale price, and the first <b>100 listings</b> are planned to be free.</p>'
+   +'</div>'
+   +'<div class="ptx-apply-fee-body" data-role="agent" hidden>'
+   +'<p>Agent applications cost nothing. The planned agent share is <b>25% of the platform commission</b> on each completed sale you introduce — not 25% of the sale price.</p>'
+   +'<p>On a USD 100 sale at the planned 5% commission, that is <b>USD 1.25</b> to the agent, paid only after the sale completes.</p>'
+   +'</div>'
+   +'<p class="ptx-apply-fee-note">These figures are <b>planned, not active</b>. Nothing is charged and nothing is earned until payments are live. <a href="fees.html">Full fee schedule</a></p>'
    +'</div>'
    +'<form id="ptxApplyForm" class="ptx-apply-form" novalidate>'
    +'<div class="ptx-apply-grid">'
@@ -3771,6 +3791,7 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
    +'<label class="wide">Anything else<textarea name="message" rows="3" maxlength="800" placeholder="Optional — tell us how you source cards or who your buyers are."></textarea></label>'
    +'</div>'
    +'<div style="position:absolute;left:-9999px;top:auto" aria-hidden="true"><label>Company<input name="company" tabindex="-1" autocomplete="off"></label></div>'
+   +'<div class="ptx-apply-kyc"><b>What review means here</b><p>This form does not collect MyKad, passport, selfie or bank documents. Review today is a person checking your details against the seller rules — not automated identity verification. Identity checks only begin once a licensed provider and a registered business are in place.</p></div>'
    +'<label class="ptx-apply-check"><input type="checkbox" name="consent"> I agree to be contacted about this application and to Trixovel seller rules.</label>'
    +'<div class="ptx-apply-actions"><button class="ptx-ip-action primary" type="submit">Submit application</button><span id="ptxApplyStatus" class="ptx-muted" role="status"></span></div>'
    +'</form></div>';
@@ -3781,6 +3802,15 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
   const status=root.querySelector('#ptxApplyStatus');
   cardoraGuardField(form.querySelector('textarea[name="message"]'),'application note');
   const say=function(text,cls){if(status){status.textContent=text;status.className=cls||'ptx-muted';}};
+  const roleSel=form.querySelector('select[name="role"]');
+  const feeBodies=root.querySelectorAll('.ptx-apply-fee-body');
+  const feeHead=root.querySelector('#ptxApplyFeeHead');
+  const syncFees=function(){
+   const role=roleSel&&roleSel.value==='agent'?'agent':'seller';
+   feeBodies.forEach(function(b){b.hidden=b.getAttribute('data-role')!==role;});
+   if(feeHead)feeHead.textContent=role==='agent'?'Fees as an agent':'Fees as a seller';
+  };
+  if(roleSel){roleSel.addEventListener('change',syncFees);syncFees();}
   form.addEventListener('submit',async function(e){
    e.preventDefault();
    const fd=new FormData(form);
