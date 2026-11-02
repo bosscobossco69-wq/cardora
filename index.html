@@ -1029,7 +1029,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 .ptx-upload{height:190px;border:1.5px dashed #7656a0;border-radius:15px;background:#171022;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer}
 .ptx-upload:hover{background:#211535}
 .ptx-upload input{display:none}
-.ptx-preview{font-size:55px;margin-bottom:8px}
+.ptx-preview{font-size:55px;margin-bottom:8px;position:relative;display:inline-block}
+.ptx-photoclear{position:absolute;top:-8px;right:-8px;background:#2d1418;color:#ff9fae;border:1px solid #6c2c39;border-radius:99px;font-size:11px;font-weight:800;padding:4px 10px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.ptx-photoclear:hover{background:#4a1f2a;border-color:#ff9fae}
 .ptx-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .ptx-field label{font-size:11px;color:#aaa0bf;display:block;margin-bottom:3px}
 .ptx-field input,.ptx-field select,.ptx-field textarea{width:100%;box-sizing:border-box;background:#0d0915;color:#fff;border:1px solid #4e3b6d;border-radius:10px;padding:10px}
@@ -1055,11 +1057,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <p class="ptx-muted">Upload the card, verify details, set your USD price, then submit for review.</p>
 <div class="ptx-uploadgrid">
 <label class="ptx-upload">
-<input accept="image/*" onchange="ptxPhoto(this,'ptxFront')" type="file"/>
+<input accept="image/*" id="ptxFrontInput" onchange="ptxPhoto(this,'ptxFront')" type="file"/>
 <div class="ptx-preview" id="ptxFront">📷</div><b>Front Photo</b><span class="ptx-muted">Clear, full card · JPG/PNG</span>
 </label>
 <label class="ptx-upload">
-<input accept="image/*" onchange="ptxPhoto(this,'ptxBack')" type="file"/>
+<input accept="image/*" id="ptxBackInput" onchange="ptxPhoto(this,'ptxBack')" type="file"/>
 <div class="ptx-preview" id="ptxBack">📷</div><b>Back Photo</b><span class="ptx-muted">Clear, full card · JPG/PNG</span>
 </label>
 </div>
@@ -1105,13 +1107,31 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script>
 window.ptxPhoto=function(input,target){
  const el=document.getElementById(target);
- if(input.files&&input.files[0]){
-   const url=URL.createObjectURL(input.files[0]);
-   el.innerHTML='<img src="'+url+'" style="max-width:100%;max-height:150px;border-radius:8px;object-fit:contain">';
-   el.dataset.filled='1';
-   el.dataset.file=input.files[0].name||'photo';
-   if(document.querySelector('#ptxGateVerdict.show'))window.ptxRunAuthChecks();
-   else cardoraSetGate('ptxGatePhotos',true,'photo added');
+ if(!(input.files&&input.files[0]))return;
+ if(el.dataset.url)URL.revokeObjectURL(el.dataset.url);
+ const url=URL.createObjectURL(input.files[0]);
+ el.dataset.url=url;
+ el.innerHTML='<img src="'+url+'" style="max-width:100%;max-height:150px;border-radius:8px;object-fit:contain">'
+  +'<button type="button" class="ptx-photoclear" onclick="event.preventDefault();event.stopPropagation();window.ptxPhotoClear(\''+input.id+'\',\''+target+'\')">✕ Remove photo</button>';
+ el.dataset.filled='1';
+ el.dataset.file=input.files[0].name||'photo';
+ if(document.querySelector('#ptxGateVerdict.show'))window.ptxRunAuthChecks();
+ else cardoraSetGate('ptxGatePhotos',true,'photo added');
+};
+window.ptxPhotoClear=function(inputId,target){
+ const input=document.getElementById(inputId);
+ if(input)input.value='';
+ const el=document.getElementById(target);
+ if(!el)return;
+ if(el.dataset.url){URL.revokeObjectURL(el.dataset.url);delete el.dataset.url;}
+ el.innerHTML='📷';
+ delete el.dataset.filled;
+ delete el.dataset.file;
+ if(document.querySelector('#ptxGateVerdict.show'))window.ptxRunAuthChecks();
+ else{
+  const f=document.getElementById('ptxFront'),b=document.getElementById('ptxBack');
+  const both=!!(f&&b&&f.dataset.filled==='1'&&b.dataset.filled==='1');
+  cardoraSetGate('ptxGatePhotos',both,both?'front + back added':'front and back both required');
  }
 };
 function cardoraSetGate(id,ok,label){
