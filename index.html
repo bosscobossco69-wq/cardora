@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<meta content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://crqqockaetgacddxkqpb.supabase.co; frame-src https://accounts.google.com https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" http-equiv="Content-Security-Policy"/>
+<meta content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://crqqockaetgacddxkqpb.supabase.co https://api.tcgdex.net; frame-src https://accounts.google.com https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" http-equiv="Content-Security-Policy"/>
 <script>
 (function(){
   var CANON="cardora-rose.vercel.app";
@@ -1050,6 +1050,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 .ptx-gateverdict{display:none;margin-top:12px;padding:11px 12px;border-radius:12px;background:#20141b;border:1px solid #6d3348;color:#ffd0d8;font-size:12px;line-height:1.6}
 .ptx-gateverdict.show{display:block}.ptx-gateverdict.ok{background:#101f18;border-color:#2b6b4c;color:#c7f5da}
 .ptx-gateverdict ul{margin:6px 0 0;padding-left:18px}
+.ptx-tcgresult{margin-top:10px;border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.6;border:1px solid}
+.ptx-tcgresult[hidden]{display:none}
+.ptx-tcgresult.pass{background:#101f18;border-color:#2b6b4c;color:#c7f5da}
+.ptx-tcgresult.fail{background:#20141b;border-color:#6d3348;color:#ffd0d8}
+.ptx-tcgresult.run{background:#171126;border-color:#4b386d;color:#d8cdec}
 @media(max-width:650px){.ptx-uploadgrid,.ptx-fields{grid-template-columns:1fr}}
 </style>
 <section class="ptx-sell" id="ptxSellCard">
@@ -1092,6 +1097,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <div class="ptx-gatestep"><b>1 · Photos of the physical card</b><span class="ptx-muted">Front and back are both required. A back photo catches reprints and wrong-stock prints, which a front photo alone cannot.</span><span class="ptx-gatestate" id="ptxGatePhotos">not filled</span></div>
 <div class="ptx-gatestep"><b>2 · Printed number must be consistent</b><span class="ptx-muted">"012/078" means card 12 of a 78-card set. Genuine sets also print secret rares above the set total, so a number larger than the total is not proof of a fake — arithmetic on its own cannot verify a card. Step 3 is what makes a listing reviewable. <a href="pokemon-card-numbers-explained.html" target="_blank" rel="noopener" style="color:#ffd35a;text-decoration:underline">Why a number alone cannot verify a card →</a></span><span class="ptx-gatestate" id="ptxGateNumber">not checked</span></div>
 <div class="ptx-gatestep"><b>3 · Official Pokémon TCG app scan</b><span class="ptx-muted">Open the official Pokémon TCG app on your phone, tap Scan, point it at the card, and check that the app recognises the same name, set and number you typed. Trixovel cannot see the card, so the app scan is the reference a human reviewer compares your entry against.</span><span class="ptx-gatestate" id="ptxGateScan">not declared</span></div>
+<div class="ptx-field" style="margin-top:10px">
+<button class="ptx-btn alt" type="button" onclick="window.ptxTcgCheck()">🗂 Auto-check against the TCGdex card database</button>
+<div class="ptx-muted" style="margin-top:6px">Sends only the typed name, set and number to TCGdex, a community-maintained Pokémon TCG database — it is not an official Pokémon service. Your photos are never sent. A match proves the combination exists; it cannot prove the physical card is genuine.</div>
+<div class="ptx-tcgresult" id="ptxTcgResult" hidden></div>
+</div>
 <label class="ptx-gatecheck"><input id="ptxAckScan" type="checkbox"/> I scanned this exact physical card with the official Pokémon TCG app and it recognised the name, set and number I entered.</label>
 <label class="ptx-gatecheck"><input id="ptxAckOwn" type="checkbox"/> Both photos are of this card in my possession, unedited — not a stock photo, a screenshot or another seller's image.</label>
 <label class="ptx-gatecheck"><input id="ptxAckReal" type="checkbox"/> This is not a replica, reprint, proxy, custom-sleeved, altered or digitally edited card, and I have no off-platform contact or payment details in my description.</label>
@@ -1133,6 +1143,52 @@ window.ptxPhotoClear=function(inputId,target){
   const both=!!(f&&b&&f.dataset.filled==='1'&&b.dataset.filled==='1');
   cardoraSetGate('ptxGatePhotos',both,both?'front + back added':'front and back both required');
  }
+};
+window.ptxTcgCheckState={ran:false,ok:null};
+window.ptxTcgCheck=async function(){
+ const box=document.getElementById('ptxTcgResult');
+ const name=(document.getElementById('ptxName').value||'').trim();
+ const set=(document.getElementById('ptxSet').value||'').trim();
+ const num=(document.getElementById('ptxNumber').value||'').trim();
+ const show=function(cls,html){box.hidden=false;box.className='ptx-tcgresult '+cls;box.innerHTML=html;};
+ window.ptxTcgCheckState={ran:false,ok:null};
+ if(!name||!num){show('fail','<b>卡名和卡号都要先填</b> — the database check needs both to match a real card.');return;}
+ const parsed=window.ptxParseCardNumber(num);
+ if(parsed.state==='empty'||parsed.state==='format'){show('fail','<b>卡号格式不对</b> — '+cardoraEsc(parsed.reason));return;}
+ show('run','<b>查询公开卡牌数据库（TCGdex）…</b>');
+ let list;
+ try{
+  const r=await fetch('https://api.tcgdex.net/v2/en/cards?name='+encodeURIComponent(name),{headers:{'Accept':'application/json'}});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  list=await r.json();
+ }catch(e){
+  show('fail','<b>数据库暂时连不上</b>（'+cardoraEsc(e.message)+'）。稍后再试；这次审核仍由人工完成。');
+  return;
+ }
+ const nd=String(parsed.n);
+ const byNum=(list||[]).filter(function(c){const d=String(c.localId||'').replace(/\D/g,'');return d!==''&&Number(d)===Number(nd);});
+ if(!byNum.length){
+  window.ptxTcgCheckState={ran:true,ok:false};
+  show('fail','<b>查无此卡</b> — 数据库里没有 "'+cardoraEsc(name)+' · '+nd+'" 这个组合。卡名请用卡面上印的英文（包含 ex、V、GX 等后缀），卡号用印刷的数字。');
+  if(document.querySelector('#ptxGateVerdict.show'))window.ptxRunAuthChecks();
+  return;
+ }
+ const exact=byNum.filter(function(c){return String(c.name||'').toLowerCase()===name.toLowerCase();})[0]||byNum[0];
+ let detail=null;
+ try{
+  const r2=await fetch('https://api.tcgdex.net/v2/en/cards/'+encodeURIComponent(exact.id),{headers:{'Accept':'application/json'}});
+  if(r2.ok)detail=await r2.json();
+ }catch(e){}
+ const frag=set.toLowerCase().replace(/\s+/g,' ').trim();
+ const dbSet=detail&&detail.set?String(detail.set.name||''):'';
+ const ok=!frag||dbSet.toLowerCase().indexOf(frag.slice(0,6))>=0;
+ window.ptxTcgCheckState={ran:true,ok:ok};
+ const label=detail?(cardoraEsc(detail.name)+' · '+cardoraEsc(dbSet||'?')+' · '+cardoraEsc(detail.localId||nd)):(cardoraEsc(exact.name)+' · #'+nd);
+ show(ok?'pass':'fail',
+  (ok?'<b>✓ 数据库匹配</b> — ':'<b>⚠ 名字和编号存在，但系列对不上</b> — ')+label
+  +(ok?'':' · 你填的系列是 "'+cardoraEsc(set)+'"，数据库里是 "'+cardoraEsc(dbSet||'未知')+'"')
+  +'<span class="ptx-muted" style="display:block;margin-top:4px">'+(ok?'这个组合真实存在，但这不能证明你手里的卡是真的 — 照片和官方 App 扫描仍由人工审核。':'修正系列名后重新点核对，否则审核会被拦下。')+'</span>');
+ if(document.querySelector('#ptxGateVerdict.show'))window.ptxRunAuthChecks();
 };
 function cardoraSetGate(id,ok,label){
  const el=document.getElementById(id);
@@ -1180,6 +1236,8 @@ window.ptxAuthIssues=function(){
    if(setName&&hay.indexOf(setName.slice(0,6))<0&&!(numDigits&&hay.indexOf(numDigits.slice(0,3))>=0))
      out.push('The app result you typed ("'+scanText+'") shares no set name or number with the listing. Fix the details or list the card the app actually recognised.');
  } else if(ackState[0]) out.push('Type what the official app scan reported — a declaration with no result cannot be reviewed.');
+ const tcg=window.ptxTcgCheckState;
+ if(tcg&&tcg.ran&&!tcg.ok)out.push('The official database check did not confirm your name/set/number combination. Fix the details and press the database-check button again, or a reviewer sends it back.');
  const descGate=window.cardoraScanContact(v('ptxDesc'));
  if(descGate.blocked)out.push('Your description contains '+descGate.hits.map(function(h){return h.label}).join(', ')+'. Off-platform contact and payment details are removed before a listing is published.');
  return out;
