@@ -816,7 +816,7 @@ html[data-ptx-auth="signed-out"] #ptxAccountCenter{display:none !important}
 <span class="ptx-status">Signed in</span>
 </div>
 </div>
-<div class="ptx-muted" style="margin-top:10px">User ID: <span data-ptx-user-id="">—</span></div>
+<div class="ptx-muted" style="margin-top:10px">This page shows the account that is signed in on this device. Public listings show only the card, price and seller name.</div>
 <button class="ptx-btn" onclick="ptxLogout()" style="width:100%;margin-top:12px" type="button">Sign Out</button>
 </div>
 <div class="ptx-grid">
@@ -3592,8 +3592,11 @@ Two honest limits: this is a preview site, so no payment is live, and I cannot s
   if(page==='account'&&window.ptxRenderIndependentAccount)window.ptxRenderIndependentAccount();
   if(page==='orders'&&window.ptxLoadLiveOrders)window.ptxLoadLiveOrders();
   if(page==='cart'&&window.ptxRenderIndependentCart)window.ptxRenderIndependentCart();
-  if(page==='admin'&&window.ptxLoadAdminDeposits)window.ptxLoadAdminDeposits();
-  if(page==='admin'&&window.ptxLoadAdminApplications)window.ptxLoadAdminApplications();
+  if(page==='admin'){
+    const apps=document.createElement('div');apps.id='ptxIpAdminApplications';host.appendChild(apps);
+    if(window.ptxLoadAdminDeposits)window.ptxLoadAdminDeposits();
+    if(window.ptxLoadAdminApplications)window.ptxLoadAdminApplications();
+  }
   // Keep the query string: OAuth callbacks arrive with ?code=&state= and must not be
   // erased before Supabase (or the explicit fallback exchange) reads them.
   try{history.replaceState(null,'',location.pathname+location.search+'#'+page)}catch(e){}
@@ -3856,6 +3859,11 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
   box.innerHTML='<div class="ptx-page-empty"><h2>🤝 Seller applications</h2><p class="ptx-muted">Loading…</p></div>';
   try{
    await window.ptxEnsureSupabase();
+   const sess=await window.ptxSupabase.auth.getSession();
+   if(!sess||!sess.data||!sess.data.session){box.innerHTML='<div class="ptx-page-empty"><h2>🤝 Seller applications</h2><p class="ptx-muted">Sign in with an admin account to review applications.</p></div>';return;}
+   const adm=await window.ptxSupabase.rpc('is_admin');
+   if(adm.error)throw adm.error;
+   if(!adm.data){box.innerHTML='<div class="ptx-page-empty"><h2>🤝 Seller applications</h2><p class="ptx-muted">Admin access required. This account is not on the admin list.</p></div>';return;}
    const r=await window.ptxSupabase.from('seller_applications')
      .select('id,created_at,name,email,whatsapp,city,role,shop_links,card_count,categories,monthly_volume,message,status')
      .order('created_at',{ascending:false}).limit(100);
@@ -3879,7 +3887,7 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
    box.innerHTML='<div class="ptx-page-empty">'+head+'<div class="ptx-app-list">'+items+'</div></div>';
   }catch(e){
    console.error('admin applications',e);
-   box.innerHTML='<div class="ptx-page-empty"><h2>🤝 Seller applications</h2><p class="ptx-muted">Not available yet. Run cardora_seller_applications.sql in Supabase, then reload.</p></div>';
+   box.innerHTML='<div class="ptx-page-empty"><h2>🤝 Seller applications</h2><p class="ptx-muted">The application queue could not be read. Reload the page, then check that this account is on the admin list.</p></div>';
   }
  };
 
