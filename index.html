@@ -3750,6 +3750,10 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
 .ptx-apply-kyc{margin-top:14px;border-left:3px solid #6b4a9e;padding:10px 12px;background:#140e22;border-radius:0 12px 12px 0}
 .ptx-apply-kyc b{font-size:13px;color:#f8f5fb}
 .ptx-apply-kyc p{margin:6px 0 0;font-size:12px;line-height:1.55;color:#a99db9}
+.ptx-app-stats{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.ptx-app-stat{border:1px solid #3a2a4f;border-radius:10px;padding:6px 10px;background:#140e22;font-size:12px;color:#a99db9}
+.ptx-app-stat b{display:block;font-size:18px;line-height:1.15;color:#f8f5fb}
+.ptx-app-export{margin-left:auto;background:#f5c542;color:#17110b;border:0;border-radius:9px;padding:9px 13px;font-weight:800;font-size:12px;cursor:pointer}
 @media(max-width:700px){.ptx-apply-grid{grid-template-columns:1fr}.ptx-apply-steps{grid-template-columns:1fr}}
 </style>
 <script id="ptx-apply-v1">(function(){
@@ -3869,7 +3873,14 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
      .order('created_at',{ascending:false}).limit(100);
    if(r.error)throw r.error;
    const rows=r.data||[];
-   const head='<h2>🤝 Seller applications ('+rows.length+')</h2>';
+   window.ptxApplicationsCache=rows;
+   const cnt={pending:0,contacted:0,approved:0,rejected:0};
+   rows.forEach(function(a){if(cnt[a.status]!==undefined)cnt[a.status]++;});
+   const chips='<div class="ptx-app-stats">'
+    +['pending','contacted','approved','rejected'].map(function(s){return '<span class="ptx-app-stat"><b>'+cnt[s]+'</b>'+s+'</span>'}).join('')
+    +(rows.length?'<button class="ptx-app-export" type="button" onclick="ptxExportApplications()">Download CSV</button>':'')
+    +'</div>';
+   const head='<h2>🤝 Seller applications ('+rows.length+')</h2>'+chips;
    if(!rows.length){box.innerHTML='<div class="ptx-page-empty">'+head+'<p class="ptx-muted">No applications yet. Share the Join page to start collecting sellers.</p></div>';return;}
    const items=rows.map(function(a){
     const when=a.created_at?new Date(a.created_at).toLocaleString():'';
@@ -3891,15 +3902,37 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
   }
  };
 
+ window.ptxApplicationsCsv=function(rows){
+  const cols=['created_at','name','email','whatsapp','city','role','categories','card_count','monthly_volume','shop_links','status','message'];
+  const q=function(v){const s=v==null?'':String(v);return '"'+s.replace(/"/g,'""')+'"';};
+  return [cols.join(',')].concat((rows||[]).map(function(r){return cols.map(function(c){return q(r[c]);}).join(',');})).join('\r\n');
+ };
+
+ window.ptxExportApplications=function(){
+  const rows=window.ptxApplicationsCache||[];
+  if(!rows.length){if(window.ptxToast)window.ptxToast('Nothing to export');return;}
+  const csv=window.ptxApplicationsCsv(rows);
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='seller-applications-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  if(window.ptxToast)window.ptxToast('Exported '+rows.length+' applications');
+ };
+
  window.ptxSetApplicationStatus=async function(id,status){
   try{
    await window.ptxEnsureSupabase();
-   const r=await window.ptxSupabase.from('seller_applications').update({status:status}).eq('id',id);
+   const r=await window.ptxSupabase.from('seller_applications').update({status:status}).eq('id',id).select('id');
    if(r.error)throw r.error;
+   if(!r.data||!r.data.length)throw new Error('no row updated');
+   const hit=(window.ptxApplicationsCache||[]).filter(function(a){return a.id===id;})[0];
+   if(hit)hit.status=status;
    if(window.ptxToast)window.ptxToast('Application marked '+status);
   }catch(e){
    console.warn('application status',e);
-   if(window.ptxToast)window.ptxToast('Could not update status');
+   if(window.ptxToast)window.ptxToast('Could not update status: '+(e&&e.message?e.message:'unknown'));
   }
  };
  window.ptxRenderHomeTrending=function(){
