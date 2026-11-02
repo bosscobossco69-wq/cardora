@@ -3881,7 +3881,7 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
      +(a.shop_links?'<div class="ptx-muted">'+esc(a.shop_links)+'</div>':'')
      +(a.message?'<div class="ptx-app-msg">'+esc(a.message)+'</div>':'')
      +'<div class="ptx-app-actions"><select onchange="ptxSetApplicationStatus(\''+esc(a.id)+'\',this.value)">'
-     +['new','contacted','approved','rejected'].map(function(s){return '<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s+'</option>'}).join('')
+     +['pending','contacted','approved','rejected'].map(function(s){return '<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s+'</option>'}).join('')
      +'</select></div></div>';
    }).join('');
    box.innerHTML='<div class="ptx-page-empty">'+head+'<div class="ptx-app-list">'+items+'</div></div>';
