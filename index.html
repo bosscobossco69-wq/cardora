@@ -160,6 +160,7 @@ img, video, iframe, canvas, svg { max-width:100%; }
 <div class="ptx-nav">
 <button onclick="ptxJump('ptxOfficialHome')">Home</button>
 <button onclick="ptxJump('ptxMarketplace')">Market</button>
+<button onclick="ptxJump('ptxAgentProgram')">Agent</button>
 <button onclick="ptxJump('ptxSellCard')">Sell</button>
 <button onclick="ptxJump('ptxAccountCenter')">Wallet</button>
 <button onclick="ptxJump('ptxBattleArena')">⚔️ Battle</button>
@@ -1502,8 +1503,31 @@ window.ptxSendChat=function(){
 <button class="ptx-btn" onclick="window.ptxIPGo?.('sell')">Sell Your Card</button>
 </div>
 </div>
+<section class="ptx-section agent" id="ptxAgentProgram">
+<h2>🤝 Agent Program — fixed prices, human service</h2>
+<p class="ptx-muted" style="margin:0 16px 14px">A real person handles your card deal from start to finish: finding, verifying, negotiating, selling and shipping. Every job begins with a <b>free written quote</b> — you approve it before anything is bought, sold or charged.</p>
+<table class="commtable" style="margin:0 16px;width:calc(100% - 32px)">
+<tr><th>Service</th><th>What you get</th><th>Price</th></tr>
+<tr><td>🔍 Card Sourcing</td><td>Tell us the card and your budget. We locate it, check the seller and condition, negotiate, and buy on your behalf.</td><td>10% of item price<br><span style="color:#9f94ae">min US$10</span></td></tr>
+<tr><td>🏷️ Consignment</td><td>We photograph, list and promote cards you own, and handle the buyer until the deal closes.</td><td>15% of final sale<br><span style="color:#9f94ae">min US$10</span></td></tr>
+<tr><td>✅ Authenticity Check</td><td>Photo-based review: authenticity signals, condition report and current market price reference.</td><td>US$5<br><span style="color:#9f94ae">per card</span></td></tr>
+<tr><td>📦 Consolidated Shipping</td><td>Combine several purchases into one parcel to cut postage cost.</td><td>US$8 handling<br><span style="color:#9f94ae">+ actual postage</span></td></tr>
+</table>
+<h3 style="margin:20px 16px 10px">How it works</h3>
+<div class="agentsteps" style="margin:0 16px">
+<div class="agentstep"><b>1 · Email the agent desk</b><br><span style="color:#9f94ae">Card name, budget, or what you want to sell.</span></div>
+<div class="agentstep"><b>2 · Free written quote</b><br><span style="color:#9f94ae">Item, fee, shipping and timeline — in writing.</span></div>
+<div class="agentstep"><b>3 · You approve</b><br><span style="color:#9f94ae">Nothing moves before your written OK.</span></div>
+<div class="agentstep"><b>4 · We execute</b><br><span style="color:#9f94ae">Photo updates until the card reaches you or your buyer.</span></div>
+</div>
+<div class="fee" style="margin:14px 16px 0"><b>How payment works:</b> Trixovel processes no online payments. The agent fee is settled directly between you and the agent (bank transfer or another method you both agree on). Trixovel is run by an individual and is not a registered company. Quotes are always free — no payment is due before you approve a quote in writing.</div>
+<div style="margin:16px;display:flex;gap:10px;flex-wrap:wrap">
+<a class="ptx-btn" style="text-decoration:none;display:inline-block" href="mailto:nkj30733838@gmail.com?subject=Agent%20Service%20Request%20-%20Trixovel&amp;body=Service%20wanted%3A%20%0ACard%20or%20goal%3A%20%0ABudget%20or%20price%3A%20%0ACountry%3A%20">📧 Email the Agent Desk</a>
+<button class="ptx-btn alt" onclick="ptxCopyEmail(this)">Copy email address</button>
+</div>
+</section>
 <div class="ptx-footer">
-<div><b>Trixovel</b>Global collectible card marketplace.<br/>Trixovel does not sell cards and does not process payments — every listing is offered by an independent seller.<br/>Agent Program · Support Center · Trust &amp; Safety · Report an Issue</div>
+<div><b>Trixovel</b>Global collectible card marketplace.<br/>Trixovel does not sell cards and does not process payments — every listing is offered by an independent seller.<br/><span style="cursor:pointer;text-decoration:underline" onclick="ptxJump('ptxAgentProgram')">Agent Program</span> · Support Center · Trust &amp; Safety · Report an Issue</div>
 <div><b>Marketplace</b><a href="#market" style="color:inherit;text-decoration:underline">Buy Cards</a><br/><a href="#sell" style="color:inherit;text-decoration:underline">Sell Cards</a><br/>Shipping<br/><a href="#orders" style="color:inherit;text-decoration:underline">Order status</a><br/><a href="how-to-spot-a-fake-pokemon-card.html" style="color:#ffd35a;text-decoration:underline">Spot a fake card</a><br/><a href="pokemon-card-numbers-explained.html" style="color:#ffd35a;text-decoration:underline">Card numbers explained</a><br/><a href="fees.html" style="color:#ffd35a;text-decoration:underline">Fees</a></div>
 <div><b>Legal</b><span style="cursor:pointer;text-decoration:underline" onclick="cardoraOpenPolicy()">Privacy Policy</span><br/><span style="cursor:pointer;text-decoration:underline" onclick="cardoraOpenPolicy()">Marketplace Terms</span><br/><span style="cursor:pointer;text-decoration:underline" onclick="cardoraOpenPolicy()">Fees &amp; Commission</span><br/><span style="cursor:pointer;text-decoration:underline" onclick="cardoraOpenPolicy()">Refunds &amp; Disputes</span><br/><span style="cursor:pointer;text-decoration:underline" onclick="cardoraOpenPolicy()">Data Requests</span></div>
 <div><b>Contact</b>Email: <a href="mailto:nkj30733838@gmail.com" style="color:#ffd35a;text-decoration:none">nkj30733838@gmail.com</a> <button type="button" onclick="ptxCopyEmail(this)" style="background:#21183a;color:#cbb8e6;border:1px solid #4a3670;border-radius:7px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px">copy</button><br/>Run by an individual · Malaysia<br/>Not a registered company — and no payments are processed<br/><span style="color:#7d7488">If fees are ever introduced, the payment provider, refund window and seller payout terms are published here first.</span></div>
