@@ -1111,7 +1111,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <button class="ptx-btn alt" type="button" onclick="ptxRunAuthChecks()">Run the three checks</button>
 </div>
 <div class="ptx-progress"><i style="width:100%;background:#2b213c"></i></div>
-<p class="ptx-muted">Listings are not being accepted yet. Apply first; we open your seller account after review. The checks above still run so you know what a submission needs.</p>
+<p class="ptx-muted">Submissions go straight into the review queue. An automated pre-check flags obvious problems, then a human reviewer approves or rejects each card before anything is published.</p>
 <button class="ptx-btn" onclick="ptxSubmitListing()">Submit for Review</button>
 <button class="ptx-btn alt" onclick="window.ptxIPGo?.('apply')">Open seller application</button>
 </section>
@@ -1254,7 +1254,7 @@ window.ptxRunAuthChecks=function(){
   :'<b>'+issues.length+' check'+(issues.length>1?'s':'')+' must pass before a listing can be reviewed:</b><ul>'+issues.map(function(i){return '<li>'+cardoraEsc(i)+'</li>'}).join('')+'</ul>';
  return issues;
 };
-window.ptxSubmitListing=function(){
+window.ptxSubmitListing=async function(){
  const issues=window.ptxRunAuthChecks();
  const gate=document.getElementById('ptxAuthGate');
  if(issues.length){
@@ -1262,8 +1262,87 @@ window.ptxSubmitListing=function(){
   if(window.ptxToast)window.ptxToast(issues.length+' authenticity check'+(issues.length>1?'s':'')+' failed — see the red list');
   return;
  }
- const msg="Authenticity checks passed. Listings are not open to the public yet: send a seller application and a human reviewer opens your seller account, then this submission route goes live.";
- if(window.ptxToast){window.ptxToast(msg);window.ptxIPGo?.("apply");}else alert(msg);
+ const val=id=>{const e=document.getElementById(id);return e?String(e.value||'').trim():''};
+ const price=parseFloat(val('ptxSellPrice'));
+ if(isNaN(price)||price<=0){ if(window.ptxToast)window.ptxToast('Set a valid USD price first'); return; }
+ const scan=window.cardoraScanContact?window.cardoraScanContact(val('ptxDesc')):{blocked:false};
+ if(scan.blocked){ if(window.ptxToast)window.ptxToast('Description mentions '+scan.hits.map(function(h){return h.label}).join(', ')+' — remove that and submit again'); return; }
+ const flags=[];
+ if(!val('ptxName'))flags.push('missing card name');
+ if(!val('ptxSet'))flags.push('missing set');
+ if(!val('ptxNumber'))flags.push('missing card number');
+ if(!val('ptxCondition'))flags.push('condition not selected');
+ if(!val('ptxScanResult'))flags.push('official app scan not filled');
+ if(price>50000)flags.push('price above 50000');
+ if(!window.ptxSupabase){ if(window.ptxToast)window.ptxToast('Database offline — please try again in a moment'); return; }
+ try{
+  let email=null;
+  try{ const s=await window.ptxSupabase.auth.getSession(); email=(s&&s.data&&s.data.session&&s.data.session.user&&s.data.session.user.email)||null; }catch(_){}
+  const r=await window.ptxSupabase.from('listing_submissions').insert({
+   card_name:val('ptxName'),
+   card_set:val('ptxSet'),
+   card_number:val('ptxNumber'),
+   rarity:val('ptxRare'),
+   condition:val('ptxCondition'),
+   price:price,
+   currency:'USD',
+   description:val('ptxDesc'),
+   scan_result:val('ptxScanResult'),
+   flag:flags.length?flags.join('; '):null,
+   submitter_email:email
+  });
+  if(r.error)throw r.error;
+  if(window.ptxToast)window.ptxToast(flags.length?('Submitted for review — auto-flagged: '+flags.length+' item(s)'):'Submitted for review — no auto-flags');
+  const pf=document.getElementById('ptxSellPrice'); if(pf)pf.value='';
+  const pd=document.getElementById('ptxDesc'); if(pd)pd.value='';
+ }catch(err){
+  console.error('listing submission',err);
+  if(window.ptxToast)window.ptxToast((err&&err.code==='42P01')?'Review queue is not connected yet — please try again later':'Could not submit — please try again');
+ }
+};
+window.ptxLoadSubmissionQueue=async function(){
+ const box=document.getElementById('ptxSubmissionQueue');
+ if(!box||!window.ptxSupabase)return;
+ try{
+  const {data:sessionData}=await window.ptxSupabase.auth.getSession();
+  if(!sessionData||!sessionData.session){ box.innerHTML='<div class="ptx-muted">Sign in with an admin account to review submissions.</div>'; return; }
+  const {data:isAdmin,error:adminError}=await window.ptxSupabase.rpc('is_admin');
+  if(adminError)throw adminError;
+  if(!isAdmin){ box.innerHTML='<div class="ptx-muted">Admin access required.</div>'; return; }
+  const {data:rows,error}=await window.ptxSupabase.from('listing_submissions').select('id,card_name,card_set,card_number,rarity,condition,price,currency,description,scan_result,flag,status,created_at,decided_at').order('created_at',{ascending:false}).limit(50);
+  if(error)throw error;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const list=rows||[];
+  const pending=list.filter(function(r){return r.status==='pending'});
+  const flagged=pending.filter(function(r){return r.flag});
+  const approvedToday=list.filter(function(r){return r.status==='approved'&&r.decided_at&&new Date(r.decided_at)>=today});
+  const rejected=list.filter(function(r){return r.status==='rejected'});
+  const setv=function(id,v){const e=document.getElementById(id);if(e)e.textContent=String(v)};
+  setv('ptxSubPending',pending.length);
+  setv('ptxSubFlagged',flagged.length);
+  setv('ptxSubApproved',approvedToday.length);
+  setv('ptxSubRejected',rejected.length);
+  if(!list.length){ box.innerHTML='<div class="ptx-muted">No submissions yet.</div>'; return; }
+  const esc=window.ptxEsc||function(v){return String(v==null?'':v)};
+  box.innerHTML=list.map(function(r){
+   const pill=r.status==='pending'?'<span class="ptx-pill">pending</span>':(r.status==='approved'?'<span class="ptx-pill" style="background:#1d4d33;color:#75f1ac">approved</span>':'<span class="ptx-pill" style="background:#57202e;color:#ff879d">rejected</span>');
+   const flag=r.flag?'<p style="color:#ffd35a;font-size:12px">⚠ Auto-flag: '+esc(r.flag)+'</p>':'';
+   const actions=r.status==='pending'?'<div class="ptx-actions"><button class="ptx-btn" onclick="ptxDecideSubmission(\''+esc(r.id)+'\',\'approve\')">Approve</button> <button class="ptx-btn alt" onclick="ptxDecideSubmission(\''+esc(r.id)+'\',\'reject\')">Reject</button></div>':'';
+   const meta=[r.card_set,r.card_number,r.rarity,r.condition].filter(Boolean).join(' · ')||'—';
+   return '<div class="ptx-review"><div class="ptx-review-img">🃏</div><div><b>'+esc(r.card_name)+'</b> '+pill+'<br><span class="ptx-pill">'+Number(r.price).toFixed(2)+' '+esc(r.currency||'USD')+'</span><p class="ptx-muted">'+esc(meta)+'</p>'+flag+(r.description?'<p class="ptx-muted">'+esc(r.description)+'</p>':'')+'<p class="ptx-muted">App scan: '+esc(r.scan_result||'—')+'</p><p class="ptx-muted">Submitted: '+esc(new Date(r.created_at).toLocaleString())+'</p></div>'+actions+'</div>';
+  }).join('');
+ }catch(e){
+  console.error('submission queue',e);
+  box.innerHTML='<div class="ptx-muted">Could not load the review queue.</div>';
+ }
+};
+window.ptxDecideSubmission=async function(id,action){
+ if(!confirm(action==='approve'?'Approve this card submission?':'Reject this card submission?'))return;
+ try{
+  const {error}=await window.ptxSupabase.rpc(action==='approve'?'approve_submission':'reject_submission',{p_id:id});
+  if(error)throw error;
+  await window.ptxLoadSubmissionQueue();
+ }catch(e){ alert((e&&e.message)||(action==='approve'?'Approval failed.':'Rejection failed.')); }
 };
 document.addEventListener('DOMContentLoaded',function(){
  cardoraScanVisibleFields(document.getElementById('ptxSellCard'));
@@ -1290,14 +1369,14 @@ document.addEventListener('DOMContentLoaded',function(){
 </div>
 <div class="ptx-panel" id="ptxAdminDepositList"><div class="ptx-muted">Checking admin access…</div></div>
 <h2>🛡️ Admin · Card Review Center</h2>
-<p class="ptx-muted">Seller card submissions are not stored in the database yet, so there is no review queue to show. Approve / Reject becomes available once submissions are collected server-side.</p>
+<p class="ptx-muted">Every card submission lands here. An automated pre-check flags obvious problems; a human makes the final approve / reject decision.</p>
 <div class="ptx-admin-grid">
-<div class="ptx-admin-card"><div class="ptx-label">Pending Review</div><div class="ptx-value">—</div></div>
-<div class="ptx-admin-card"><div class="ptx-label">AI Flagged</div><div class="ptx-value ptx-warn">—</div></div>
-<div class="ptx-admin-card"><div class="ptx-label">Approved Today</div><div class="ptx-value ptx-good">—</div></div>
-<div class="ptx-admin-card"><div class="ptx-label">Reports</div><div class="ptx-value ptx-danger">—</div></div>
+<div class="ptx-admin-card"><div class="ptx-label">Pending Review</div><div class="ptx-value" id="ptxSubPending">—</div></div>
+<div class="ptx-admin-card"><div class="ptx-label">Auto-flagged</div><div class="ptx-value ptx-warn" id="ptxSubFlagged">—</div></div>
+<div class="ptx-admin-card"><div class="ptx-label">Approved Today</div><div class="ptx-value ptx-good" id="ptxSubApproved">—</div></div>
+<div class="ptx-admin-card"><div class="ptx-label">Rejected</div><div class="ptx-value ptx-danger" id="ptxSubRejected">—</div></div>
 </div>
-<div class="ptx-panel"><div class="ptx-muted">No card submissions yet. Nothing can be approved or rejected until the submission queue is connected to the database.</div></div>
+<div class="ptx-panel" id="ptxSubmissionQueue"><div class="ptx-muted">Checking admin access…</div></div>
 <div class="ptx-panel">
 <h3>🔎 Review Rules</h3>
 <div class="ptx-grid">
@@ -1364,7 +1443,7 @@ window.ptxRejectDeposit=async function(id){
   try{ const {error}=await ptxSupabase.rpc('reject_wallet_deposit',{p_review_id:id}); if(error) throw error; alert('Deposit rejected.'); await ptxLoadAdminDeposits(); }
   catch(e){ alert(e.message||'Rejection failed.'); }
 };
-document.addEventListener('DOMContentLoaded',()=>{ ptxLoadAdminDeposits(); });
+document.addEventListener('DOMContentLoaded',()=>{ ptxLoadAdminDeposits(); if(window.ptxLoadSubmissionQueue)window.ptxLoadSubmissionQueue(); });
 </script>
 <style>
 .ptx-control{background:linear-gradient(145deg,#171027,#0a0811);border:1px solid #4b376d;border-radius:20px;padding:16px;margin:14px 0}
@@ -3697,6 +3776,7 @@ Two honest limits: this is a preview site, so no payment is live, and I cannot s
   if(page==='admin'){
     const apps=document.createElement('div');apps.id='ptxIpAdminApplications';host.appendChild(apps);
     if(window.ptxLoadAdminDeposits)window.ptxLoadAdminDeposits();
+    if(window.ptxLoadSubmissionQueue)window.ptxLoadSubmissionQueue();
     if(window.ptxLoadAdminApplications)window.ptxLoadAdminApplications();
   }
   // Keep the query string: OAuth callbacks arrive with ?code=&state= and must not be
