@@ -234,3 +234,38 @@ The `order_items` AFTER INSERT trigger `ptx_order_items_reserve` decrements inve
 Both paths therefore appear to reserve the same quantity twice. The older `create_order` and `create_checkout_order` paths rely on the trigger and do not show the same additional manual decrement in their function bodies.
 
 **Recommended fix:** use one inventory-reservation mechanism for every active checkout path, with row locks / conditional updates and rollback-safe tests. Confirm which checkout path the frontend actually uses before retiring the others.
+
+
+## Additional audit findings — direct table writes can bypass RPC workflows
+
+### H-12 — Direct chat-message INSERT bypasses the safe moderation function
+
+- `send_chat_message_safe(thread_id, body)` performs participant validation and blocks off-platform links/contact/payment patterns.
+- However, the `chat_messages_insert_own` RLS policy permits direct INSERT whenever `sender_user_id = current_user_row_id()`.
+- Authenticated users have table INSERT privilege on `chat_messages`.
+- No database trigger was found that applies the same content checks to direct INSERTs.
+
+**Impact:** an authenticated user may be able to insert messages directly and bypass the moderation checks implemented in `send_chat_message_safe`. The policy does not itself confirm that the sender belongs to the referenced thread; the SELECT policy may hide the inserted row from other users, but the row can still be stored.
+
+**Recommended fix:** revoke direct client INSERT on `chat_messages` and route all message creation through the validated RPC, or implement equivalent database-side validation and participant checks for every insertion path. Also restrict DELETE/UPDATE privileges to the intended moderation workflow.
+
+### H-13 — Direct chat-thread INSERT does not bind participants to the referenced order
+
+- `chat_threads_insert_participant` allows insertion when the caller is the specified buyer or owns the specified seller profile.
+- It does not verify that `buyer_id` and `seller_id` are the actual participants on the referenced `order_id`.
+- The table has foreign keys but no unique constraint on `order_id`.
+- The trusted `create_order_chat` RPC does perform an order-participant check, but direct INSERT is separately permitted.
+
+**Recommended fix:** revoke direct client INSERT and use the RPC, or make the RLS policy verify the order's buyer and seller relationship. Add a unique order/thread constraint if the business rule is one chat thread per order.
+
+### H-14 — Direct dispute INSERT does not verify order participation
+
+- `disputes_insert_own` checks only that `opened_by = current_user_row_id()`.
+- It does not check that the caller is the buyer or one of the sellers associated with the referenced order.
+- Authenticated users have table INSERT privileges. The `open_order_dispute` RPC correctly checks buyer/seller participation, but the direct table policy does not enforce the same rule.
+
+**Recommended fix:** revoke direct client INSERT on disputes and require the validated RPC, or make the RLS policy enforce the same buyer/seller relationship. Add duplicate-open-dispute protection and valid status constraints.
+
+### Defense-in-depth note — broad table grants are not the same as a successful exploit
+
+The inspected roles have broad SQL table grants on several workflow tables, including wallet transactions, orders, order items, disputes, and chat. RLS policies still filter those operations; for example, `wallet_transactions` currently has a SELECT policy but no client INSERT/UPDATE/DELETE policy in the returned policy list. Do not describe every listed table grant as a confirmed writable vulnerability. Prefer least-privilege table grants in addition to correctly scoped RLS.
