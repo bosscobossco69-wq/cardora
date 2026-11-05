@@ -269,3 +269,30 @@ Both paths therefore appear to reserve the same quantity twice. The older `creat
 ### Defense-in-depth note — broad table grants are not the same as a successful exploit
 
 The inspected roles have broad SQL table grants on several workflow tables, including wallet transactions, orders, order items, disputes, and chat. RLS policies still filter those operations; for example, `wallet_transactions` currently has a SELECT policy but no client INSERT/UPDATE/DELETE policy in the returned policy list. Do not describe every listed table grant as a confirmed writable vulnerability. Prefer least-privilege table grants in addition to correctly scoped RLS.
+
+
+## Latest Supabase Security Advisor snapshot
+
+Read-only Security Advisor results were refreshed on 2026-11-05:
+- 2 tables have RLS enabled with no policies: `admin_users`, `ptx_email_otps`.
+- 34 SECURITY DEFINER functions are executable by `anon`.
+- 38 SECURITY DEFINER functions are executable by `authenticated`.
+- Leaked-password protection is disabled in Supabase Auth.
+
+These counts are lint findings, not 72 distinct exploitable vulnerabilities. Many RPCs include internal identity/ownership/admin checks; each must be classified by intended caller and function-body validation before permissions are changed.
+
+### H-15 — Leaked-password protection is disabled
+
+Supabase Auth's leaked-password protection is currently disabled according to Security Advisor.
+
+**Recommended fix:** enable leaked-password protection after checking the Auth configuration and signup/login UX. This is a configuration hardening item and does not replace MFA, rate limiting, or secure password reset controls.
+
+Reference: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+
+## Current high-priority direct-write observations
+
+The latest policy/grant inspection confirmed:
+- Direct INSERT on `chat_messages` is allowed by an ownership-only RLS policy, so `send_chat_message_safe` is not the only message-write path.
+- Direct INSERT on `chat_threads` does not verify that the referenced order's actual buyer and seller match the supplied participants.
+- Direct INSERT on `disputes` verifies only the opener's user ID, not participation in the referenced order.
+- `wallet_transactions` has broad table grants, but the returned RLS policies only allow SELECT; no client INSERT/UPDATE/DELETE policy was found. Treat this as excessive grants / defense-in-depth weakness, not proof that clients can write ledger rows under current RLS.
