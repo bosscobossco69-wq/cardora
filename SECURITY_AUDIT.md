@@ -368,3 +368,26 @@ The `seller_profiles_insert_own` policy only verifies `user_id = current_user_ro
 ### Storage note
 
 Private bucket configuration and owner-folder policies are positive controls. The broader authorization issue in `users.role` remains important because some Storage admin policies consult that mutable column instead of the independent admin allowlist.
+
+
+## Frontend-to-database call-path verification (index.html on audit branch)
+
+The current `index.html` was scanned for all Supabase `.rpc(...)` call sites. It contains 9 calls and the following actual checkout behavior:
+
+- Cart checkout at line 985 calls `create_order(p_items, p_shipping=0)`.
+- Product-detail checkout at line 2144 calls `create_order(p_items, p_shipping=3.99)`.
+- Neither UI path calls `create_market_order` nor `create_order_with_wallet`.
+- The UI reports the resulting order as `PENDING`; it does not call `record_order_payment`.
+- The UI text explicitly describes the payment options as planned/testing only, and says not to use manual payment for real customer payments.
+
+### H-19 — The frontend checkout is a legacy pending-order path, not wallet escrow checkout
+
+The current frontend creates a pending order through `create_order`. It does not debit the buyer's wallet, hold funds, or invoke a verified external payment provider. The existence of wallet checkout RPCs in the database does not mean the current UI uses them.
+
+**Impact:** the current order UI is not a complete paid marketplace checkout. It can create a pending order record, but no payment confirmation is integrated into these UI call paths. Do not present an order as paid or fulfill it until a provider webhook/signature-verified payment flow is implemented.
+
+**Currency mismatch to resolve:** the inspected `create_order` function creates orders with currency `USD`, while listings default to `USDT` and the wallet checkout functions use `USDT`. The frontend displays listing amounts as USD in some areas. Define a canonical currency and conversion policy before enabling checkout.
+
+### Clarification — duplicate stock reservation applies to callable wallet RPCs, not the current visible checkout UI
+
+The `ptx_order_items_reserve` trigger decrements stock once for each inserted order item. The wallet functions `create_market_order` and `create_order_with_wallet` also manually decrement stock, so calling either of those RPCs causes a second decrement. The current visible frontend checkout calls `create_order`, which does not manually decrement stock in its function body, so its trigger-based reservation is single-decrement. These wallet RPCs remain callable by authenticated users and should be fixed or disabled before they are exposed as the checkout route.
