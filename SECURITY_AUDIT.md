@@ -337,3 +337,34 @@ The inspected `confirm_order_received(p_order_id)` changes the order status to `
 **Impact:** the dispute can be marked resolved while the order remains in dispute and the held funds remain unchanged. There is no partial amount argument or recorded allocation.
 
 **Recommended fix:** do not accept `partial` until a concrete amount/allocation model is implemented and validated. Require an explicit buyer refund amount and seller release amount, enforce their sum against the held total, and write all ledger movements atomically.
+
+
+## Additional checks — private Storage buckets and wallet-review status
+
+### Storage buckets — no public exposure observed
+
+Read-only inspection of Storage bucket metadata found:
+- `deposit-proofs`: private, 5 MiB limit, JPEG/PNG/WebP/HEIC.
+- `listing-media`: private, 10 MiB limit, JPEG/PNG/WebP.
+
+Current Storage object policies restrict deposit-proof uploads and reads to the caller's UID folder (with admin read), and listing-media uploads/reads to the caller's UID folder (with admin management). No public bucket setting was observed. Continue validating signed URL lifetimes and whether any application-generated public URLs are stale; do not make these buckets public to solve image display issues.
+
+### H-17 — Wallet review INSERT permits client-supplied status and amount fields
+
+The `wallet_reviews_insert_own` policy checks only that `user_id` belongs to the caller. The table grants INSERT to authenticated users, and `status` defaults to `pending` but has no CHECK constraint restricting inserted values. Other client-supplied fields include `amount`, `review_type`, `txid`, and `screenshot_url`.
+
+The deposit approval RPC checks that the row is still `pending` before crediting a balance, so setting `status='approved'` at insert time does not itself invoke the credit function. However, clients may create misleading/non-pending review records or spoof review metadata.
+
+**Recommended fix:** revoke direct INSERT and use a validated submission RPC, or restrict client insertable columns and enforce `status='pending'`, positive amount, valid type, bounded text, and upload ownership server-side. Keep approval/rejection admin-only and idempotent.
+
+### H-18 — Direct seller profile INSERT can set privileged seller fields
+
+The `seller_profiles_insert_own` policy only verifies `user_id = current_user_row_id()`. The table has no CHECK constraints for `status`, `trust_level`, `verification_status`, `security_deposit`, or `available_balance`, and no insert trigger was found. The unique constraint on `user_id` prevents duplicate profiles, but does not prevent the first profile from being inserted with caller-supplied privileged values.
+
+**Impact:** a user who has no seller profile may be able to create their own profile already marked `approved` and/or with a fabricated positive available balance. This could bypass seller onboarding and potentially make withdrawal eligibility checks pass, subject to the remaining withdrawal controls.
+
+**Recommended fix:** remove direct client INSERT and expose a server-side seller-application/profile-creation function that sets all trust, status, verification, deposit, and balance fields itself. New profiles must be forced to `pending`, `new`, `pending`, and zero financial values. Add CHECK constraints as defense in depth.
+
+### Storage note
+
+Private bucket configuration and owner-folder policies are positive controls. The broader authorization issue in `users.role` remains important because some Storage admin policies consult that mutable column instead of the independent admin allowlist.
