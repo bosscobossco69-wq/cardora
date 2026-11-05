@@ -391,3 +391,43 @@ The current frontend creates a pending order through `create_order`. It does not
 ### Clarification — duplicate stock reservation applies to callable wallet RPCs, not the current visible checkout UI
 
 The `ptx_order_items_reserve` trigger decrements stock once for each inserted order item. The wallet functions `create_market_order` and `create_order_with_wallet` also manually decrement stock, so calling either of those RPCs causes a second decrement. The current visible frontend checkout calls `create_order`, which does not manually decrement stock in its function body, so its trigger-based reservation is single-decrement. These wallet RPCs remain callable by authenticated users and should be fixed or disabled before they are exposed as the checkout route.
+
+
+## Authentication frontend call-path verification
+
+### H-23 — The visible website uses Supabase Auth OTP directly; the custom OTP Edge Function is not called by index.html
+
+The current frontend code calls:
+- `supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })` to send a code.
+- `supabase.auth.verifyOtp({ email, token, type: 'email' })` to verify and create a session.
+
+A scan of all `index.html` lines found no `functions.invoke()` call to `ptx-email-otp`. Therefore the custom Edge Function's eight-digit code, Resend sender, custom email-level throttle, and custom verification-attempt counter are not the OTP controls used by the visible frontend flow. The active website relies on Supabase Auth's native email OTP configuration and rate limits. The custom function may still be used by another client or external integration; that was not established.
+
+**Recommended fix:** choose one authoritative OTP flow. Prefer native Supabase Auth unless a specific custom workflow is required. If retaining the Edge Function, wire it intentionally and document its separate rate limits, email templates, redirect allowlist, and abuse controls. Do not assume hardening the unused function protects the website's current login flow.
+
+### H-24 — The login form also enables account creation for unknown email addresses
+
+Both the visible “register” and “login” buttons call the same OTP-send function, and it always sets `shouldCreateUser: true`. Supabase Auth documentation confirms this option allows a new account to be created when the email does not already exist.
+
+**Impact:** a user entering an unregistered email in the login form may be taken through account creation rather than receiving a clear “account not found” response. This may be intentional passwordless onboarding, but the UI wording and product policy should match the behavior.
+
+**Recommended fix:** decide whether login should allow implicit registration. If not, set `shouldCreateUser: false` for login and keep it true only for registration. If implicit signup is intended, make the UI clearly explain that behavior and retain email confirmation.
+
+### Positive authentication observations
+
+- The visible site uses Supabase Auth's native `verifyOtp` to verify email OTPs and establish a session.
+- The profile editor only writes `full_name`, `buyer_country`, and `shipping_destination` into user metadata; the inspected SQL policies do not use `raw_user_meta_data` / JWT `user_metadata` for authorization decisions.
+- No direct password login, password signup, or password-reset client calls were found in the current `index.html`; the visible email authentication is passwordless OTP plus Google OAuth.
+- The `is_admin()` function reads the separate `admin_users` allowlist. That table has broad SQL grants to client roles, but RLS is enabled with no policies, so direct Data API row access is denied under the current policy state. Revoke unnecessary client grants as defense in depth; do not confuse grants alone with a demonstrated RLS bypass.
+
+### Configuration items not verifiable from the inspected SQL/frontend source
+
+The current project Auth dashboard settings were not exposed by the available read-only tools in this audit. The following still require dashboard verification:
+- Email OTP length and expiry.
+- Auth email rate limits and CAPTCHA configuration.
+- Email confirmation requirement.
+- Allowed redirect URL list and Site URL.
+- Google OAuth provider configuration and authorized redirect URIs.
+- Leaked-password protection status (Security Advisor previously reported it disabled).
+
+Supabase documentation: https://supabase.com/docs/guides/auth/auth-email-passwordless
