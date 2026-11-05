@@ -173,3 +173,39 @@ No SQL writes, migrations, function deployments, data modifications, payment act
 - The SQL inspection did not execute any test transactions and did not attempt privilege escalation.
 - Storage policy review covered the two configured private buckets and the current `storage.objects` policies returned by the project.
 - The report does not yet establish whether any separate external payment provider webhook, server-side payout service, or reconciliation job exists outside the inspected database functions and two active Edge Functions.
+
+
+## Additional audit findings — authentication triggers and RPC exposure
+
+### C-06 — Two auth-user creation triggers insert into the same profile table
+
+- The `auth.users` table has two AFTER INSERT triggers: `on_auth_user_created` calling `handle_new_auth_user()`, and `ptx_on_auth_user_created` calling `ptx_handle_new_user()`.
+- Both functions insert a row into `public.users` for the same `auth.users.id`.
+- `users.auth_user_id` has a UNIQUE constraint.
+- The first function uses `ON CONFLICT (auth_user_id) DO UPDATE`; the second performs a plain INSERT. If both triggers run for a new auth user, the second insert can violate the unique constraint and roll back the signup transaction.
+- This is a static finding from trigger and function definitions; no live signup test was run.
+
+**Recommended fix:** retain one canonical auth-user trigger and one profile-creation function. Before removing either trigger, compare its required metadata/initialization behavior and verify the existing user population. Test signup, OAuth signup, duplicate event handling, and profile creation in an isolated environment.
+
+### H-10 — Many SECURITY DEFINER functions are executable by anon through PUBLIC privileges
+
+- The routine privilege inventory shows most SECURITY DEFINER functions report `anon_execute=true` and `authenticated_execute=true`, even when they are intended for signed-in users or admins.
+- Some functions perform internal `auth.uid()` / ownership / `is_admin()` checks, which are important defenses. However, allowing anonymous invocation unnecessarily exposes the function surface and makes future regressions more dangerous.
+- Trigger functions such as `ptx_reserve_stock`, `seller_app_throttle`, `ptx_guard_wallet_reviews`, and auth-user trigger functions are not browser RPC endpoints and should not need client EXECUTE privileges.
+- A few functions are intentionally public read endpoints (for example, marketplace rankings) and should be treated separately.
+
+**Recommended fix:** inventory intended callers for every SECURITY DEFINER routine, revoke EXECUTE from `PUBLIC` / `anon` by default, and grant only the minimum required role. Keep trigger functions non-callable by browser roles. Preserve only explicitly approved public read functions. Verify PostgREST RPC access after each grant change.
+
+### H-11 — Chat thread creation is not protected by a unique order constraint
+
+- `create_order_chat(p_order_id)` first looks for an existing thread for the order, then inserts one if absent.
+- `chat_threads.order_id` has a foreign key but no UNIQUE constraint.
+- Concurrent requests can both observe no thread and create duplicate order-chat threads. This is a concurrency/integrity risk, not an authorization bypass.
+
+**Recommended fix:** decide whether each order should have one thread or one thread per buyer/seller pair. If one per order, add a unique constraint after deduplicating existing rows and use `INSERT ... ON CONFLICT` in the function.
+
+## Additional verified observations
+
+- No ordinary views were returned by `pg_views` in the public schema during this inspection.
+- The two auth-user triggers are the only non-internal triggers found on `auth.users`; the public schema also has the four previously documented trigger definitions.
+- The two Storage buckets remain private and have image-only MIME allowlists and size limits.
