@@ -457,3 +457,48 @@ A read-only aggregate query found two rows in `admin_users` and one row in `user
 ## Positive control — current admin allowlist table has no client RLS policies
 
 `admin_users` has RLS enabled and no policies. Although `anon` and `authenticated` have broad SQL table grants, the absence of a permissive RLS policy currently blocks normal client-role Data API reads/writes. This is not evidence that a client can insert itself into the admin allowlist. Revoke unnecessary client grants as defense in depth, but preserve server-side service-role access and the intended admin management path.
+
+
+## H-27 — Mutable users.role controls a wider set of RLS policies than previously listed
+
+A refreshed full policy scan found additional policies that authorize administrators by checking `users.role='admin'` instead of `is_admin()`. In addition to the previously listed listing-media and seller-profile paths, the role-based policies include:
+- `card_requests`: admin update and admin read.
+- `chat_messages` and `chat_threads`: admin read.
+- `disputes`: admin read and update.
+- `listing_details`: admin write.
+- `listing_media` and `listing_media_reviews`: admin management/read.
+- `order_financials`: admin read/write.
+- `order_shipping`: admin read/write.
+- `seller_profiles`: admin read/update.
+- `withdrawal_requests`: admin read/update.
+
+Because the owner can currently update their own `users.role` under the broad `users_update_own` policy, these policies inherit the same role-forgery risk. This is materially broader than only the media-review functions: it may expose private chat, dispute, shipping, financial and withdrawal records, and permit writes to admin-managed records, subject to the individual table grants and RLS command policies.
+
+**Recommended fix:** replace every role-string admin predicate in RLS policies with the trusted `is_admin()` predicate (or a hardened equivalent), and separately remove client ability to update `users.role`. Review all admin-only reads and writes after the change. Do not assume frontend admin routing is a security boundary.
+
+## H-28 — Direct withdrawal request INSERT can forge a non-pending status
+
+The refreshed schema inspection confirmed:
+- `withdrawal_requests` has a CHECK constraint for `amount >= 100`, but no status CHECK constraint.
+- The `withdrawals_insert_own` RLS policy checks only that `user_id = current_user_row_id()` and `amount >= 100`.
+- Authenticated clients have table INSERT privilege.
+- The status column defaults to `pending`, but a client INSERT can supply another status value because the policy does not force `status='pending'` and no status constraint rejects it.
+- The insert policy also does not require an approved seller profile or ensure the amount is deducted from `seller_profiles.available_balance`.
+
+**Impact:** a user can potentially create a withdrawal row labelled `approved` or another arbitrary status without using `request_withdrawal`. This does not prove that a payout is executed, but it can forge records and may mislead admin/customer workflows or downstream jobs that trust the status field.
+
+**Recommended fix:** revoke direct client INSERT on `withdrawal_requests`; force requests through a server-side function that verifies approved seller status, available balance, amount, network, and wallet address. Add a status CHECK constraint and enforce allowed state transitions in trusted code. Any payout job must independently verify authorization and ledger state rather than trusting a client-created row.
+
+## H-29 — Seller profile table has no constraints protecting trust and financial fields
+
+A refreshed constraint inventory found only the primary key, user foreign key, and unique user constraint on `seller_profiles`; no CHECK constraints protect `status`, `trust_level`, `verification_status`, `security_deposit`, or `available_balance`.
+
+Combined with the owner-only INSERT policy and authenticated INSERT grant, this confirms there is no database constraint that normalizes a first self-created profile to pending/unverified/zero-balance values. The previously documented H-18 remains a high-priority onboarding and financial-integrity issue.
+
+**Recommended fix:** server-only profile creation and explicit CHECK constraints for valid states and nonnegative amounts. The server must assign all trust, verification, deposit, and balance fields; never accept these fields from browser input.
+
+## H-30 — Wallet review owner UPDATE policy is effectively blocked by a trigger, but should be simplified
+
+The table has an owner UPDATE RLS policy, but its BEFORE UPDATE/DELETE trigger rejects every non-admin mutation. Therefore, a normal owner update is blocked at trigger execution even if RLS admits the row. This is a defense-in-depth control, but the owner UPDATE policy is misleading and creates unnecessary policy complexity.
+
+**Recommended fix:** remove the owner UPDATE policy if owners are not meant to edit review submissions after creation. If edits are required, expose a narrow function that permits only specific fields while the review is still pending; keep status, reviewed_at, amount, and approval metadata server-controlled.
