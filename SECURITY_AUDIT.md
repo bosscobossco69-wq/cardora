@@ -296,3 +296,44 @@ The latest policy/grant inspection confirmed:
 - Direct INSERT on `chat_threads` does not verify that the referenced order's actual buyer and seller match the supplied participants.
 - Direct INSERT on `disputes` verifies only the opener's user ID, not participation in the referenced order.
 - `wallet_transactions` has broad table grants, but the returned RLS policies only allow SELECT; no client INSERT/UPDATE/DELETE policy was found. Treat this as excessive grants / defense-in-depth weakness, not proof that clients can write ledger rows under current RLS.
+
+
+## C-08 — Wallet checkout paths reserve inventory twice
+
+The live database has an AFTER INSERT trigger on `public.order_items`:
+`ptx_order_items_reserve()` subtracts `NEW.quantity` from `listings.inventory` and raises if stock is insufficient.
+
+Both `create_market_order(p_items)` and `create_order_with_wallet(p_items)` also explicitly subtract inventory after inserting the same order_items rows. Because the trigger fires for each inserted row, these two checkout functions deduct stock twice.
+
+**Impact:** a successful purchase can reduce inventory by twice the purchased quantity. This may cause premature out-of-stock status and incorrect stock counts. This is confirmed by static inspection of the trigger and both function bodies; no checkout was executed.
+
+**Recommended fix:** choose exactly one reservation mechanism. Keep the trigger and remove manual decrements, or remove the trigger and use a single atomic conditional UPDATE in each checkout function. Ensure all active checkout paths share the same strategy and add transaction-level tests for concurrent purchases.
+
+## C-09 — Dispute refund resolution does not refund or release held funds
+
+The inspected `admin_resolve_dispute(p_dispute_id, 'refund', ...)` only marks the dispute resolved and changes the order status to `cancelled`. It does not:
+- credit the buyer's available balance;
+- decrease the buyer's `held_balance`;
+- insert a compensating wallet ledger transaction;
+- restore the reserved listing inventory;
+- update order financial refund fields.
+
+For the wallet checkout flow, funds were moved from buyer available balance to held balance at order creation. Marking the order cancelled without a corresponding refund leaves the funds held and no explicit refund record is created.
+
+**Recommended fix:** implement an idempotent, row-locked refund transaction that verifies the original hold, restores the buyer's funds and inventory exactly once, writes an immutable ledger entry, updates financials, and transitions order/dispute statuses atomically. Define and separately test partial refunds.
+
+## H-16 — Order settlement credits sellers but does not release buyer held balance
+
+The inspected `confirm_order_received(p_order_id)` changes the order status to `settled`, sets financial settlement time, and credits seller available balances with 92% of item value. It does not decrement the buyer's `users.held_balance` or write a corresponding hold-release ledger entry.
+
+**Impact:** after a wallet-funded order settles, the seller receives the proceeds but the buyer's held balance may continue to show the same funds as held. This creates inconsistent wallet accounting and can leave funds appearing locked indefinitely.
+
+**Recommended fix:** in the same idempotent settlement transaction, lock the buyer and order, release exactly the order's held amount, credit seller net amounts, write balanced ledger entries, and update financial settlement fields. Validate the sum of held, released, refunded, and seller-net/platform-fee amounts against the original order total.
+
+## C-10 — Admin dispute "partial" resolution is accepted but has no financial implementation
+
+`admin_resolve_dispute` accepts `p_resolution='partial'`, marks the dispute resolved, but does not change the order status or perform any partial refund/release accounting.
+
+**Impact:** the dispute can be marked resolved while the order remains in dispute and the held funds remain unchanged. There is no partial amount argument or recorded allocation.
+
+**Recommended fix:** do not accept `partial` until a concrete amount/allocation model is implemented and validated. Require an explicit buyer refund amount and seller release amount, enforce their sum against the held total, and write all ledger movements atomically.
