@@ -209,3 +209,28 @@ No SQL writes, migrations, function deployments, data modifications, payment act
 - No ordinary views were returned by `pg_views` in the public schema during this inspection.
 - The two auth-user triggers are the only non-internal triggers found on `auth.users`; the public schema also has the four previously documented trigger definitions.
 - The two Storage buckets remain private and have image-only MIME allowlists and size limits.
+
+
+## New critical finding — withdrawal exception handler can credit funds
+
+### C-07 — `request_withdrawal` may increase seller balance when a withdrawal fails
+
+The inspected function performs these steps:
+1. Validates the minimum withdrawal amount.
+2. Attempts to subtract the requested amount only where `available_balance >= p_amount`.
+3. Raises `INSUFFICIENT_AVAILABLE_BALANCE` if no row was updated.
+4. Its broad `EXCEPTION WHEN OTHERS` handler then unconditionally attempts to add `p_amount` back to the approved seller profile before re-raising the error.
+
+This means that when the deduction never happened (for example, insufficient balance), the exception handler can still add the requested amount. The same structure can also run for other validation or insert failures after entering the function's exception block. This is a static control-flow finding; no withdrawal was submitted and no balances were changed.
+
+**Recommended fix:** remove the unconditional compensating update. Prefer a single database transaction with a narrowly scoped rollback strategy: perform a conditional balance deduction, verify exactly one row changed, insert the pending withdrawal, and allow any later error to roll back the whole transaction automatically. Do not manually credit funds in a broad exception handler unless a prior debit is positively recorded and the compensation is idempotent. Add tests for insufficient balance, below-minimum amount, invalid seller, duplicate submission, and insert failure.
+
+## Clarification — duplicate inventory reservation affects three checkout functions
+
+The `order_items` AFTER INSERT trigger `ptx_order_items_reserve` decrements inventory for every inserted item. The following functions also manually decrement inventory after inserting order items:
+- `create_market_order(p_items)`
+- `create_order_with_wallet(p_items)`
+
+Both paths therefore appear to reserve the same quantity twice. The older `create_order` and `create_checkout_order` paths rely on the trigger and do not show the same additional manual decrement in their function bodies.
+
+**Recommended fix:** use one inventory-reservation mechanism for every active checkout path, with row locks / conditional updates and rollback-safe tests. Confirm which checkout path the frontend actually uses before retiring the others.
