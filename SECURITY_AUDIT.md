@@ -120,3 +120,56 @@ The current GitHub repository branch contains static HTML pages and SEO assets; 
 ## Explicitly not done
 
 No SQL writes, migrations, function deployments, data modifications, payment actions, live exploit tests, or paid infrastructure provisioning were performed.
+
+
+## Additional audit findings — order lifecycle, withdrawals, and storage
+
+### C-04 — Dispute resolution changes order status but does not execute the financial resolution
+
+- `admin_resolve_dispute` checks `is_admin()`, marks the dispute resolved, and changes order status for `refund` or `release`.
+- For `refund`, it sets the order to `cancelled` but does not restore buyer funds, reduce held balance, add a refund ledger entry, or restore inventory.
+- For `release`, it changes the order to `buyer_protection`; it does not itself move funds to the seller. The later buyer-confirmation function handles seller crediting.
+- `partial` marks the dispute resolved but does not implement a partial refund or release amount.
+
+**Recommended fix:** make each resolution an atomic financial operation with explicit amounts, locked buyer/order/seller rows, idempotency keys, and ledger entries. Do not mark a dispute financially resolved until the corresponding balance and inventory movements have succeeded.
+
+### C-05 — Buyer confirmation credits sellers but does not reconcile the held-wallet ledger
+
+- `confirm_order_received` allows the buyer to move an order from `delivered` or `buyer_protection` to `settled`.
+- It credits seller `available_balance` using 92% of item value.
+- It does not decrement the buyer's `held_balance`, write a settlement transaction to `wallet_transactions`, or update `order_financials.seller_net` / `platform_fee` in the inspected function.
+- This may be inconsistent with `create_order_with_wallet`, which moves funds from buyer balance to held balance at checkout. It is also inconsistent with legacy external-payment order paths unless the accounting model is explicitly reconciled elsewhere.
+
+**Recommended fix:** define one authoritative accounting model for wallet-funded and external-payment orders. On settlement, atomically debit held funds, credit seller payable, record platform fee, write immutable ledger entries, and mark financial settlement. Add idempotency protection so repeated calls cannot double-credit.
+
+### H-07 — Withdrawal request rows can be inserted directly with a client-selected status
+
+- The `withdrawals_insert_own` policy checks only owner identity and `amount >= 100`.
+- `withdrawal_requests.status` defaults to `pending`, but there is no status CHECK constraint in the inspected constraints.
+- Authenticated clients have INSERT privileges. A direct insert may therefore set `status='approved'` or supply a transaction ID without going through `request_withdrawal`, which is the function that deducts seller available balance.
+- This does not by itself prove that an actual payout can be triggered, but it can create misleading or forged withdrawal records and may affect admin/customer interfaces.
+
+**Recommended fix:** revoke direct INSERT on `withdrawal_requests`; require the trusted withdrawal function. Enforce allowed status transitions server-side and add a CHECK constraint for valid statuses. Ensure payout processing requires an independently verified admin action and ledger record.
+
+### H-08 — Storage admin authorization uses the vulnerable users.role field
+
+- Both private buckets, `deposit-proofs` and `listing-media`, are configured as non-public.
+- Bucket size limits are 5 MiB for deposit proofs and 10 MiB for listing media; MIME types are restricted to image formats.
+- The `admin listing media all` Storage policy checks `users.role = 'admin'`, not `is_admin()`. This inherits the role-escalation risk in C-01.
+- Seller media upload/read policies scope paths to the caller's auth UID. Deposit-proof read access is owner-or-`is_admin()`.
+
+**Recommended fix:** use the same authoritative admin membership predicate for all Storage admin policies. Keep both buckets private; consider image content scanning, dimensions, and metadata stripping in the upload review pipeline.
+
+### H-09 — Admin and OTP tables have broad SQL grants despite having no RLS policies
+
+- `admin_users` and `ptx_email_otps` have RLS enabled with no policies, which currently means Data API row access is denied by RLS.
+- The inspected grants nevertheless include broad table privileges for `anon` and `authenticated` on `admin_users`. This is unnecessary exposure and fragile defense-in-depth, even though the missing policies currently block row access.
+- Re-check the exact grants for `ptx_email_otps` separately before changing them.
+
+**Recommended fix:** revoke all client-role privileges on server-only tables and grant only the minimum required to trusted server roles. Keep the OTP table inaccessible to browser clients.
+
+## Remaining verification limits
+
+- The SQL inspection did not execute any test transactions and did not attempt privilege escalation.
+- Storage policy review covered the two configured private buckets and the current `storage.objects` policies returned by the project.
+- The report does not yet establish whether any separate external payment provider webhook, server-side payout service, or reconciliation job exists outside the inspected database functions and two active Edge Functions.
