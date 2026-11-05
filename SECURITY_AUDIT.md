@@ -1,0 +1,122 @@
+# Trixovel / Cardora — Security Audit Snapshot
+
+**Date:** 2026-11-05  
+**Code branch reviewed:** `ai/trixovel-safe-audit`  
+**Repository:** `bosscobossco69-wq/cardora`  
+**Database inspected read-only:** Supabase project ref `crqqockaetgacddxkqpb`
+
+> Scope warning: the inspected Supabase project is named `pokemon-treasure-demo` and may be shared with Pokémon Treasure. No database changes, data edits, deployments, paid branch creation, or exploit tests were performed. This report is based on read-only schema, policy, privilege, trigger, and function inspection plus the current Git branch files. It is not a penetration test or a claim that the whole system is secure.
+
+## Executive summary
+
+**Do not enable real deposits, external payment confirmation, or seller withdrawals until the critical findings below are fixed and tested in an isolated development database.**
+
+The current GitHub repository branch contains static HTML pages and SEO assets; it does not contain the database migrations or source code for the deployed Edge Functions. The Supabase project has 38 recorded migrations and two active Edge Functions, which were inspected through the Supabase tools.
+
+## Critical findings
+
+### C-01 — Authenticated users can update privileged fields in their own user row
+
+- `users_update_own` allows UPDATE when `auth_user_id = auth.uid()`.
+- `anon` and `authenticated` have table UPDATE privileges on `users`, including `role`, `balance`, `held_balance`, `status`, and `auth_user_id`.
+- The policy's WITH CHECK only ensures the row still belongs to the current auth user; it does not restrict which columns can change.
+- Several admin-facing functions and policies check `users.role = 'admin'` rather than the dedicated `admin_users` membership check. A user changing their own role could therefore satisfy those role-based checks. This does not automatically satisfy functions that call `is_admin()`, which checks `admin_users`.
+
+**Recommended fix:** revoke direct client UPDATE on sensitive columns; expose a narrowly scoped profile-update function or column grants for safe profile fields only. Make every admin authorization path use one authoritative server-side admin membership check. Add regression tests proving users cannot change role, balance, held balance, status, or auth_user_id.
+
+### C-02 — Seller profile self-insert does not constrain approval or balance fields
+
+- `seller_profiles_insert_own` checks only `user_id = current_user_row_id()`.
+- The table grants INSERT/UPDATE/DELETE to anon and authenticated roles; RLS still applies, but the authenticated self-insert policy does not constrain `status`, `verification_status`, `available_balance`, `security_deposit`, `total_sales`, or `completed_orders`.
+- No trigger was found on `seller_profiles` to normalize or reject privileged values.
+- The table's admin update policy checks `users.role = 'admin'`, which is also affected by C-01.
+
+**Recommended fix:** remove direct client INSERT/UPDATE/DELETE; create seller profiles only in a trusted admin/server workflow. Enforce server-owned status and balance fields with constraints and a single controlled function.
+
+### C-03 — Client-callable order payment function can mark a pending order paid without verifying payment
+
+- `record_order_payment(p_order_id, p_txid)` checks that the caller owns a pending order, then sets status to `paid`.
+- The function does not validate a payment-provider webhook, signature, transaction status, amount, or currency.
+- The supplied `p_txid` is not used in the function body.
+- The function is executable by authenticated users (and has an anon EXECUTE grant, although its auth/profile check prevents an anonymous caller from proceeding).
+
+**Recommended fix:** remove client permission to mark an order paid. Only a server-verified payment webhook or trusted server-side payment verification function may transition an order to paid. Validate signature, provider transaction ID uniqueness, order ID, amount, currency, and final provider status.
+
+## High-priority findings
+
+### H-01 — Wallet order functions decrement inventory twice
+
+- An AFTER INSERT trigger `ptx_order_items_reserve` calls `ptx_reserve_stock()`, which decrements listing inventory.
+- Both `create_market_order` and `create_order_with_wallet` also manually decrement inventory after inserting `order_items`.
+- Calling either function therefore causes the trigger and the function body to decrement stock for the same line item.
+
+**Recommended fix:** keep exactly one stock-reservation mechanism. Prefer the trigger or an explicit locked update, not both. Add tests for one-item and multi-item orders, concurrent checkouts, rollback on insufficient stock, and exact inventory deltas.
+
+### H-02 — Admin checks are inconsistent
+
+- Some functions use `public.is_admin()` (checks `admin_users.auth_user_id`).
+- At least `admin_get_listing_review_queue` and both overloads of `admin_review_listing_media` check `users.role = 'admin'`.
+- RLS policies on seller profiles and withdrawal requests also check `users.role = 'admin'`.
+
+**Recommended fix:** standardize all privileged operations on one trusted admin membership source. Audit all functions and policies for role-string checks.
+
+### H-03 — Public seller-application INSERT policies are permissive
+
+- `seller_applications_insert_public` applies to anon and authenticated with `WITH CHECK (true)`.
+- Other INSERT policies contain field validation, but permissive RLS policies are OR-combined; the unrestricted policy can make those checks ineffective for rows it covers.
+
+**Recommended fix:** remove the unrestricted policy and retain one intentional public intake policy with strict validation, rate limiting, and safe ownership rules. Confirm whether anonymous applications are intended.
+
+### H-04 — Legacy checkout function does not reserve stock safely
+
+- `create_checkout_order()` totals cart rows without locking listing rows.
+- It creates a pending order, inserts order items, and clears the cart; the trigger may decrement stock, but the function's subtotal calculation and insert path do not form one explicit locked inventory validation flow.
+
+**Recommended fix:** retire unused checkout functions or rebuild them around the same tested, atomic inventory reservation function used by the chosen checkout path.
+
+### H-05 — Email OTP endpoint has incomplete abuse controls
+
+- `ptx-email-otp` has `verify_jwt=false`, expected for a public email-code flow.
+- It limits unconsumed sends by email (five in 15 minutes) and failed verification attempts (five per code).
+- The code generator uses `Math.random()`, and no IP/device-level send throttle or distributed rate limiter is present in the inspected source.
+- CORS allows all origins. This is not by itself an authentication bypass, but should be reviewed alongside abuse controls.
+
+**Recommended fix:** use `crypto.getRandomValues`, add IP/email/device throttles backed by shared storage, prevent concurrent send races, and restrict CORS to approved origins where practical. Keep secrets server-side.
+
+### H-06 — AI support rate limiting is process-local
+
+- `ai-support` requires JWT verification, but its rate-limit map is in-memory per function instance.
+- It relies on the first `x-forwarded-for` value for IP grouping.
+- The function may forward user messages to configured external AI providers and a last-resort external provider.
+
+**Recommended fix:** use shared rate-limit storage, validate trusted proxy IP handling, apply per-user quotas, and clearly disclose external AI processing in the privacy notice.
+
+## Front-end observations
+
+- The current `index.html` calls `create_order` for order creation. This function checks active listings and database prices; stock is decremented by the order-items trigger.
+- The front-end calls `is_admin` before showing admin panels. This is only a UI check; database authorization must remain authoritative.
+- The front-end calls `approve_wallet_deposit` and `reject_wallet_deposit`; these functions check `is_admin()`. Keep deposit crediting disabled until the payment review process is operational and independently verified.
+- The frontend still contains the old `cardora-rose.vercel.app` hostname in OAuth/help and AI provider configuration. Domain migration must include Supabase Auth redirect allowlists and provider settings, not just page text.
+- The frontend currently has no `functions.invoke()` calls; the two active Edge Functions are not directly invoked in the inspected index file.
+
+## Repository / backup / environment status
+
+- The audit branch is a GitHub code branch only; it is not a database backup.
+- The repository tree currently contains HTML pages, `README.md`, `robots.txt`, and `sitemap.xml`; no SQL migration source or Edge Function source files were found in this branch.
+- The Supabase database has migration history, but its schema and data may be shared with Pokémon Treasure. Do not apply schema changes to this project until an isolated, recoverable development copy is available.
+- No paid Supabase branch was created. No costs were confirmed. No production changes were made.
+
+## Remediation order
+
+1. Fix C-01 and C-02: lock down user roles, balances, seller approval, and seller profile creation.
+2. Fix C-03: make payment confirmation server-verified only.
+3. Fix H-01: eliminate duplicate inventory decrement.
+4. Standardize admin authorization and remove permissive public application policy.
+5. Rebuild or retire legacy checkout paths; review refund, dispute, release, and withdrawal lifecycle.
+6. Harden OTP and AI support rate limiting and external data handling.
+7. Recover/store migration and Edge Function source in version control; establish a verified database backup and isolated test environment before applying changes.
+8. Run regression tests for buyer, seller, admin, inventory, wallet ledger, deposits, withdrawals, disputes, and payment webhooks.
+
+## Explicitly not done
+
+No SQL writes, migrations, function deployments, data modifications, payment actions, live exploit tests, or paid infrastructure provisioning were performed.
