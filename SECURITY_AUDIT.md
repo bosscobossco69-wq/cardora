@@ -431,3 +431,29 @@ The current project Auth dashboard settings were not exposed by the available re
 - Leaked-password protection status (Security Advisor previously reported it disabled).
 
 Supabase documentation: https://supabase.com/docs/guides/auth/auth-email-passwordless
+
+
+## H-25 — Admin RPCs and Storage policy still trust mutable users.role
+
+A source scan of SECURITY DEFINER functions found these admin-facing routines authorize using `users.role='admin'` rather than the independent `is_admin()` allowlist:
+- `admin_get_listing_review_queue(integer)`
+- `admin_review_listing_media(uuid,text,text)`
+- `admin_review_listing_media(uuid,text,text,text,jsonb)`
+
+The Storage policy `admin listing media all` also authorizes by `users.role='admin'`.
+
+This is directly connected to the previously confirmed `users_update_own` policy and broad UPDATE grants on the `users` table, which allow an authenticated owner to update their own row without column restrictions. Consequently, if a user changes their own role to `admin`, these particular functions and the listing-media Storage policy may accept the forged role even though `is_admin()` would reject the user unless they are present in `admin_users`.
+
+**Impact:** this is a concrete authorization bypass path for the listed admin media/review operations, contingent on the previously observed self-update permission. It does not automatically bypass functions that consistently call `is_admin()`.
+
+**Recommended fix:** immediately remove client UPDATE privileges on `users.role` and other protected columns, and change all admin checks to the independent allowlist predicate. Apply equivalent checks in Storage policies. Do not simply rely on hiding admin buttons in the frontend.
+
+## H-26 — Admin allowlist and users.role are inconsistent
+
+A read-only aggregate query found two rows in `admin_users` and one row in `users` with `role='admin'`. This confirms the two sources of admin identity are not a one-to-one representation at present; the specific account identities are intentionally not included in this report.
+
+**Recommended fix:** reconcile the intended administrators with the project owner, then use `admin_users` as the sole authoritative allowlist. Avoid automatic privilege synchronization from client-editable profile fields.
+
+## Positive control — current admin allowlist table has no client RLS policies
+
+`admin_users` has RLS enabled and no policies. Although `anon` and `authenticated` have broad SQL table grants, the absence of a permissive RLS policy currently blocks normal client-role Data API reads/writes. This is not evidence that a client can insert itself into the admin allowlist. Revoke unnecessary client grants as defense in depth, but preserve server-side service-role access and the intended admin management path.
