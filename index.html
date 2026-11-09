@@ -183,15 +183,15 @@ img, video, iframe, canvas, svg { max-width:100%; }
  const badge=function(text,cls){const el=document.getElementById('cardoraLbLive');if(!el)return;el.textContent=text;el.className='cardora-lb-live '+(cls||'')};
  function shape(row){
   const name=pick(row,['store_name','shop_name','display_name','username','seller_name','name'])||('Seller '+String(row.user_id||row.id||'').slice(0,6));
-  return {name:name,orders:Number(row.completed_orders||0),volume:Number(row.total_sales||0),
-          verified:String(row.verification_status||'').toLowerCase()==='verified',
+  return {name:name,orders:Number(row.completed_orders||0),volume:0,
+          verified:row.verified===true||String(row.verification_status||'').toLowerCase()==='verified',
           initial:String(name).replace(/[^A-Za-z0-9]/g,'').slice(0,1).toUpperCase()||'🎴'};
  }
  window.cardoraRenderLeaderboard=function(mode){
   const ordersBtn=document.getElementById('cardoraLbOrdersBtn'),volBtn=document.getElementById('cardoraLbVolumeBtn'),rows=document.getElementById('cardoraLbRows');
   if(!rows)return;
   if(ordersBtn)ordersBtn.classList.toggle('active',mode==='orders');
-  if(volBtn)volBtn.classList.toggle('active',mode==='volume');
+  if(volBtn){volBtn.classList.toggle('active',mode==='volume');volBtn.style.display='none';}
   window.cardoraLbMode=mode;
   if(state.source==='loading'){rows.innerHTML='<div class="cardora-lb-loading">Loading seller records…</div>';return}
   if(!state.rows.length){
@@ -219,9 +219,9 @@ img, video, iframe, canvas, svg { max-width:100%; }
   if(!rows)return;
   if(!window.ptxSupabase){state.source='unavailable';state.error='no client';badge('database offline','off');cardoraRenderLeaderboard('orders');return}
   try{
-   const res=await window.ptxSupabase.from('seller_profiles').select('*').order('completed_orders',{ascending:false}).limit(25);
+   const res=await window.ptxSupabase.from('public_seller_leaderboard').select('display_name,completed_orders,verified').order('completed_orders',{ascending:false}).limit(25);
    if(res.error)throw res.error;
-   state.rows=(res.data||[]).map(shape).filter(function(s){return s.orders>0||s.volume>0});
+   state.rows=(res.data||[]).map(shape).filter(function(s){return s.orders>0});
    state.source='live';state.error='';
    badge(state.rows.length?state.rows.length+' seller'+(state.rows.length>1?'s':'')+' · live':'no completed orders','on');
   }catch(err){
@@ -1565,7 +1565,7 @@ window.ptxSendChat=function(){
 <div class="ptx-home-products" id="ptxHomeTrending"><div class="ptx-muted" style="padding:8px 0">Loading listings…</div></div>
 <section class="cardora-leaderboard" id="cardoraMonthlyLeaderboard" aria-labelledby="cardoraLbTitle">
   <div class="cardora-lb-head"><div><h2 id="cardoraLbTitle">🏆 Top Sellers This Month</h2><div class="cardora-lb-sub" id="cardoraLbMonth">October 2026 · counted from completed orders only</div></div><span class="cardora-lb-live" id="cardoraLbLive">reading the database…</span></div>
-  <p class="cardora-lb-lead">Seller rankings are built from order records in the Trixovel database. Nothing here is a sample, an illustration or a paid placement.</p>
+  <p class="cardora-lb-lead">Seller rankings show completed order counts from approved public seller profiles. Private balances and sales totals are never displayed.</p>
   <div class="cardora-lb-controls" role="group" aria-label="Leaderboard ranking type"><button class="active" id="cardoraLbOrdersBtn" onclick="cardoraRenderLeaderboard('orders')">Most Orders</button><button id="cardoraLbVolumeBtn" onclick="cardoraRenderLeaderboard('volume')">Sales Volume</button></div>
   <div id="cardoraLbRows" aria-live="polite"><div class="cardora-lb-loading">Loading seller records…</div></div>
   <div class="cardora-lb-actions"><button class="cardora-lb-history" onclick="cardoraToggleHistory()">How the ranking works</button><button class="cardora-lb-history" onclick="window.ptxIPGo?ptxIPGo('apply'):ptxJump('ptxSellerCenter')">Put your shop here</button></div>
@@ -4018,9 +4018,17 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
    say('Sending…','ptx-muted');
    try{
     await window.ptxEnsureSupabase();
+    const {data:sessionData,error:sessionError}=await window.ptxSupabase.auth.getSession();
+    if(sessionError)throw sessionError;
+    if(!sessionData?.session?.user){say('Please sign in before submitting a seller application.','ptx-apply-err');return;}
+    const {data:profileId,error:profileError}=await window.ptxSupabase.rpc('current_user_row_id');
+    if(profileError)throw profileError;
+    if(!profileId)throw new Error('Your account profile is not ready yet. Please sign out and sign in again.');
     const rawCount=String(fd.get('card_count')||'').trim();
     const n=rawCount?parseInt(rawCount,10):null;
     const payload={
+      user_id:profileId,
+      status:'pending',
       name:name, email:email, whatsapp:whatsapp,
       city:val(fd,'city'),
       role:(fd.get('role')==='agent'?'agent':'seller'),
@@ -4037,6 +4045,8 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
    }catch(err){
     console.error('seller application',err);
     if(err&&err.code==='42P01')say('The application form is not connected yet. Please try again later.','ptx-apply-err');
+    else if(err&&err.code==='42501')say('Your login session or account profile is not authorized yet. Please sign in again and retry.','ptx-apply-err');
+    else if(err&&err.code==='23505')say('An application already exists for this account. Please wait for the review result.','ptx-apply-err');
     else say('Could not send the application. Please try again.','ptx-apply-err');
    }finally{ if(btn)btn.disabled=false; }
   });
