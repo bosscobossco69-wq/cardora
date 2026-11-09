@@ -611,21 +611,12 @@ async function ptxInitBackend(){
     },400);
   };
   const start=async()=>{
-    // Let Supabase finish processing an OAuth callback before reading the persisted session.
     const callback=PTX_AUTH_CALLBACK;
     let session=null, sessionRead=false;
-    const readSession=async()=>{
-      try{
-        session=(await ptxSupabase.auth.getSession()).data?.session||null;
-        sessionRead=true;
-      }catch(e){
-        console.warn('Initial auth session check failed:',e);
-      }
-    };
-    await readSession();
-    if(!session && callback.hasCode && !callback.error){
-      // supabase-js can fail the PKCE exchange silently (e.g. the verifier is missing or
-      // belongs to an older OAuth attempt). Retry explicitly so the real reason is visible.
+    // On a PKCE callback, exchange the authorization code before any getSession() read.
+    // The initial auth-state event can otherwise race this startup path and contend for
+    // the same persisted verifier/session lock. The code is exchanged exactly once.
+    if(callback.hasCode && !callback.error){
       try{
         let result=null;
         if(callback.code){
@@ -635,11 +626,17 @@ async function ptxInitBackend(){
         }
         if(result?.error) throw result.error;
         session=result?.data?.session||null;
-        if(session) sessionRead=true;
+        sessionRead=!!session;
       }catch(e){
         console.warn('OAuth callback exchange failed:',e);
         callback.exchangeError=e;
-        await readSession();
+      }
+    }else{
+      try{
+        session=(await ptxSupabase.auth.getSession()).data?.session||null;
+        sessionRead=true;
+      }catch(e){
+        console.warn('Initial auth session check failed:',e);
       }
     }
     if(sessionRead) await ptxUpdateAuthUI(session); else await ptxUpdateAuthUI();
@@ -671,7 +668,7 @@ async function ptxInitBackend(){
       // re-read storage for that one event only. Re-reading on SIGNED_OUT turns a single
       // failed refresh into another refresh request, which is how a 429 becomes a loop.
       let current=session||null;
-      if(!current&&event==='INITIAL_SESSION'){
+      if(!current&&event==='INITIAL_SESSION'&&!PTX_AUTH_CALLBACK.hasCode){
         try{ current=(await ptxSupabase.auth.getSession()).data?.session||null; }catch(e){}
       }
       await ptxUpdateAuthUI(current);
