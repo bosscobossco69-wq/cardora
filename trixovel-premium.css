@@ -1,0 +1,85 @@
+/* Trixovel Premium White Design System
+   Scope: preview branch only. Deep charcoal navigation, warm white content, champagne accents.
+   Existing behavior and data flows are intentionally untouched. */
+:root{
+  --tx-ink:#20252B;--tx-ink-2:#343A40;--tx-muted:#747B83;
+  --tx-paper:#F7F7F4;--tx-white:#FFFFFF;--tx-gold:#D9A441;
+  --tx-gold-dark:#A97822;--tx-line:#E5E3DE;--tx-panel:#FFFFFF;
+  --tx-success:#27845A;--tx-danger:#C94B45;
+  color-scheme:light;
+}
+html{background:var(--tx-paper)!important;color-scheme:light}
+body{background:var(--tx-paper)!important;color:var(--tx-ink)!important;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important}
+button,input,select,textarea{font:inherit}
+a{color:#8A6424}
+button{cursor:pointer}
+.ptx-brandbar,header,.ptx-nav,nav{
+  background:var(--tx-ink)!important;color:#fff!important;
+  border-color:#343A40!important;box-shadow:0 5px 22px #20252b12!important
+}
+.ptx-logo,.ptx-logo small,.ptx-nav button,nav div,nav b{color:#fff!important}
+.ptx-logo-mark{background:var(--tx-gold)!important;color:var(--tx-ink)!important;box-shadow:none!important}
+.ptx-nav button{background:#343A40!important;border:1px solid #59616a!important;border-radius:9px!important}
+.ptx-nav button:hover{background:#4a525b!important;border-color:var(--tx-gold)!important}
+.ptx-currencybar,#ptxCurrencyBar{background:#fff!important;color:var(--tx-ink)!important;border-color:var(--tx-line)!important}
+#ptxCurrencySelect{background:#fff!important;color:var(--tx-ink)!important;border-color:var(--tx-line)!important}
+.ca-promobar,.ca-promobar *{color:var(--tx-ink)!important}
+.ca-promobar{background:#F2E8D4!important;border-color:#E4D3B1!important}
+.hero,.ptx-home-hero,.ptx-markethero,.agenthero{
+  background:linear-gradient(135deg,#fff,#F1EEE7)!important;
+  color:var(--tx-ink)!important;border:1px solid var(--tx-line)!important;
+  box-shadow:0 14px 40px #20252b0b!important
+}
+.hero p,.ptx-home-hero p,.ptx-markethero p,.agenthero p{color:var(--tx-muted)!important}
+h1,h2,h3,h4,.ptx-section-title{color:var(--tx-ink)!important}
+p,.muted,.hint,.agentnote,.cs-muted{color:var(--tx-muted)!important}
+.card,.wallet,.sellbox,.ordercard,.rule,.chatbox,.reportcard,.agentbox,.agentstat,
+.withdrawbox,.tier,.ptx-book,.ptx-bookpage,.ptx-slot,.ptx-panel,.ptx-card,
+.ptx-battlecard,.ptx-battlehero,.ptx-section,.ptx-complete-hub,.cs-panel,
+#cardoraSealedCenter,.cardora-leaderboard{
+  background:#fff!important;color:var(--tx-ink)!important;
+  border:1px solid var(--tx-line)!important;box-shadow:0 8px 24px #20252b0a!important
+}
+input,select,textarea,.reportselect,.chatbox textarea,.agent input,.cs-field input,
+.cs-field select,.cs-field textarea,.editlisting input,.editlisting select,.editlisting textarea{
+  background:#fff!important;color:var(--tx-ink)!important;border:1px solid #D7D8D5!important;
+  border-radius:10px!important
+}
+input::placeholder,textarea::placeholder{color:#92979c!important}
+.btn,.cs-btn.primary,.ptx-btn-primary,.primary,.ptx-nav .active{
+  background:var(--tx-gold)!important;color:var(--tx-ink)!important;
+  border:1px solid var(--tx-gold)!important;box-shadow:none!important
+}
+button,.buy,.orderactions button,.cs-btn,.cardora-lb-controls button,.cardora-lb-history{
+  border-radius:10px!important
+}
+.buy,.orderactions button,.cs-btn,.cardora-lb-controls button,.cardora-lb-history{
+  background:#fff!important;color:var(--tx-ink)!important;border:1px solid #CFCBC2!important
+}
+button:hover,.btn:hover,.buy:hover,.cs-btn:hover{filter:brightness(.97)}
+.ptx-shimmer{background:none!important;color:var(--tx-gold-dark)!important;animation:none!important;-webkit-text-fill-color:var(--tx-gold-dark)!important}
+.ptx-glow{display:none!important}
+.ptx-float,.ptx-live i{animation:none!important}
+.ptx-stat,.cs-stat,.calc,.tracking,.agentstep,.case,.ptx-slot-art{
+  background:#F7F7F4!important;color:var(--tx-ink)!important;border-color:var(--tx-line)!important
+}
+.tag,.cardora-lb-rank,.cardora-lb-value,.commission,.commissionbig{color:var(--tx-gold-dark)!important}
+.dot{background:var(--tx-gold)!important}.dot.off{background:#D5D7D8!important}
+.ptx-toast,.modalbox,.modal .modalbox{background:#fff!important;color:var(--tx-ink)!important;border-color:var(--tx-line)!important}
+.modal{background:#20252B99!important}
+.ptx-booknav button,.ptx-lb-live,.cardora-lb-live{background:#F7F7F4!important;color:var(--tx-ink)!important;border-color:var(--tx-line)!important}
+.ptx-bookprogress i,.progress>div{background:var(--tx-gold)!important}
+.ptx-footer,.footer{background:var(--tx-ink)!important;color:#fff!important}
+.ptx-footer *,.footer *{color:#fff!important}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:3px solid #D9A441!important;outline-offset:2px!important
+}
+@media(max-width:700px){
+  .ptx-brandbar{position:sticky!important;top:0!important;flex-wrap:wrap!important}
+  .ptx-nav{max-width:100%;padding-bottom:2px}
+  .ptx-nav button{padding:9px 10px!important}
+  .ptx-stats{gap:6px!important}
+  .ptx-bookgrid{gap:8px!important}
+  .ptx-section,.ptx-panel,.ptx-complete-hub{margin-left:10px!important;margin-right:10px!important}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
