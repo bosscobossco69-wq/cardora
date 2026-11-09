@@ -83,3 +83,48 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   .ptx-section,.ptx-panel,.ptx-complete-hub{margin-left:10px!important;margin-right:10px!important}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* Warm Cocoa theme refinement — requested 2026-11-09 */
+:root{
+ --tx-ink:#38291F;--tx-ink-2:#594334;--tx-muted:#78685D;
+ --tx-paper:#EDE3D5;--tx-white:#FFF9F1;--tx-gold:#C99A45;
+ --tx-gold-dark:#8A622C;--tx-line:#D9C8B5;--tx-panel:#F8F0E6;
+}
+html,body{background:#EDE3D5!important;color:#38291F!important}
+body{background:linear-gradient(180deg,#F2E9DE 0%,#E9DDCE 100%)!important}
+#ptxCurrencyBar,.ptx-currencybar{background:#F8F1E8!important;color:#49372B!important;border-color:#D9C8B5!important}
+.ptx-brandbar,header,.ptx-nav,nav{background:#35251C!important;color:#FFF8EF!important;border-color:#594334!important}
+.ptx-logo,.ptx-logo small,.ptx-nav button,nav div,nav b{color:#FFF8EF!important}
+.ptx-nav button{background:#49352A!important;border-color:#725743!important;color:#FFF8EF!important}
+.ptx-nav button:hover{background:#624936!important;border-color:#D2A65B!important}
+.ptx-nav .active,.ptx-nav button.active{background:#C99A45!important;color:#2F2118!important}
+.hero,.ptx-home-hero,.ptx-markethero,.agenthero,
+.ptx-section,.ptx-panel,.ptx-complete-hub,.ptx-book,.ptx-bookpage,
+.ptx-card,.ptx-battlecard,.ptx-battlehero,.card,.wallet,.sellbox,.ordercard,
+.rule,.chatbox,.reportcard,.agentbox,.agentstat,.withdrawbox,.tier,
+.cs-panel,#cardoraSealedCenter,.cardora-leaderboard,section,main{
+ background:#F8F0E6!important;color:#38291F!important;
+ border-color:#D9C8B5!important;box-shadow:0 8px 24px #513a2510!important
+}
+.hero,.ptx-home-hero,.ptx-markethero,.agenthero{background:linear-gradient(135deg,#FFF9F1,#EADBC8)!important}
+h1,h2,h3,h4,.ptx-section-title,.hero *,.ptx-home-hero *,.ptx-markethero *,.agenthero *{color:#38291F!important}
+p,.muted,.hint,.agentnote,.cs-muted,.ptx-section p{color:#78685D!important}
+.ptx-stat,.cs-stat,.calc,.tracking,.agentstep,.case,.ptx-slot-art,
+.cs-statrow,.ptx-stats{background:#EFE3D5!important;color:#38291F!important;border-color:#D9C8B5!important}
+.ptx-stat span,.ptx-live,.cs-field label{color:#78685D!important}
+input,select,textarea,.reportselect,.chatbox textarea,.agent input,.cs-field input,
+.cs-field select,.cs-field textarea,.editlisting input,.editlisting select,.editlisting textarea{
+ background:#FFFCF7!important;color:#38291F!important;border-color:#D1BEAA!important
+}
+input::placeholder,textarea::placeholder{color:#9A897A!important}
+.btn,.cs-btn.primary,.ptx-btn-primary,.primary,.buy,.orderactions button,.cs-btn,
+.cardora-lb-controls button,.cardora-lb-history{
+ background:#C99A45!important;color:#2F2118!important;border-color:#B78637!important
+}
+.ptx-footer,.footer{background:#35251C!important;color:#FFF8EF!important}
+.ptx-footer *,.footer *{color:#FFF8EF!important}
+.ptx-toast,.modalbox,.modal .modalbox{background:#FFF9F1!important;color:#38291F!important;border-color:#D9C8B5!important}
+.modal{background:#35251C99!important}
+.ca-promobar{background:#E9D7BE!important;border-color:#D5B98F!important}
+a{color:#805526!important}
+.tag,.cardora-lb-rank,.cardora-lb-value,.commission,.commissionbig{color:#805526!important}
