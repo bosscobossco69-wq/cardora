@@ -338,7 +338,9 @@ const PTX_AUTH_OPTIONS={
     flowType:'pkce',
     autoRefreshToken:true,
     persistSession:true,
-    detectSessionInUrl:true,
+    // OAuth callback is exchanged explicitly once in ptxInitBackend.start().
+    // Disable automatic URL detection to prevent a race that consumes the PKCE verifier twice.
+    detectSessionInUrl:false,
     storage:window.localStorage,
     storageKey:'cardora-supabase-auth-v1'
   }
