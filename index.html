@@ -474,14 +474,15 @@ async function ptxCurrentUser(){
 
 
 let ptxWalletLoadInFlight=false;
-async function ptxLoadWallet(){
+async function ptxLoadWallet(sessionOverride){
   if(ptxWalletLoadInFlight) return;
   ptxWalletLoadInFlight=true;
   try{
     if(!ptxSupabase) return;
-    // Signed-out visitors have nothing to load; skip quietly instead of logging errors.
-    const {data:sessionData}=await ptxSupabase.auth.getSession();
-    const user=sessionData?.session?.user||null;
+    // Reuse the session already supplied by the auth lifecycle where possible.
+    // This avoids redundant getSession() calls immediately after OAuth/refresh events.
+    const session=arguments.length>0?sessionOverride:((await ptxSupabase.auth.getSession()).data?.session||null);
+    const user=session?.user||null;
     if(!user) return;
     const {data:profile,error:profileError}=await ptxSupabase.from('users').select('id,balance').eq('auth_user_id',user.id).maybeSingle();
     if(profileError) throw profileError;
@@ -606,8 +607,10 @@ async function ptxInitBackend(){
     clearTimeout(authUiRefreshTimer);
     authUiRefreshTimer=setTimeout(async()=>{
       authUiLastRead=Date.now();
-      await ptxUpdateAuthUI();
-      await ptxLoadWallet();
+      let current=null;
+      try{current=(await ptxSupabase.auth.getSession()).data?.session||null;}catch(e){console.warn('Auth UI refresh',e);}
+      await ptxUpdateAuthUI(current);
+      await ptxLoadWallet(current);
     },400);
   };
   const start=async()=>{
@@ -659,7 +662,7 @@ async function ptxInitBackend(){
         :'Google sign-in did not complete. Click "Continue with Google" again and finish it in this tab.');
       ptxCleanAuthUrl();
     }
-    await ptxLoadWallet();
+    await ptxLoadWallet(session);
   };
   ptxSupabase.auth.onAuthStateChange((event,session)=>{
     // Defer UI/data work out of the auth callback to avoid re-entrant Supabase calls.
@@ -677,7 +680,7 @@ async function ptxInitBackend(){
         ptxNotifySignedIn();
         try{ window.ptxRenderIndependentAccount?.(); }catch(e){}
       }
-      await ptxLoadWallet();
+      await ptxLoadWallet(current);
     },0);
   });
   window.addEventListener('pageshow',refreshAuthUi);
@@ -3102,7 +3105,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       else if(currentHub==='wallet')await window.ptxLoadPaymentSummary();
       else if(currentHub==='seller')await window.ptxLoadSellerSummary();
       else if(currentHub==='account')await window.ptxLoadAccountSummary();
-      await ptxLoadWallet();
+      await ptxLoadWallet(session);
       setRefresh('Updated '+new Date().toLocaleTimeString(),true);
       if(!silent) window.ptxToast?.('✓ '+(currentHub==='orders'?'Orders':currentHub.charAt(0).toUpperCase()+currentHub.slice(1))+' refreshed');
     }catch(e){console.error('refresh',e);setRefresh('Refresh failed · try again',false);if(!silent) window.ptxToast?.('Refresh failed');}
