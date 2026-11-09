@@ -5,15 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <meta content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://crqqockaetgacddxkqpb.supabase.co https://api.tcgdex.net; frame-src https://accounts.google.com https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" http-equiv="Content-Security-Policy"/>
-<script>
-(function(){
-  var CANON="cardora-rose.vercel.app";
-  var h=location.hostname;
-  if(h!==CANON&&/\.vercel\.app$/i.test(h)){
-    location.replace("https://"+CANON+location.pathname+location.hash);
-  }
-})();
-</script>
+<!-- Preview deployments must remain on their own origin so PKCE verifier storage matches the OAuth callback origin. -->
 <title>Trixovel — Global Collectibles Marketplace</title>
 <meta name="description" content="Trixovel is a global collectible card marketplace: browse Pokémon card listings, compare sellers and shipping, and manage your account. Payments are not live yet."/>
 <meta name="theme-color" content="#080711"/>
@@ -183,15 +175,15 @@ img, video, iframe, canvas, svg { max-width:100%; }
  const badge=function(text,cls){const el=document.getElementById('cardoraLbLive');if(!el)return;el.textContent=text;el.className='cardora-lb-live '+(cls||'')};
  function shape(row){
   const name=pick(row,['store_name','shop_name','display_name','username','seller_name','name'])||('Seller '+String(row.user_id||row.id||'').slice(0,6));
-  return {name:name,orders:Number(row.completed_orders||0),volume:Number(row.total_sales||0),
-          verified:String(row.verification_status||'').toLowerCase()==='verified',
+  return {name:name,orders:Number(row.completed_orders||0),volume:0,
+          verified:row.verified===true||String(row.verification_status||'').toLowerCase()==='verified',
           initial:String(name).replace(/[^A-Za-z0-9]/g,'').slice(0,1).toUpperCase()||'🎴'};
  }
  window.cardoraRenderLeaderboard=function(mode){
   const ordersBtn=document.getElementById('cardoraLbOrdersBtn'),volBtn=document.getElementById('cardoraLbVolumeBtn'),rows=document.getElementById('cardoraLbRows');
   if(!rows)return;
   if(ordersBtn)ordersBtn.classList.toggle('active',mode==='orders');
-  if(volBtn)volBtn.classList.toggle('active',mode==='volume');
+  if(volBtn){volBtn.classList.toggle('active',mode==='volume');volBtn.style.display='none';}
   window.cardoraLbMode=mode;
   if(state.source==='loading'){rows.innerHTML='<div class="cardora-lb-loading">Loading seller records…</div>';return}
   if(!state.rows.length){
@@ -219,9 +211,9 @@ img, video, iframe, canvas, svg { max-width:100%; }
   if(!rows)return;
   if(!window.ptxSupabase){state.source='unavailable';state.error='no client';badge('database offline','off');cardoraRenderLeaderboard('orders');return}
   try{
-   const res=await window.ptxSupabase.from('seller_profiles').select('*').order('completed_orders',{ascending:false}).limit(25);
+   const res=await window.ptxSupabase.from('public_seller_leaderboard').select('display_name,completed_orders,verified').order('completed_orders',{ascending:false}).limit(25);
    if(res.error)throw res.error;
-   state.rows=(res.data||[]).map(shape).filter(function(s){return s.orders>0||s.volume>0});
+   state.rows=(res.data||[]).map(shape).filter(function(s){return s.orders>0});
    state.source='live';state.error='';
    badge(state.rows.length?state.rows.length+' seller'+(state.rows.length>1?'s':'')+' · live':'no completed orders','on');
   }catch(err){
@@ -338,7 +330,9 @@ const PTX_AUTH_OPTIONS={
     flowType:'pkce',
     autoRefreshToken:true,
     persistSession:true,
-    detectSessionInUrl:true,
+    // OAuth callback is exchanged explicitly once in ptxInitBackend.start().
+    // Disable automatic URL detection to prevent a race that consumes the PKCE verifier twice.
+    detectSessionInUrl:false,
     storage:window.localStorage,
     storageKey:'cardora-supabase-auth-v1'
   }
@@ -472,14 +466,15 @@ async function ptxCurrentUser(){
 
 
 let ptxWalletLoadInFlight=false;
-async function ptxLoadWallet(){
+async function ptxLoadWallet(sessionOverride){
   if(ptxWalletLoadInFlight) return;
   ptxWalletLoadInFlight=true;
   try{
     if(!ptxSupabase) return;
-    // Signed-out visitors have nothing to load; skip quietly instead of logging errors.
-    const {data:sessionData}=await ptxSupabase.auth.getSession();
-    const user=sessionData?.session?.user||null;
+    // Reuse the session already supplied by the auth lifecycle where possible.
+    // This avoids redundant getSession() calls immediately after OAuth/refresh events.
+    const session=arguments.length>0?sessionOverride:((await ptxSupabase.auth.getSession()).data?.session||null);
+    const user=session?.user||null;
     if(!user) return;
     const {data:profile,error:profileError}=await ptxSupabase.from('users').select('id,balance').eq('auth_user_id',user.id).maybeSingle();
     if(profileError) throw profileError;
@@ -604,26 +599,19 @@ async function ptxInitBackend(){
     clearTimeout(authUiRefreshTimer);
     authUiRefreshTimer=setTimeout(async()=>{
       authUiLastRead=Date.now();
-      await ptxUpdateAuthUI();
-      await ptxLoadWallet();
+      let current=null;
+      try{current=(await ptxSupabase.auth.getSession()).data?.session||null;}catch(e){console.warn('Auth UI refresh',e);}
+      await ptxUpdateAuthUI(current);
+      await ptxLoadWallet(current);
     },400);
   };
   const start=async()=>{
-    // Let Supabase finish processing an OAuth callback before reading the persisted session.
     const callback=PTX_AUTH_CALLBACK;
     let session=null, sessionRead=false;
-    const readSession=async()=>{
-      try{
-        session=(await ptxSupabase.auth.getSession()).data?.session||null;
-        sessionRead=true;
-      }catch(e){
-        console.warn('Initial auth session check failed:',e);
-      }
-    };
-    await readSession();
-    if(!session && callback.hasCode && !callback.error){
-      // supabase-js can fail the PKCE exchange silently (e.g. the verifier is missing or
-      // belongs to an older OAuth attempt). Retry explicitly so the real reason is visible.
+    // On a PKCE callback, exchange the authorization code before any getSession() read.
+    // The initial auth-state event can otherwise race this startup path and contend for
+    // the same persisted verifier/session lock. The code is exchanged exactly once.
+    if(callback.hasCode && !callback.error){
       try{
         let result=null;
         if(callback.code){
@@ -633,11 +621,17 @@ async function ptxInitBackend(){
         }
         if(result?.error) throw result.error;
         session=result?.data?.session||null;
-        if(session) sessionRead=true;
+        sessionRead=!!session;
       }catch(e){
         console.warn('OAuth callback exchange failed:',e);
         callback.exchangeError=e;
-        await readSession();
+      }
+    }else{
+      try{
+        session=(await ptxSupabase.auth.getSession()).data?.session||null;
+        sessionRead=true;
+      }catch(e){
+        console.warn('Initial auth session check failed:',e);
       }
     }
     if(sessionRead) await ptxUpdateAuthUI(session); else await ptxUpdateAuthUI();
@@ -660,7 +654,7 @@ async function ptxInitBackend(){
         :'Google sign-in did not complete. Click "Continue with Google" again and finish it in this tab.');
       ptxCleanAuthUrl();
     }
-    await ptxLoadWallet();
+    await ptxLoadWallet(session);
   };
   ptxSupabase.auth.onAuthStateChange((event,session)=>{
     // Defer UI/data work out of the auth callback to avoid re-entrant Supabase calls.
@@ -669,7 +663,7 @@ async function ptxInitBackend(){
       // re-read storage for that one event only. Re-reading on SIGNED_OUT turns a single
       // failed refresh into another refresh request, which is how a 429 becomes a loop.
       let current=session||null;
-      if(!current&&event==='INITIAL_SESSION'){
+      if(!current&&event==='INITIAL_SESSION'&&!PTX_AUTH_CALLBACK.hasCode){
         try{ current=(await ptxSupabase.auth.getSession()).data?.session||null; }catch(e){}
       }
       await ptxUpdateAuthUI(current);
@@ -678,7 +672,7 @@ async function ptxInitBackend(){
         ptxNotifySignedIn();
         try{ window.ptxRenderIndependentAccount?.(); }catch(e){}
       }
-      await ptxLoadWallet();
+      await ptxLoadWallet(current);
     },0);
   });
   window.addEventListener('pageshow',refreshAuthUi);
@@ -1562,12 +1556,12 @@ window.ptxSendChat=function(){
 <div class="ptx-title" style="margin-top:20px"><h2>🔥 Live Cards</h2><span class="ptx-see">From marketplace listings</span></div>
 <div class="ptx-home-products" id="ptxHomeTrending"><div class="ptx-muted" style="padding:8px 0">Loading listings…</div></div>
 <section class="cardora-leaderboard" id="cardoraMonthlyLeaderboard" aria-labelledby="cardoraLbTitle">
-  <div class="cardora-lb-head"><div><h2 id="cardoraLbTitle">🏆 Top Sellers This Month</h2><div class="cardora-lb-sub" id="cardoraLbMonth">October 2026 · counted from completed orders only</div></div><span class="cardora-lb-live" id="cardoraLbLive">reading the database…</span></div>
-  <p class="cardora-lb-lead">Seller rankings are built from order records in the Trixovel database. Nothing here is a sample, an illustration or a paid placement.</p>
-  <div class="cardora-lb-controls" role="group" aria-label="Leaderboard ranking type"><button class="active" id="cardoraLbOrdersBtn" onclick="cardoraRenderLeaderboard('orders')">Most Orders</button><button id="cardoraLbVolumeBtn" onclick="cardoraRenderLeaderboard('volume')">Sales Volume</button></div>
+  <div class="cardora-lb-head"><div><h2 id="cardoraLbTitle">🏆 Top Sellers</h2><div class="cardora-lb-sub" id="cardoraLbMonth">Ranked by completed orders · public seller profiles only</div></div><span class="cardora-lb-live" id="cardoraLbLive">reading the database…</span></div>
+  <p class="cardora-lb-lead">Seller rankings show completed order counts from approved public seller profiles. Private balances and sales totals are never displayed.</p>
+  <div class="cardora-lb-controls" role="group" aria-label="Leaderboard ranking type"><button class="active" id="cardoraLbOrdersBtn" onclick="cardoraRenderLeaderboard('orders')">Completed Orders</button></div>
   <div id="cardoraLbRows" aria-live="polite"><div class="cardora-lb-loading">Loading seller records…</div></div>
   <div class="cardora-lb-actions"><button class="cardora-lb-history" onclick="cardoraToggleHistory()">How the ranking works</button><button class="cardora-lb-history" onclick="window.ptxIPGo?ptxIPGo('apply'):ptxJump('ptxSellerCenter')">Put your shop here</button></div>
-  <div class="cardora-lb-history-panel" id="cardoraLbHistory"><b>How the ranking is calculated</b><ul><li>Only orders marked completed count; cancelled and refunded orders are removed at the close of each month.</li><li>Order count ranks “Most Orders”. Paid value in USD ranks “Sales Volume”.</li><li>Sellers with an unresolved counterfeit or non-delivery case are held out of the board until it closes.</li><li>No paid placement, no seeded accounts and no illustrative figures — an empty board means what it says.</li></ul></div>
+  <div class="cardora-lb-history-panel" id="cardoraLbHistory"><b>How the ranking is calculated</b><ul><li>The board reads completed order counts from the public seller leaderboard view.</li><li>Only active seller profiles with a public display name and at least one completed order are listed.</li><li>The ranking is based on the completed-order total supplied by the database; it is not a monthly ranking or a sales-value ranking.</li><li>Only public display names, completed-order counts and verification status are shown. Private account details and financial balances are not exposed.</li></ul></div>
   <div class="cardora-lb-foot" id="cardoraLbFoot">Trixovel publishes only records that exist. If a seller, order count or sales figure has not actually happened, it is not shown here.</div>
 </section>
 <div class="ptx-title" style="margin-top:20px"><h2>🛡️ What is real on Trixovel today</h2></div>
@@ -3103,7 +3097,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       else if(currentHub==='wallet')await window.ptxLoadPaymentSummary();
       else if(currentHub==='seller')await window.ptxLoadSellerSummary();
       else if(currentHub==='account')await window.ptxLoadAccountSummary();
-      await ptxLoadWallet();
+      await ptxLoadWallet(session);
       setRefresh('Updated '+new Date().toLocaleTimeString(),true);
       if(!silent) window.ptxToast?.('✓ '+(currentHub==='orders'?'Orders':currentHub.charAt(0).toUpperCase()+currentHub.slice(1))+' refreshed');
     }catch(e){console.error('refresh',e);setRefresh('Refresh failed · try again',false);if(!silent) window.ptxToast?.('Refresh failed');}
@@ -4016,9 +4010,17 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
    say('Sending…','ptx-muted');
    try{
     await window.ptxEnsureSupabase();
+    const {data:sessionData,error:sessionError}=await window.ptxSupabase.auth.getSession();
+    if(sessionError)throw sessionError;
+    if(!sessionData?.session?.user){say('Please sign in before submitting a seller application.','ptx-apply-err');return;}
+    const {data:profileId,error:profileError}=await window.ptxSupabase.rpc('current_user_row_id');
+    if(profileError)throw profileError;
+    if(!profileId)throw new Error('Your account profile is not ready yet. Please sign out and sign in again.');
     const rawCount=String(fd.get('card_count')||'').trim();
     const n=rawCount?parseInt(rawCount,10):null;
     const payload={
+      user_id:profileId,
+      status:'pending',
       name:name, email:email, whatsapp:whatsapp,
       city:val(fd,'city'),
       role:(fd.get('role')==='agent'?'agent':'seller'),
@@ -4035,6 +4037,8 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
    }catch(err){
     console.error('seller application',err);
     if(err&&err.code==='42P01')say('The application form is not connected yet. Please try again later.','ptx-apply-err');
+    else if(err&&err.code==='42501')say('Your login session or account profile is not authorized yet. Please sign in again and retry.','ptx-apply-err');
+    else if(err&&err.code==='23505')say('An application already exists for this account. Please wait for the review result.','ptx-apply-err');
     else say('Could not send the application. Please try again.','ptx-apply-err');
    }finally{ if(btn)btn.disabled=false; }
   });
