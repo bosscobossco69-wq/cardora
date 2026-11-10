@@ -167,3 +167,46 @@ Checked the separate original repository `bosscobossco69-wq/pokemon-treasure` (d
 Cardora repository path history for `supabase/migrations` shows only the directory's appearance in the 2026-10-21 upload commit `8123cfcfccddd616986b9d313c29c703077a297f` and its removal in `986e6790e6d321f652e9d86b87648e460da4aa14`. The directory at its recovered parent revision held only the three draft/reference SQL files documented above. The 48 production-applied migrations (versions 2026-09-19 through 2026-11-09) are not present in this GitHub history path.
 
 Conclusion: GitHub history searched so far has not yielded the original SQL bodies for the 48 applied production migrations. Continue with trusted local project archives, developer machine backups, Supabase CLI working directories, SQL Editor/deployment logs, or a separately retained repository/archive. If none exists, create a read-only reconstructed schema baseline from the current production catalog, label it explicitly as reconstructed (not original migration source), and review it before any use in the isolated test project. Never replay it against production.
+
+
+## Extended catalog and privilege audit — 2026-11-10 (read-only)
+
+### View exposure: public seller leaderboard
+- public.public_seller_leaderboard is a simple view over seller_profiles selecting display_name, completed_orders and a derived verified flag, filtering active sellers with completed orders and a non-empty display name.
+- The view has no security_invoker=true reloption in the inspected catalog. Ordinary PostgreSQL views execute with the view owner's privileges by default and can bypass underlying-table RLS for callers.
+- Catalog ACL reports anon and authenticated with arwdDxtm on the view (including INSERT/UPDATE/DELETE privileges), in addition to SELECT. The view is a simple potentially-updatable view; the combination of owner-context view semantics and broad write grants is a critical exposure requiring isolated reproduction and dependency review.
+- Do not test writes on production. In staging, verify whether the view is automatically updatable and whether writes can affect seller_profiles; then design a read-only, explicitly security-invoker view or revoke unnecessary privileges. No production fix is authorized here.
+
+### Column-level table grants
+- information_schema.role_column_grants shows widespread column-level INSERT/SELECT/UPDATE grants to anon and authenticated across business tables, including listings, orders, order_items, order_financials, order_shipping, wallet_reviews, wallet_transactions, withdrawal_requests, seller_profiles, listing media/reviews, disputes, carts, chat, card requests/scans, and listing submissions.
+- This is a privilege inventory, not proof that all rows are reachable: RLS policies still apply to tables with RLS enabled. Broad column grants materially increase the impact of any permissive or incorrectly scoped policy and should be reduced to least privilege after mapping actual frontend/API usage.
+- The leaderboard view is a separate concern because ordinary view security semantics can bypass base-table RLS; its anon/authenticated ACL is explicitly broad.
+
+### Wallet review trigger correction
+- Earlier notes described the own-row UPDATE policy as a possible path to changing sensitive review fields. The extended trigger inventory confirms an enabled BEFORE UPDATE OR DELETE trigger ptx_guard_wallet_reviews calling ptx_guard_wallet_reviews().
+- The inspected function raises 'Admin access required' whenever public.is_admin() is false. Therefore, the prior statement that a non-admin user may be able to update their own wallet review fields is not established and is likely blocked by this trigger. Keep it as a staging regression test, not a confirmed exploit.
+- The authenticated/anon column grants remain broader than necessary and should still be reviewed. The trigger is SECURITY DEFINER but performs an admin check and returns OLD/NEW; do not weaken or remove it without a replacement guard.
+
+### Storage policies and buckets
+- Both buckets remain private: deposit-proofs (5 MiB; JPEG/PNG/WebP/HEIC) and listing-media (10 MiB; JPEG/PNG/WebP).
+- deposit-proofs: authenticated users may upload under a first-level folder matching their auth UID; reads are limited to own folder or is_admin().
+- listing-media: authenticated users may upload and read under their own UID folder; admin ALL policy checks users.role='admin'.
+- No public bucket setting was found. No Storage policy or bucket was modified.
+
+### Function EXECUTE ACL snapshot
+- The inspected sensitive order/payment/withdrawal functions (create_order, create_market_order, create_order_with_wallet, create_checkout_order, record_order_payment, request_withdrawal, confirm_order_received) currently show EXECUTE for postgres and service_role, not anon or authenticated.
+- admin_resolve_dispute currently shows EXECUTE for authenticated as well as postgres and service_role; its body calls is_admin() before resolving. Retain server-side authorization checks and test this path with non-admin/admin synthetic users.
+- current_user_row_id and is_admin are executable by authenticated users as helper functions. This is not itself evidence of privilege escalation; review their returned data and caller assumptions.
+
+### Revised priority
+1. Critical: public_seller_leaderboard ordinary view semantics plus anon/authenticated write ACL.
+2. High: widespread anon/authenticated column-level CRUD grants; correlate each with RLS policy and actual client usage.
+3. High: direct withdrawal_requests INSERT policy field integrity; test synthetic processed/paid metadata attempts.
+4. High: duplicate inventory decrement in wallet order RPCs.
+5. Medium: duplicate auth signup triggers; consolidate only after staging signup regression tests.
+6. Corrected: wallet_reviews non-admin own-row UPDATE exploit is not confirmed because the enabled guard trigger rejects non-admin UPDATE/DELETE.
+
+### Scope and safety confirmation
+- All catalog queries in this section were SELECT-only against production project crqqockaetgacddxkqpb.
+- No production rows, schema, grants, policies, views, functions, buckets, or deployments were changed.
+- This remains a reconstructed audit record, not a recovered migration set. The empty isolated project fdkfquvzbswxocyrhduk has not been modified.
