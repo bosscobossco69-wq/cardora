@@ -231,3 +231,16 @@ Staging-only validation plan:
 5. Inspect frontend references to the view and preserve its required public leaderboard SELECT behavior before proposing a production migration.
 
 No production view, grants, policies, table, or data were modified. The isolated project remains untouched pending explicit approval for test DDL.
+
+
+### Frontend dependency check for leaderboard view — 2026-11-10 (read-only)
+
+Inspected the staging branch `index.html` around the leaderboard loader (lines 211-228). The only discovered client call to `public_seller_leaderboard` is a read query selecting exactly `display_name,completed_orders,verified`, ordered by completed_orders and limited to 25 rows. No client-side INSERT, UPDATE, or DELETE call against this view was found in the inspected file. The homepage uses the view as a public leaderboard and displays only those projected fields.
+
+Remediation implication:
+- Preserve the public SELECT behavior required by the homepage; do not blindly convert to security_invoker=true because the current seller_profiles SELECT policy is own-row/admin-only and would likely make the public leaderboard empty for anon users.
+- First candidate for isolated validation: retain the narrowly projected owner-context view for public SELECT, but revoke INSERT, UPDATE, and DELETE from anon/authenticated and confirm the view owner and base-table projection expose no additional sensitive columns.
+- Alternative: security-invoker view only if a deliberate public-read policy and the minimum necessary base-table SELECT column grants are designed and tested without exposing seller_profiles through the Data API.
+- Check all frontend files and any external consumers before finalizing; the current scan covered the staging index.html loader.
+
+No production or isolated database changes were made. The above are remediation candidates only, pending a complete consumer/role review and explicit approval for isolated test DDL.
