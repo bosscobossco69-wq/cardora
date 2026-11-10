@@ -70,3 +70,29 @@
 - No seller balance changes without balanced, idempotent ledger entries.
 - Preview UI never represents simulated state as real money movement.
 - A reviewed rollback plan exists for every staging migration.
+
+
+## Additional read-only verification — 2026-11-10
+
+### Auth user creation triggers
+- Both `on_auth_user_created` and `ptx_on_auth_user_created` are enabled on `auth.users`.
+- Their functions both insert into `public.users` and both use `ON CONFLICT (auth_user_id)`, so the inspected definitions do not demonstrate duplicate rows. They are redundant competing profile-creation paths and should be consolidated only after confirming signup behavior and trigger order in staging.
+- `handle_new_auth_user` sets deterministic member_id, role='user', status='active'; `ptx_handle_new_user` uses a random member_id and leaves role/status to defaults. Because both are enabled, actual resulting profile values depend on trigger execution order and conflict handling. Add signup tests before changing either trigger.
+
+### Withdrawal and wallet review access
+- `request_withdrawal` locks the approved seller row, subtracts available_balance only when sufficient, then creates a pending withdrawal request. Its inspected function body has no exception handler that credits funds back.
+- Direct table grants are broader than the visible RLS policies: anon has table-level CRUD grants on seller_profiles, wallet_reviews and withdrawal_requests; authenticated has CRUD grants on these tables. RLS still applies, but broad grants are unnecessary exposure and need a table/column privilege plus policy matrix before any change.
+- `wallet_reviews` has an authenticated own-row UPDATE policy. Verify column-level grants and whether users can alter status, amount, review outcome, transaction identifiers or approval metadata. Do not assume RLS alone prevents changing sensitive columns.
+- `withdrawal_requests` own INSERT policy checks owner and amount >= 100, but does not constrain status or other submitted fields. Table-level grants include INSERT; inspect column privileges and test whether clients can forge request state/metadata.
+
+### Source recovery result
+- Checked all six visible repository branches, including `ai/trixovel-safe-audit` and `ai-admin-preview`; none contains `supabase/migrations`, `.sql` migration files, or Edge Function source.
+- The `ai-admin-preview` branch contains a security review document only. It records that the configured production project is `crqqockaetgacddxkqpb` and the separate Cardora project is `fdkfquvzbswxocyrhduk`; do not switch the live site based on project naming.
+- Supabase migration history confirms 48 version/name records, but does not provide the SQL bodies. Canonical migration source is still missing.
+- GitHub code search did not return source matches for `create_market_order`; this does not prove the source is absent from private backups or local developer machines.
+
+### Next read-only checks
+- Inspect column-level grants for `wallet_reviews` and `withdrawal_requests`.
+- Inspect constraints/defaults and exact columns for those tables.
+- Inspect `create_market_order` and `create_order_with_wallet` full definitions side-by-side to document exactly where duplicate stock decrement occurs.
+- Search trusted local/backup sources for the 48 migration SQL files and deployed Edge Function source. Do not reconstruct and apply migrations to production.
