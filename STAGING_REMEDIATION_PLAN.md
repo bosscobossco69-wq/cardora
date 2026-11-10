@@ -210,3 +210,24 @@ Conclusion: GitHub history searched so far has not yielded the original SQL bodi
 - All catalog queries in this section were SELECT-only against production project crqqockaetgacddxkqpb.
 - No production rows, schema, grants, policies, views, functions, buckets, or deployments were changed.
 - This remains a reconstructed audit record, not a recovered migration set. The empty isolated project fdkfquvzbswxocyrhduk has not been modified.
+
+
+### Leaderboard view privilege verification — 2026-11-10 (read-only)
+
+A second catalog pass confirmed the exact PostgreSQL view capability and underlying RLS context:
+- `information_schema.views` reports `is_updatable=YES`, `is_insertable_into=YES`, `is_trigger_updatable=NO`, and `is_trigger_deletable=NO` for `public_seller_leaderboard`.
+- `pg_relation_is_updatable(view_oid, true)` returned bitmask `28`; combined with the information_schema flags, this confirms the view is automatically updatable/insertable.
+- Effective privilege checks return true for anon and authenticated for SELECT, INSERT, UPDATE, and DELETE on the view.
+- Its only reloption is `security_barrier=true`; this is not equivalent to `security_invoker=true` and does not make the view honor caller RLS on the base table.
+- `seller_profiles` has RLS enabled (but FORCE ROW LEVEL SECURITY is false). Its inspected policies include authenticated own-profile INSERT constrained to pending/default-zero fields; SELECT for own row or users.role='admin'; and UPDATE for users.role='admin'. No general authenticated UPDATE policy was shown.
+
+Assessment: the mismatch is confirmed at the catalog/privilege level: the leaderboard view is insertable and updatable by browser roles while the base table has restrictive RLS. Since the ordinary view executes with owner privileges by default, the view may provide a route around the base-table policy model. Exact data mutation impact still requires synthetic staging reproduction; no write exploit has been run or claimed as demonstrated.
+
+Staging-only validation plan:
+1. Build a minimal synthetic seller_profiles fixture with two users and representative RLS policies in the isolated database (do not copy production rows).
+2. Create an equivalent view owned by a controlled test role, first matching the current security_barrier-only definition.
+3. Under anon and authenticated JWT contexts, test SELECT and attempted INSERT/UPDATE/DELETE through the view; inspect base rows after each transaction.
+4. Repeat with a security-invoker view and least-privilege SELECT-only grants; confirm caller RLS applies and writes are denied.
+5. Inspect frontend references to the view and preserve its required public leaderboard SELECT behavior before proposing a production migration.
+
+No production view, grants, policies, table, or data were modified. The isolated project remains untouched pending explicit approval for test DDL.
