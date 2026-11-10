@@ -145,3 +145,16 @@ These are source snapshots, not deployed changes. The production functions remai
 ## Migration source recovery status
 - Edge Function code recovery is now complete for the two currently deployed functions.
 - The 48 database migration SQL bodies remain unrecovered. Migration history only exposes version/name metadata. Continue searching trusted local backups, original SQL editor/deployment logs, or developer archives; any reconstructed baseline must be labeled reconstruction and reviewed before applying to the empty test project.
+
+
+## Deleted Supabase directory history recovery — 2026-11-10 (read-only)
+
+A historical parent revision was located before commit `986e6790e6d321f652e9d86b87648e460da4aa14` ("Delete supabase directory"). Its parent is `f9b7e459b64f6368b9af7da915d7750693ff1b60`. The deleted `supabase/migrations` directory contained exactly three SQL files:
+
+1. `202610210001_cardora_payment_ledger.sql` — blob SHA `61d7107e7b74345672ec2f0a8afde8e558b27bb4`. Payment/payout/ledger schema and service-role-only journal function. Header says review/apply only in a non-production project first; this is not a live payment integration.
+2. `202610210002_cardora_privacy_controls.sql` — blob SHA `3211c66ed902fde6e251bd04ab6ec31a79cd234f`. Explicitly marked Draft only; policy acceptance and privacy request tables.
+3. `202610210003_cardora_seller_leaderboard.sql` — blob SHA `b41ec674b42c21ec4446eaa6512c0eaa55dd8bf5`. Explicitly says not yet applied to any project; leaderboard tables and view.
+
+The production project's current migration history contains 48 versions, but none of these three version identifiers appears in that list. Therefore these are recovered historical design/draft files, not missing applied migrations and not evidence of production schema state. Do not replay them or insert their version identifiers into migration history. Preserve them as reference material only; any future test must use an isolated non-production database after review.
+
+The recovered parent directory also had `email-templates/` and `functions/` folders; their contents are separate from the three SQL migrations. The directory deletion removed 449 lines across the files listed in the deletion commit. This recovery does not resolve the missing source bodies for the 48 applied production migrations.
