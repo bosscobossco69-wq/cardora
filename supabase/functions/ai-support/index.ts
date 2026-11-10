@@ -37,7 +37,7 @@ const GEMINI_MODELS = [
   "gemini-2.5-flash",
 ];
 
-const SYSTEM_PROMPT = `You are Cardora Support, the assistant on the Cardora collectible card marketplace preview.
+const SYSTEM_PROMPT = `You are Trixovel Support, the assistant on the Trixovel collectible card marketplace preview.
 
 Facts you must follow:
 - This website is a preview. Real payments, checkout, refunds, payouts and order fulfilment are NOT live.
@@ -46,7 +46,7 @@ Facts you must follow:
 - Sellers are responsible for condition, language, authenticity and shipping. Platform fees shown are examples only.
 - You cannot read accounts, orders, balances or payments, and you cannot confirm that anything was paid.
 - Never tell a user to send money to a personal bank account, QR code, wallet or any account shared in chat. Treat such requests as scams and warn the user.
-- Do not discuss topics unrelated to Cardora. Politely redirect.
+- Do not discuss topics unrelated to Trixovel. Politely redirect.
 - Answer in the user's language (English, 涓枃 or Bahasa Melayu). Be concise: at most 120 words. If you are unsure, say so and suggest contacting official support once published.`;
 
 type Turn = { role?: string; text?: string };
@@ -221,7 +221,7 @@ Deno.serve(async (req: Request) => {
       models: OPENROUTER_MODELS,
       headers: {
         "HTTP-Referer": "https://cardora-rose.vercel.app",
-        "X-Title": "Cardora Support",
+        "X-Title": "Trixovel Support",
       },
     },
     {
