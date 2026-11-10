@@ -83,11 +83,11 @@ Deno.serve(async (req: Request) => {
           "Authorization": `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: "Pokémon Treasure <onboarding@resend.dev>",
+          from: "Trixovel <onboarding@resend.dev>",
           to: [email],
-          subject: "Your Pokémon Treasure verification code",
+          subject: "Your Trixovel verification code",
           html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px">
-            <h2 style="margin-bottom:8px">Pokémon Treasure</h2>
+            <h2 style="margin-bottom:8px">Trixovel</h2>
             <p>Your verification code is:</p>
             <div style="font-size:34px;font-weight:700;letter-spacing:8px;margin:22px 0">${code}</div>
             <p>This 8-digit code expires in 10 minutes.</p>
