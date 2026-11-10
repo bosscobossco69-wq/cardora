@@ -96,3 +96,31 @@
 - Inspect constraints/defaults and exact columns for those tables.
 - Inspect `create_market_order` and `create_order_with_wallet` full definitions side-by-side to document exactly where duplicate stock decrement occurs.
 - Search trusted local/backup sources for the 48 migration SQL files and deployed Edge Function source. Do not reconstruct and apply migrations to production.
+
+
+## Critical write-path findings — 2026-11-10 (read-only)
+
+### Confirmed duplicate inventory decrement details
+- `create_market_order`: inserts `order_items` (which fires the enabled AFTER INSERT reservation trigger), then separately updates `listings.inventory = inventory - quantity`.
+- `create_order_with_wallet`: inserts each `order_items` row (trigger decrement), then separately decrements `listings.inventory` in the same loop.
+- These are confirmed double-decrement paths when the trigger fires. Do not run these wallet checkout RPCs in production until corrected. Their current EXECUTE grants were previously verified as service_role-only, but server-side callers may still invoke them.
+
+### Wallet review direct update risk
+- `wallet_reviews` has an authenticated own-row UPDATE policy and authenticated table/column UPDATE grants. The visible policy checks only row ownership; it does not constrain changes to `amount`, `review_type`, `status`, `txid`, `reviewed_at`, or `screenshot_url`.
+- Treat this as a high-priority integrity risk: an authenticated user may be able to alter their own review state/financial metadata, subject to the exact PostgREST role and policy evaluation. Reproduce only with synthetic records in staging.
+
+### Withdrawal direct insert risk
+- `withdrawal_requests` has authenticated INSERT grants across its columns. Its own-row INSERT policy checks only `user_id=current_user_row_id()` and `amount >= 100`; it does not constrain `status`, `txid`, `processed_at`, `network_fee`, or `service_fee`.
+- Treat direct client INSERT as a high-priority integrity risk: test whether a caller can create a request already marked processed/paid or populate transaction metadata. Reproduce only in staging.
+- The secure `request_withdrawal` function is a separate path that debits approved seller available balance and creates a pending request; it does not make the direct table INSERT policy safe.
+
+### Registration trigger conclusion
+- Both signup triggers are enabled, but both functions use `ON CONFLICT(auth_user_id)`; duplicate rows are not proven. Their differing member_id / role / status behavior is redundant and should be consolidated in staging after signup regression tests.
+
+### Immediate staging test matrix
+1. Create synthetic buyer and seller accounts.
+2. Test wallet review insert/update attempts: change amount, status, review_type, txid and screenshot URL after insert.
+3. Test withdrawal insert attempts with status='processed'/'paid', non-null txid and processed_at; verify they are rejected.
+4. Test stock reservation for both wallet RPCs and confirm exactly one decrement per quantity.
+5. Test signup and verify exactly one profile row with stable member_id, role and status.
+6. Never run these negative tests against production data.
