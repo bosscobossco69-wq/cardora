@@ -158,3 +158,12 @@ A historical parent revision was located before commit `986e6790e6d321f652e9d86b
 The production project's current migration history contains 48 versions, but none of these three version identifiers appears in that list. Therefore these are recovered historical design/draft files, not missing applied migrations and not evidence of production schema state. Do not replay them or insert their version identifiers into migration history. Preserve them as reference material only; any future test must use an isolated non-production database after review.
 
 The recovered parent directory also had `email-templates/` and `functions/` folders; their contents are separate from the three SQL migrations. The directory deletion removed 449 lines across the files listed in the deletion commit. This recovery does not resolve the missing source bodies for the 48 applied production migrations.
+
+
+## Original repository cross-check — 2026-11-10 (read-only)
+
+Checked the separate original repository `bosscobossco69-wq/pokemon-treasure` (default branch `main`, tree SHA `7f8fe630dbfd3f6c157e99d4ca320b070009afd6`). Its current recursive tree contains the legacy HTML application files and no `supabase/` directory or migration SQL. This repository therefore does not currently provide the missing applied migration bodies.
+
+Cardora repository path history for `supabase/migrations` shows only the directory's appearance in the 2026-10-21 upload commit `8123cfcfccddd616986b9d313c29c703077a297f` and its removal in `986e6790e6d321f652e9d86b87648e460da4aa14`. The directory at its recovered parent revision held only the three draft/reference SQL files documented above. The 48 production-applied migrations (versions 2026-09-19 through 2026-11-09) are not present in this GitHub history path.
+
+Conclusion: GitHub history searched so far has not yielded the original SQL bodies for the 48 applied production migrations. Continue with trusted local project archives, developer machine backups, Supabase CLI working directories, SQL Editor/deployment logs, or a separately retained repository/archive. If none exists, create a read-only reconstructed schema baseline from the current production catalog, label it explicitly as reconstructed (not original migration source), and review it before any use in the isolated test project. Never replay it against production.
