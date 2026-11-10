@@ -124,3 +124,24 @@
 4. Test stock reservation for both wallet RPCs and confirm exactly one decrement per quantity.
 5. Test signup and verify exactly one profile row with stable member_id, role and status.
 6. Never run these negative tests against production data.
+
+
+## Edge Function source recovery — 2026-11-10
+
+Recovered deployed source snapshots directly from the configured production Supabase project's Edge Function metadata and committed them to the isolated GitHub staging branch. No secrets or environment variable values were copied.
+
+Files added:
+- `supabase/functions/ptx-email-otp/index.ts` — deployed version 6, source SHA-256 `341b96e2b39c5cf93389fb9811de4f6c8e4edabe1ff950f1666632ecac05feb0`
+- `supabase/functions/ptx-email-otp/deno.json` — deployed import map/config (`{}`)
+- `supabase/functions/ai-support/index.ts` — deployed version 12, source SHA-256 `e8a537608df58f4c9f70fe2e42feef024f22fdf6f160171ebdae8fdca9d3b724`
+
+These are source snapshots, not deployed changes. The production functions remain unchanged.
+
+### Edge Function remediation candidates
+- OTP function: uses `Math.random()` for an 8-digit code; send throttling uses read-then-insert (race-prone); failed-attempt increments are read-then-write (race-prone); CORS origin is wildcard; email copy still says Pokémon Treasure. It hashes codes and expires them after 10 minutes, and limits failed attempts to 5 in the inspected flow.
+- AI support: in-memory IP rate limiting is instance-local; trusts the first `x-forwarded-for` value; wildcard CORS; response fallback includes an anonymous provider. Keep the Preview-only safety prompt and explicit statement that payments/refunds/payouts are not live. Review provider data handling, abuse controls, request body limits, and trusted proxy behavior before any changes.
+- Keep all secrets in Supabase/Vercel secret stores; never commit secret values.
+
+## Migration source recovery status
+- Edge Function code recovery is now complete for the two currently deployed functions.
+- The 48 database migration SQL bodies remain unrecovered. Migration history only exposes version/name metadata. Continue searching trusted local backups, original SQL editor/deployment logs, or developer archives; any reconstructed baseline must be labeled reconstruction and reviewed before applying to the empty test project.
