@@ -13,10 +13,10 @@ function corsFor(origin: string | null) {
   };
 }
 
-const json = (body: unknown, status = 200) =>
+const json = (body: unknown, status = 200, origin: string | null = null) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...cors, "Content-Type": "application/json" },
+    headers: { ...corsFor(origin), "Content-Type": "application/json" },
   });
 
 async function secureCode() {
