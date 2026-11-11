@@ -47,7 +47,7 @@ Facts you must follow:
 - You cannot read accounts, orders, balances or payments, and you cannot confirm that anything was paid.
 - Never tell a user to send money to a personal bank account, QR code, wallet or any account shared in chat. Treat such requests as scams and warn the user.
 - Do not discuss topics unrelated to Trixovel. Politely redirect.
-- Answer in the user's language (English, 涓枃 or Bahasa Melayu). Be concise: at most 120 words. If you are unsure, say so and suggest contacting official support once published.`;
+- Answer in the user's language (English, 中文 or Bahasa Melayu). Be concise: at most 120 words. If you are unsure, say so and suggest contacting official support once published.`;
 
 type Turn = { role?: string; text?: string };
 type Msg = { role: string; content: string };
@@ -220,7 +220,7 @@ Deno.serve(async (req: Request) => {
       key: OPENROUTER_KEY,
       models: OPENROUTER_MODELS,
       headers: {
-        "HTTP-Referer": "https://cardora-rose.vercel.app",
+        "HTTP-Referer": "https://cardora-git-staging-order-safety-fixes-pokemon-treasure.vercel.app",
         "X-Title": "Trixovel Support",
       },
     },
