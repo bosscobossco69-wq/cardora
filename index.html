@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<meta content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://crqqockaetgacddxkqpb.supabase.co https://api.tcgdex.net; frame-src https://accounts.google.com https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" http-equiv="Content-Security-Policy"/>
+<meta content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://fdkfquvzbswxocyrhduk.supabase.co https://api.tcgdex.net; frame-src https://accounts.google.com https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" http-equiv="Content-Security-Policy"/>
 <!-- Preview deployments must remain on their own origin so PKCE verifier storage matches the OAuth callback origin. -->
 <title>Trixovel — Global Collectibles Marketplace</title>
 <meta name="description" content="Trixovel is a global collectible card marketplace: browse Pokémon card listings, compare sellers and shipping, and manage your account. Payments are not live yet."/>
@@ -323,8 +323,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')cardoraClose
 
 
 
-const PTX_SUPABASE_URL='https://crqqockaetgacddxkqpb.supabase.co';
-const PTX_SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNycXFvY2thZXRnYWNkZHhrcXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4NDQwOTQsImV4cCI6MjEwNTQyMDA5NH0.2OlGiOeE8vcFwWgLt5tO8BVZfi1V-YO-aeywFdi5oEs';
+const PTX_SUPABASE_URL='https://fdkfquvzbswxocyrhduk.supabase.co';
+const PTX_SUPABASE_KEY='sb_publishable_V99GEROTQ492-d_w2QIoGg_RWx8DqwT';
 // Keep one Supabase client for the whole page and explicitly enable browser session persistence.
 // The explicit auth options make the Google OAuth callback/session handling predictable.
 const PTX_AUTH_OPTIONS={
@@ -336,7 +336,7 @@ const PTX_AUTH_OPTIONS={
     // Disable automatic URL detection to prevent a race that consumes the PKCE verifier twice.
     detectSessionInUrl:false,
     storage:window.localStorage,
-    storageKey:'cardora-supabase-auth-v1'
+    storageKey:'trixovel-preview-supabase-auth-v1'
   }
 };
 // Snapshot OAuth callback params before supabase-js initializes and strips them from the URL.
