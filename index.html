@@ -144,6 +144,20 @@ img, video, iframe, canvas, svg { max-width:100%; }
 .ptx-toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(15px);background:#211633;color:#fff;border:1px solid #6b4a91;border-radius:12px;padding:10px 14px;z-index:100001;opacity:0;pointer-events:none;transition:.25s}.ptx-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(max-width:650px){.ptx-brandbar{padding:9px 10px}.ptx-logo-mark{width:34px;height:34px}.ptx-stats{grid-template-columns:1fr 1fr 1fr}}
 
+/* PageSpeed CLS stabilization: reserve space for async homepage data before Supabase returns. */
+#ptxHomeTrending{min-height:260px;align-content:start}
+#cardoraMonthlyLeaderboard{min-height:300px;align-content:start}
+#ptxCurrencyBar{min-height:56px}
+#ptxHomeTrending .ptx-hp-art{aspect-ratio:1/1;height:auto;min-height:120px}
+@media(max-width:750px){
+  #ptxHomeTrending{min-height:470px}
+  #cardoraMonthlyLeaderboard{min-height:330px}
+  #ptxCurrencyBar{min-height:60px}
+}
+@media(max-width:380px){
+  #ptxHomeTrending{min-height:440px}
+}
+
 /* Trixovel sealed inventory prototype */
 #cardoraSealedCenter{margin:18px 14px;padding:18px;border:1px solid #49366a;border-radius:20px;background:linear-gradient(145deg,#151024,#0f0c17);color:#f7f2ff;scroll-margin-top:80px}
 #cardoraSealedCenter *{box-sizing:border-box} .cs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.cs-panel{padding:14px;border:1px solid #332747;border-radius:14px;background:#100c18;min-width:0}.cs-field{display:grid;gap:6px;margin:10px 0}.cs-field label{font-size:12px;color:#b8abc9}.cs-field input,.cs-field select,.cs-field textarea{width:100%;padding:11px;border-radius:9px;border:1px solid #45345c;background:#0b0911;color:#fff}.cs-btn{padding:10px 12px;border-radius:10px;border:1px solid #674b8b;background:#2b1b43;color:#fff;font-weight:700;cursor:pointer}.cs-btn.primary{background:linear-gradient(120deg,#7c3fd0,#a34bd4);border:0}.cs-btn:disabled{opacity:.45;cursor:not-allowed}.cs-muted{font-size:12px;color:#a99db9;line-height:1.5}.cs-badge{display:inline-block;border:1px solid #4d3b68;border-radius:20px;padding:4px 8px;font-size:10px;color:#d6c4f0}.cs-statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.cs-stat{padding:10px;border-radius:11px;background:#1a1227;border:1px solid #352448}.cs-stat b{display:block;font-size:19px}.cs-tablewrap{overflow:auto}.cs-table{width:100%;border-collapse:collapse;font-size:12px;min-width:600px}.cs-table th,.cs-table td{text-align:left;padding:9px 7px;border-bottom:1px solid #2e233e;vertical-align:top}.cs-table th{color:#b9a9ce}.cs-notice{padding:10px;border-radius:10px;background:#251b0b;border:1px solid #745520;color:#f5d98a;font-size:12px;line-height:1.5}.cs-good{color:#8ce6ae}.cs-warn{color:#f4d27d}.cs-camera{width:100%;max-height:260px;background:#050407;border-radius:12px;object-fit:contain;display:none;margin:8px 0}.cs-status{font-size:12px;min-height:18px;margin-top:8px;color:#bca7d5}.cs-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.cs-tabs button[aria-pressed="true"]{background:#6b3ab0;border-color:#b38ae8}.cs-hidden{display:none!important}
