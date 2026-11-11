@@ -149,7 +149,12 @@ Deno.serve(async (req: Request) => {
       const tokenHash = link?.properties?.hashed_token;
       if (!tokenHash) throw new Error("Authentication token could not be generated.");
 
-      await admin.from("ptx_email_otps").update({ consumed_at: new Date().toISOString() }).eq("id", row.id);
+      const { data: consumed, error: consumeError } = await admin.rpc("ptx_consume_email_otp", {
+        p_id: row.id,
+        p_code_hash: row.code_hash,
+      });
+      if (consumeError) throw consumeError;
+      if (!consumed) return json({ error: "This code has already been used or expired. Please request a new code." }, 400, origin);
 
       return json({ ok: true, token_hash: tokenHash }, 200, origin);
     }
