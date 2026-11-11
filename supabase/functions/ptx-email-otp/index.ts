@@ -60,34 +60,16 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "send") {
-      const { data: recent, error: recentError } = await admin
-        .from("ptx_email_otps")
-        .select("created_at")
-        .eq("email", email)
-        .is("consumed_at", null)
-        .gte("created_at", new Date(Date.now() - 15 * 60 * 1000).toISOString())
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (recentError) throw recentError;
-      if ((recent?.length ?? 0) >= 5) {
-        return json({ error: "Too many codes requested. Please wait a few minutes and try again." }, 429, origin);
-      }
-
       const code = await secureCode();
       const codeHash = await keyedHash(code, SERVICE_ROLE);
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-      await admin
-        .from("ptx_email_otps")
-        .update({ consumed_at: new Date().toISOString() })
-        .eq("email", email)
-        .is("consumed_at", null);
-
-      const { error: insertError } = await admin
-        .from("ptx_email_otps")
-        .insert({ email, code_hash: codeHash, expires_at: expiresAt });
-      if (insertError) throw insertError;
+      const { data: otpId, error: reserveError } = await admin.rpc("ptx_reserve_otp_send", {
+        p_email: email,
+        p_code_hash: codeHash,
+        p_expires_at: expiresAt,
+      });
+      if (reserveError) throw reserveError;
+      if (!otpId) return json({ error: "Too many codes requested. Please wait a few minutes and try again." }, 429, origin);
 
       const resend = await fetch("https://api.resend.com/emails", {
         method: "POST",
