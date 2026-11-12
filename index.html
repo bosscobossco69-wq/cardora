@@ -2480,7 +2480,7 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 <button class="ptx-google-btn" onclick="ptxGoogleAuth()" type="button"><span class="ptx-google-icon">G</span><span>Continue with Google</span></button>
 <div class="ptx-auth-note">Email codes are not available yet: this project cannot deliver verification mail, so Google is the only sign-in method that works today.</div>
 <div class="ptx-auth-note" id="ptxLoginMessage" style="min-height:20px"></div>
-<div data-ca-email-auth="off" style="display:none">
+<div data-ca-email-auth="on">
 <label>Email</label>
 <input autocomplete="email" id="ptxModalLoginEmail" placeholder="you@example.com" type="email"/>
 <button class="ptx-auth-main" id="ptxLoginEmailSend" onclick="ptxSendOtp('login')" type="button">Send verification code</button>
@@ -2496,7 +2496,7 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 <div class="ptx-auth-view" id="ptxAuthRegister">
 <div class="ptx-register-subtitle">Create your account with Google — no password needed.</div>
 <button class="ptx-google-btn" onclick="ptxGoogleAuth()" type="button"><span class="ptx-google-icon">G</span><span>Continue with Google</span></button>
-<div class="ptx-auth-note">Email codes are not available yet: this project cannot deliver verification mail. Sign up with Google instead.</div>
+<div class="ptx-auth-note">Sign in with your email verification code. The code expires in 10 minutes.</div>
 <div class="ptx-auth-note" id="ptxRegisterMessage" style="min-height:20px"></div>
 <div data-ca-email-auth="off" style="display:none">
 <label>Email</label>
@@ -2611,10 +2611,15 @@ window.ptxSendOtp=async function(mode){
   if(!ptxSupabase){ptxSetAuthMessage(msgId,'Supabase client is not ready. Please refresh the page.');return;}
   const btn=document.getElementById(btnId); if(btn){btn.disabled=true;btn.textContent='SENDING…';}
   try{
-    const {error}=await ptxSupabase.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
-    if(error)throw error;
+    const response=await fetch(PTX_SUPABASE_URL+'/functions/v1/ptx-email-otp',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':PTX_SUPABASE_KEY,'Authorization':'Bearer '+PTX_SUPABASE_KEY},
+      body:JSON.stringify({action:'send',email})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||'Could not send the verification code.');
     const area=document.getElementById(areaId); if(area)area.style.display='block';
-    ptxSetAuthMessage(msgId,'Code sent. Check your email for the verification code.',true);
+    ptxSetAuthMessage(msgId,'Verification code sent. Check your inbox and spam folder.',true);
   }catch(err){console.error('OTP send error:',err);ptxSetAuthMessage(msgId,err?.message||'Could not send the verification code.');}
   finally{if(btn){btn.disabled=false;btn.textContent='Send verification code';}}
 };
@@ -2630,7 +2635,15 @@ window.ptxVerifyOtp=async function(mode){
   const verifyBtn=document.querySelector(mode==='register'?'#ptxRegisterOtpArea .ptx-auth-main':'#ptxLoginOtpArea .ptx-auth-main');
   if(verifyBtn){verifyBtn.disabled=true;verifyBtn.textContent='VERIFYING…';}
   try{
-    const {data,error}=await ptxSupabase.auth.verifyOtp({email,token,type:'email'});
+    const response=await fetch(PTX_SUPABASE_URL+'/functions/v1/ptx-email-otp',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':PTX_SUPABASE_KEY,'Authorization':'Bearer '+PTX_SUPABASE_KEY},
+      body:JSON.stringify({action:'verify',email,code:token,redirectTo:ptxOAuthRedirectUrl()})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||'Invalid or expired code. Please request a new code.');
+    if(!result.token_hash)throw new Error('Verification completed but no sign-in token was returned.');
+    const {data,error}=await ptxSupabase.auth.verifyOtp({token_hash:result.token_hash,type:'magiclink'});
     if(error)throw error;
     // Pass the returned session explicitly; null must not fall back to stale local storage.
     await ptxUpdateAuthUI(data?.session ?? null);
