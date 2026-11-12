@@ -978,10 +978,10 @@ window.ptxCheckout=async function(){
    const {data:profile,error:pe}=await ptxSupabase.from('users').select('id').eq('auth_user_id',user.id).single();
    if(pe)throw pe;
    const items=cart.map(x=>({listing_id:x.id,quantity:x.qty}));
-   const {data:order,error:oe}=await ptxSupabase.rpc('create_order',{p_items:items,p_shipping:0});
+   const {data:order,error:oe}=await ptxSupabase.rpc('create_order',{p_items:items});
    if(oe)throw oe;
    cart=[]; updateCart(); ptxCloseCart();
-   alert('Order created successfully.\nOrder: '+order.order_id+'\nTotal: '+Number(order.total).toFixed(2)+' USD\nStatus: PENDING');
+   alert('Order created successfully.\nOrder: '+order.order_id+'\nTotal: '+Number(order.total).toFixed(2)+' '+(order.currency||'USD')+'\nStatus: PENDING');
    if(typeof ptxJump==='function')setTimeout(()=>ptxJump('ptxLiveOrderFlow'),300);
  }catch(e){
    console.error('checkout',e);
@@ -2137,12 +2137,12 @@ window.ptxPlaceOrder=async function(){
    if(!listing?.id)throw new Error('This listing is not available in the marketplace database.');
    const isDbListing=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
    if(!isDbListing.test(String(listing.id)))throw new Error('This is a sample card, not live marketplace inventory. Ordering opens when real listings are connected.');
-   const {data:order,error:oe}=await ptxSupabase.rpc('create_order',{p_items:[{listing_id:listing.id,quantity:1}],p_shipping:3.99});
+   const {data:order,error:oe}=await ptxSupabase.rpc('create_order',{p_items:[{listing_id:listing.id,quantity:1}]});
    if(oe)throw oe;
    const total=Number(order.total);
    ptxCloseCheckout();ptxCloseProduct();
    window.__ptxOrderOk=true;if(typeof ptxToast==='function')ptxToast('Order '+order.order_id+' created · payment pending');
-   alert('Order created successfully.\nOrder: '+order.order_id+'\nTotal: '+total.toFixed(2)+' USD\nStatus: PENDING');
+   alert('Order created successfully.\nOrder: '+order.order_id+'\nTotal: '+total.toFixed(2)+' '+(order.currency||'USD')+'\nStatus: PENDING');
    setTimeout(()=>{if(typeof ptxJump==='function')ptxJump('ptxLiveOrderFlow')},500);
  }catch(e){console.error('place order',e);alert(e?.message||'Unable to create order. Please sign in and try again.');}
 };
