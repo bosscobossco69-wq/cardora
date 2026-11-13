@@ -57,3 +57,22 @@ A single `wallet_transactions.balance_after` field currently represents buyer wa
 
 ## Verification limits
 This pass inspected database catalog metadata and current function source, plus the Staging branch `fees.html` and project tree. It did not execute payment RPCs, mutate balances, run withdrawal processing, or inspect an external payment provider dashboard. The original canonical Production migration SQL remains unrecovered.
+
+
+## Historical ledger design recovered after this audit pass
+
+A deleted historical repository revision contains `202610210001_cardora_payment_ledger.sql` (blob SHA `61d7107e7b74345672ec2f0a8afde8e558b27bb4`). Its own header explicitly labels it a payment/payout/ledger foundation, not a live integration, and says to review/apply only in a non-production project.
+
+The draft proposes a more complete architecture than the live `wallet_transactions` table:
+- provider payment transactions with provider IDs and idempotency keys;
+- payout requests with explicit review/processing states and idempotency;
+- ledger accounts, journals and entries using balanced debit/credit double-entry postings;
+- provider event de-duplication and signature-verification status;
+- refund transaction records;
+- a service-role-only `cardora_private.post_ledger_journal` routine that checks journal balance and currency;
+- append-only journal/entry history with reversals rather than edits;
+- browser roles cannot write financial rows.
+
+Important limitation: this file is a recovered historical draft/reference, not one of the 48 currently recorded Production migrations. Its presence does not prove these tables or functions exist in Production, and it must not be replayed against Production or silently treated as approved final accounting policy. It is a useful starting design for a separately reviewed synthetic Staging implementation.
+
+The draft's event types include buyer_payment, platform_fee, seller_payable, seller_payout, refund, chargeback, adjustment and agent_commission. Agent commission still must be derived from the approved project rule (25% of actual platform commission) and remain inactive while platform commission is 0%; consignment service fee and seller subscriptions are separate business flows.
