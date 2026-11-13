@@ -244,3 +244,43 @@ Remediation implication:
 - Check all frontend files and any external consumers before finalizing; the current scan covered the staging index.html loader.
 
 No production or isolated database changes were made. The above are remediation candidates only, pending a complete consumer/role review and explicit approval for isolated test DDL.
+
+
+## Staging schema correction and Seller/Listing workflow repair — 2026-11-13
+
+This section supersedes earlier statements above that the isolated project was empty or untouched. A fresh catalog check found that project `fdkfquvzbswxocyrhduk` already contained a partial synthetic schema and test fixtures. It is not a clean copy of Production.
+
+### Pre-change findings
+- Staging had users, seller_applications, seller_profiles, listings, orders, order_items, test_listing_sellers and other test-only tables, but no `listing_details`.
+- Staging had `create_order` plus `ptx_reserve_stock`; this path relies on the order_items AFTER INSERT trigger and does not perform a second manual inventory decrement.
+- Staging had no Seller application review, seller listing creation, listing review queue, listing review, or seller resubmission functions.
+- Production `admin_review_seller_application` approved every application role by creating/updating seller_profiles, so approving an Agent application could incorrectly create/promote a Seller Profile.
+- Production `seller_resubmit_listing` compared `listing_details.seller_id` (a seller_profiles.id) to `current_user_row_id()` (a users.id), an incorrect ID-domain comparison.
+- Production `admin_get_listing_review_queue` joined `seller_profiles.user_id` to `listing_details.seller_id`; the correct relation is `seller_profiles.id = listing_details.seller_id`.
+- Production `seller_applications.status` permits pending/contacted/approved/rejected, while the review function also accepted needs_info. That status is inconsistent with the table constraint.
+
+### Applied staging migration
+- Added `supabase/migrations/20261113045016_cardora_staging_seller_listing_workflow_fixes.sql` on branch `staging/order-safety-fixes`.
+- Applied the same migration to the isolated Staging Supabase project only; migration history records `20261113045016_cardora_staging_seller_listing_workflow_fixes`.
+- Added the missing `listing_details` table with `seller_id -> seller_profiles.id`, enabled RLS, and added a read policy for the owning seller or admin.
+- Added/fixed the Seller application approval function so only role=seller creates/promotes seller_profiles; approved Agent applications do not.
+- Used the existing valid application statuses. `contacted` is the waiting-for-information state; `needs_info` remains invalid until the schema and UI are deliberately migrated together.
+- Added seller listing creation, admin review queue, admin listing review, and seller resubmission functions. Seller ownership is checked by joining seller_profiles.id to listing_details.seller_id and seller_profiles.user_id to current_user_row_id().
+- Function EXECUTE grants are limited to authenticated/service_role; anonymous execution is revoked. Admin functions perform an explicit users.role='admin' check.
+
+### Staging-only regression results
+A rollback-clean DO-block test completed successfully:
+1. Approved a synthetic Agent application while temporarily setting the fixture profile to pending; the Seller Profile remained pending (Agent approval did not promote it).
+2. Created a seller listing and verified listing_details.seller_id equals seller_profiles.id.
+3. Verified the admin review queue returns the seller display name through the corrected ID join.
+4. Resubmitted a rejected listing as its owning seller; status returned to pending_review.
+5. A separate rollback-clean stock test created an active test listing with inventory 5, created an order for quantity 2, and verified inventory became exactly 3 (one reservation, not two).
+
+All test-created applications, listings and orders were removed at the end of their test blocks. The existing synthetic seller ledger fixture and test financial data were preserved.
+
+### Remaining work
+- Production remains read-only and unchanged. Do not apply this migration to Production.
+- The staging seller/listing migration is a test implementation, not yet a Production release.
+- Next inspect Production wallet checkout RPC call paths and design the duplicate stock-decrement correction in a separate Staging migration; do not change the already-working Staging `create_order` + trigger path.
+- Review the full application UI status labels before deciding whether to add a `needs_info` state; do not silently change the current allowed status set.
+- Do not change approved subscription prices, agent referral share, consignment fee, or any platform fee as part of this workflow repair.
