@@ -313,3 +313,14 @@ An earlier opening note in this plan incorrectly described the isolated project 
 - Production has separate buyer balances (users.balance / held_balance) and seller earnings (seller_profiles.available_balance); the current wallet_transactions table does not represent both domains as a unified traceable ledger.
 - See `docs/remediation/2026-11-13-wallet-settlement-ledger-audit.md` for verified source details, limitations and safe implementation sequence.
 - No Production writes, Staging schema/data changes, deployments, payment calls, or money movement occurred.
+
+
+### Staging accounting model review — 2026-11-13
+- Confirmed Staging already contains synthetic `test_*` finance tables and helper routines for payment-event claiming, payment finalization, seller settlement, dispute refund reversal, withdrawal reserve/reject/pay.
+- These existing test helpers are not a canonical ledger: payment finalization and settlement hardcode 8%; `test_financial_ledger` and `test_withdrawal_ledger` are event logs rather than balanced double-entry journals; partial refund and complete provider payout flows are not implemented end-to-end.
+- Existing test fixtures and rows were preserved. No Staging DDL/DML was executed in this pass.
+- Drafted a separate accounting model with distinct buyer funds, seller proceeds, platform/agent earnings, consignment fees and subscriptions; double-entry event map; idempotency, refund, dispute, withdrawal and reconciliation invariants.
+- Preserve approved policy: current platform commission 0%; future 1% inactive; agent referral 25% of platform commission only; consignment fee 15%, minimum USD10; subscription tiers and trial/grace remain separate. Do not use legacy 8% test code or public 5% text as the active rule.
+- See `docs/remediation/2026-11-13-staging-accounting-model-draft.md`.
+- Next: review exact DDL and grants for a new isolated `cardora_test_*` double-entry journal model, then apply additively in Staging only after the migration is checked. Preserve existing `test_*` tables and fixtures.
+- Production remains read-only; no deployment, payment, refund, settlement, payout, or money movement occurred.
