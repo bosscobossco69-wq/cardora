@@ -125,3 +125,12 @@ The exact treatment of shipping, taxes, payment provider fees, chargebacks, refu
 - No Staging DDL/DML was executed in this pass.
 - No Production DDL/DML was executed.
 - No payment, refund, settlement, withdrawal payout, or real money movement was performed.
+
+
+## 11. Privilege review of existing Staging test helpers
+
+A catalog-only check confirmed:
+- All seven `ptx_test_*` routines are SECURITY DEFINER and their EXECUTE ACLs list postgres and service_role only; anon/authenticated are not listed.
+- The existing `test_*` finance tables have RLS enabled and table grants shown only for postgres and service_role; anon/authenticated grants were not present in the inspected role-table-grant result.
+- This is a positive containment property for the current test helpers, but it does not make their 8% logic or incomplete ledger semantics suitable for production.
+- Keep the same service-only boundary for any new `cardora_test_*` journal writer. Browser users should receive only narrowly scoped read access to their own non-sensitive payment/payout status after identity and ownership policies are designed.
