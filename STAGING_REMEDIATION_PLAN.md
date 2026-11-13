@@ -2,8 +2,8 @@
 
 **Target branch:** `staging/order-safety-fixes`  
 **Production database:** `crqqockaetgacddxkqpb` — read-only; no changes authorized or performed.  
-**Isolated project:** `fdkfquvzbswxocyrhduk` — currently empty (0 public tables, 0 recorded migrations).  
-**Status:** planning and source recovery only; no schema/function changes, deployment, or production writes.
+**Isolated project:** `fdkfquvzbswxocyrhduk` — populated synthetic Staging project; latest check found 26 public tables and 17 recorded migrations.  
+**Status:** Staging-only additive test schema/function work has been applied; Production remains read-only and no deployment has been performed.
 
 ## Safety rules
 
@@ -284,3 +284,21 @@ All test-created applications, listings and orders were removed at the end of th
 - Next inspect Production wallet checkout RPC call paths and design the duplicate stock-decrement correction in a separate Staging migration; do not change the already-working Staging `create_order` + trigger path.
 - Review the full application UI status labels before deciding whether to add a `needs_info` state; do not silently change the current allowed status set.
 - Do not change approved subscription prices, agent referral share, consignment fee, or any platform fee as part of this workflow repair.
+
+
+## Staging reality correction — 2026-11-13
+
+An earlier opening note in this plan incorrectly described the isolated project as empty. That statement is obsolete. Current live inspection shows a populated synthetic Staging project with 26 public tables and 17 recorded migrations. Staging includes synthetic seller/financial test fixtures; preserve them.
+
+### Seller/listing workflow staging work
+- Migration `20261113045016_cardora_staging_seller_listing_workflow_fixes` is present in Staging and on this branch.
+- It adds the missing Staging `listing_details` test table and fixes Seller-only profile creation on approval, seller-profile ID joins, admin review queue, listing review and rejected-listing resubmission.
+- Transactional tests verified Seller listing creation and rejected-listing resubmission; test rows were rolled back.
+- A trigger-only stock test verified quantity 3 reduces inventory from 10 to 7. Test rows were rolled back.
+
+### Wallet order audit update — 2026-11-13
+- Production `create_market_order` and `create_order_with_wallet` both duplicate the stock trigger decrement with manual inventory UPDATE statements.
+- Production `create_order_with_wallet` additionally references a nonexistent `wallet_transactions.order_id` column and inserts `type='order_hold'`, which violates the existing CHECK constraint allowing only deposit/withdrawal/adjustment.
+- Staging lacks both Production wallet RPCs and is not yet schema-equivalent; no guessed RPC replacement was applied.
+- See `docs/remediation/2026-11-13-stock-and-wallet-order-audit.md` for exact findings and safe remediation sequence.
+- No Production database writes, Production branch changes, or deployments have occurred.
