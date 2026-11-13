@@ -324,3 +324,16 @@ An earlier opening note in this plan incorrectly described the isolated project 
 - See `docs/remediation/2026-11-13-staging-accounting-model-draft.md`.
 - Next: review exact DDL and grants for a new isolated `cardora_test_*` double-entry journal model, then apply additively in Staging only after the migration is checked. Preserve existing `test_*` tables and fixtures.
 - Production remains read-only; no deployment, payment, refund, settlement, payout, or money movement occurred.
+
+
+### Staging double-entry ledger foundation — 2026-11-13
+- Applied additive migration `cardora_staging_double_entry_ledger_foundation` to isolated Staging project `fdkfquvzbswxocyrhduk` only.
+- Added `cardora_test_accounts`, `cardora_test_journals`, and `cardora_test_entries`. All three have RLS enabled, no browser-role grants, and immutable UPDATE/DELETE guards.
+- Added atomic `cardora_test_post_journal(...)`: validates journal metadata, one currency, active matching accounts, positive debit/credit lines, and exact debit-credit equality; uses a transaction advisory lock plus unique idempotency key; callable only by `service_role`.
+- ACL verification: anon EXECUTE=false; authenticated EXECUTE=false; service_role EXECUTE=true. service_role direct SELECT on the tables=false. Table writes remain behind the SECURITY DEFINER posting function.
+- Rollback-only synthetic test passed: balanced journal accepted, duplicate idempotency key returned the same journal ID, unbalanced journal rejected. Test transaction rolled back.
+- Post-test counts: new accounts=0, journals=0, entries=0. Existing `test_financial_ledger` fixture count remains 2; no existing `test_*` rows were changed.
+- Supabase security advisors report informational `rls_enabled_no_policy` findings for the three new tables; this is intentional because no browser or direct service-role table access is granted. The same advisor run also reports pre-existing SECURITY DEFINER warnings for six unrelated functions and leaked-password protection disabled; those were not changed in this migration.
+- Reference SQL draft: `docs/remediation/drafts/20261113_cardora_test_double_entry_ledger.sql`. The applied migration includes an additional explicit null/length validation for reference/event/description metadata.
+- Important limitation: this is the ledger schema/posting primitive only. It does not yet seed a chart of accounts, connect order payment, escrow, seller settlement, Agent referral payable, consignment fee, subscription revenue, refunds/disputes, or provider payouts. No real money movement is possible through this test-only addition.
+- Production project `crqqockaetgacddxkqpb` remains read-only; no Production deployment or Vercel deployment occurred.
