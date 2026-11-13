@@ -337,3 +337,13 @@ An earlier opening note in this plan incorrectly described the isolated project 
 - Reference SQL draft: `docs/remediation/drafts/20261113_cardora_test_double_entry_ledger.sql`. The applied migration includes an additional explicit null/length validation for reference/event/description metadata.
 - Important limitation: this is the ledger schema/posting primitive only. It does not yet seed a chart of accounts, connect order payment, escrow, seller settlement, Agent referral payable, consignment fee, subscription revenue, refunds/disputes, or provider payouts. No real money movement is possible through this test-only addition.
 - Production project `crqqockaetgacddxkqpb` remains read-only; no Production deployment or Vercel deployment occurred.
+
+
+### Ledger chart of accounts and business-event map — 2026-11-13
+- Added `docs/remediation/2026-11-13-ledger-chart-and-event-map.md` on the Staging branch.
+- Defined proposed account-code families for provider clearing, platform cash, buyer wallet liability, order escrow, seller payable/reserved payout, buyer refund payable, Agent referral payable, Agent service-fee payable, subscription deferred revenue/revenue, platform commission revenue and provider/network expenses.
+- Mapped conceptual double-entry flows for provider-funded orders, buyer wallet top-ups, wallet-funded orders, order completion, subscriptions, refunds/disputes and seller withdrawals.
+- Preserved the approved fee rules: current platform commission 0%; future 1% inactive; Agent referral 25% of actual platform commission only; consignment service fee 15%, minimum USD10; subscriptions separate (RM0/29/79/199, 7-day trial and 7-day grace).
+- Explicitly did not classify consignment fees as Cardora revenue because the fee beneficiary is not confirmed. Shipping/tax commission base, provider/network fee payer, post-payout recovery, subscription proration/recognition, supported currencies and FX policy remain decision gates.
+- No account rows or financial balances were seeded. No checkout, webhook, refund, settlement, subscription billing, or payout flow was connected. Staging ledger tables remain empty; existing legacy test fixtures remain unchanged.
+- Production remains read-only; no real payment or money movement.
