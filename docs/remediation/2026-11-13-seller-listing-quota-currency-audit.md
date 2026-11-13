@@ -29,9 +29,15 @@ The function is SECURITY DEFINER, has an empty search_path, and is executable by
 - Does not create a new listing, so it should not consume an additional listing slot.
 - Does not check subscription quota; it is an existing listing being resubmitted.
 
-## Critical mismatch with the agreed currency decision
-The agreed product direction is MYR as the initial accounting and preferred settlement currency; USD is display/reference only; USDT is not enabled as a settlement currency.
-However, `create_seller_listing` currently hardcodes `listings.currency='USDT'`, while the column default is USD. This is an existing inconsistency. It was not changed in this audit because price currency and settlement currency need a clearly defined product rule and a safe migration plan. Do not silently replace USDT with MYR without reviewing existing listings and frontend currency display/checkout code.
+## Currency clarification — user-confirmed
+The user explicitly corrected the currency interpretation:
+- **USD is the correct currency for Cardora listing prices.**
+- **USDT is incorrect and must not be used as the listing currency.**
+- The listings table default of USD is consistent with the user's intended listing denomination.
+- The current `create_seller_listing` function hardcodes USDT, which is a confirmed bug to correct in a future Staging migration.
+- MYR remains the preferred base accounting / Malaysian settlement currency direction discussed earlier. Listing denomination (USD) and accounting/settlement currency (MYR) are separate concepts and must not be conflated.
+- Do not change listing prices or existing rows blindly. Inspect checkout/order currency propagation and payment-provider support before implementation.
+- Do not treat USD display as merely a reference conversion: the user has confirmed USD is the actual intended listing price currency.
 
 ## Subscription / quota rules to implement
 - Free: RM0, maximum 5 active listings.
@@ -51,12 +57,13 @@ However, `create_seller_listing` currently hardcodes `listings.currency='USDT'`,
 - Trial grants access to the selected plan's quota for 7 days. At expiry, move to the documented grace state for 7 days. After grace, fall back to Free or pause excess listings according to an explicit policy; do not invent the behavior.
 
 ## Next implementation gates
-1. Inspect frontend listing creation and currency display/checkout paths to determine where the hardcoded USDT assumption is consumed.
-2. Confirm counted listing statuses and post-grace behavior before schema/function changes.
-3. Design subscription plans, seller subscription lifecycle, immutable subscription payment events, and quota enforcement in Staging.
-4. Keep paid plan activation gated on verified provider payment webhook + double-entry journal posting. Never grant a paid plan merely because the browser reports payment success.
-5. Test concurrent listing creation at the final available slot, plan expiry, grace period, downgrade over-quota behavior, and resubmission without double-counting.
-6. No Production changes, no real payments, and no Vercel deployment during this work.
+1. Inspect frontend listing creation, USD price display, checkout/order currency propagation, and provider settlement paths.
+2. Correct `create_seller_listing` from hardcoded `USDT` to `USD` in an additive Staging migration after checking all dependent flows. Do not change Production.
+3. Confirm counted listing statuses and post-grace behavior before quota enforcement.
+4. Design subscription plans, seller subscription lifecycle, immutable subscription payment events, and quota enforcement in Staging.
+5. Keep paid plan activation gated on verified provider payment webhook + double-entry journal posting. Never grant a paid plan merely because the browser reports payment success.
+6. Test concurrent listing creation at the final available slot, plan expiry, grace period, downgrade over-quota behavior, and resubmission without double-counting.
+7. No Production changes, no real payments, and no Vercel deployment during this work.
 
 ## No changes made
 No DDL/DML, no existing fixture changes, no Production access, and no payment or payout operations.
