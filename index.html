@@ -1068,9 +1068,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </label>
 </div>
 <div class="ptx-ai">
-<b>🔎 How Cardora checks a card before it goes live</b>
-<p class="ptx-muted">Cardora does not run its own image-matching service, so authenticity rests on evidence you supply: front and back photos of the physical card, the printed card number together with the set named on the card, and a cross-check of the printed card name, set and number against a card checklist or database. The three checks below are mandatory.</p>
-<button class="ptx-btn alt" onclick="document.getElementById('ptxAuthGate').scrollIntoView({behavior:'smooth',block:'center'});window.ptxRunAuthChecks&&ptxRunAuthChecks()">Go to the authenticity checks</button>
+<b>🔎 How Cardora reviews listing evidence before it goes live</b>
+<p class="ptx-muted">Cardora does not run its own image-matching service, so authenticity rests on evidence you supply: front and back photos of the physical card, the printed card number together with the set named on the card, and a cross-check of the printed card name, set and number against a card checklist or database. The three listing checks below are mandatory.</p>
+<button class="ptx-btn alt" onclick="document.getElementById('ptxAuthGate').scrollIntoView({behavior:'smooth',block:'center'});window.ptxRunAuthChecks&&ptxRunAuthChecks()">Go to the listing checks</button>
 </div>
 <div class="ptx-fields" style="margin-top:14px">
 <div class="ptx-field"><label>Card Name</label><input id="ptxName" placeholder="e.g. Pikachu ex"/></div>
@@ -1201,7 +1201,7 @@ window.ptxParseCardNumber=function(value){
  const n=Number(m[1]),t=Number(m[2]);
  if(t===0)return {state:'format',reason:'The set size reads as zero — copy the number exactly as printed.'};
  if(n===0)return {state:'format',reason:'Printed card numbers start at 1 — copy the number exactly as printed.'};
- if(n>t)return {state:'secret',n:n,t:t,reason:'“'+n+'/'+t+'” is above the '+t+'-card set total. Genuine sets print secret rares this way, so the number alone neither proves nor disproves the card — the app scan in step 3 is what a reviewer compares it against.'};
+ if(n>t)return {state:'secret',n:n,t:t,reason:'“'+n+'/'+t+'” is above the '+t+'-card set total. Genuine sets print secret rares this way, so the number alone neither proves nor disproves the card — the card-list check in step 3 is what a reviewer can compare.'};
  return {state:'ok',n:n,t:t,reason:'Number is within the printed set total.'};
 };
 window.ptxAuthIssues=function(){
@@ -1231,10 +1231,10 @@ window.ptxAuthIssues=function(){
    const setName=String(v('ptxSet')).trim().toLowerCase().replace(/\s+/g,'');
    const numDigits=String(v('ptxNumber')).replace(/\D/g,'');
    if(setName&&hay.indexOf(setName.slice(0,6))<0&&!(numDigits&&hay.indexOf(numDigits.slice(0,3))>=0))
-     out.push('The reference result you typed ("'+scanText+'") shares no set name or number with the listing. Fix the details or list the card the app actually recognised.');
- } else if(ackState[0]) out.push('Type what the official app scan reported — a declaration with no result cannot be reviewed.');
+     out.push('The reference result you typed ("'+scanText+'") shares no set name or number with the listing. Fix the details or list the card the reference check returned.');
+ } else if(ackState[0]) out.push('Type the card-list cross-check result — a declaration with no result cannot be reviewed.');
  const tcg=window.ptxTcgCheckState;
- if(tcg&&tcg.ran&&!tcg.ok)out.push('The official database check did not confirm your name/set/number combination. Fix the details and press the database-check button again, or a reviewer sends it back.');
+ if(tcg&&tcg.ran&&!tcg.ok)out.push('The TCGdex database cross-check did not confirm your name/set/number combination. Fix the details and press the database-check button again, or a reviewer sends it back.');
  const descGate=window.cardoraScanContact(v('ptxDesc'));
  if(descGate.blocked)out.push('Your description contains '+descGate.hits.map(function(h){return h.label}).join(', ')+'. Off-platform contact and payment details are removed before a listing is published.');
  return out;
@@ -1246,7 +1246,7 @@ window.ptxRunAuthChecks=function(){
  box.classList.add('show');
  box.classList.toggle('ok',issues.length===0);
  box.innerHTML=issues.length===0
-  ?'✓ All three authenticity checks pass. Cardora reviewers compare your photos, the printed number and the official app result before anything is published.'
+  ?'✓ All three listing checks pass. Cardora reviewers compare your photos and the printed card details before anything is published.'
   :'<b>'+issues.length+' check'+(issues.length>1?'s':'')+' must pass before a listing can be reviewed:</b><ul>'+issues.map(function(i){return '<li>'+cardoraEsc(i)+'</li>'}).join('')+'</ul>';
  return issues;
 };
