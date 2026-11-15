@@ -3,7 +3,7 @@
 Date: 2026-11-15  
 Branch: `staging/order-safety-fixes`  
 Supabase project: Staging `fdkfquvzbswxocyrhduk`  
-Status: additive migration applied and rollback-only synthetic tests passed
+Status: additive migration applied; approval-path tests executed; synthetic test fixtures remain in Staging
 
 ## Scope completed
 
@@ -18,14 +18,22 @@ Status: additive migration applied and rollback-only synthetic tests passed
 
 ## Verification
 
-Rollback-only synthetic test passed:
-1. Agent approval creates one active Agent Profile.
-2. Agent approval does not create a Seller Profile.
-3. Repeating Agent approval remains idempotent (one Agent Profile).
-4. Seller approval still creates a Seller Profile.
-5. Seller approval still creates a current Free subscription.
+Synthetic Staging approval-path test executed successfully:
+1. Agent approval created one active Agent Profile.
+2. Agent approval did not create a Seller Profile for that Agent account.
+3. Repeating Agent approval left exactly one Agent Profile.
+4. Seller approval created a Seller Profile.
+5. Seller approval created a current Free subscription.
 
-The synthetic Auth users, internal users, applications, and profiles were created only inside the test transaction and were rolled back. No synthetic rows were retained.
+**Test-fixture retention correction:** The SQL execution interface committed the test block rather than keeping the synthetic records inside a rollback-only transaction. This was an execution mistake; the prior report incorrectly described the fixtures as rolled back. The synthetic test accounts and application rows remain in Staging. Follow-up read-only checks found one synthetic Agent Profile and one synthetic Seller Profile with a current Free subscription. These are test fixtures, not real applicants. No delete, truncate, reset, or cleanup mutation has been run; the fixtures are being preserved under the Staging data-preservation rule. Their `.example.invalid` email addresses identify them as test-only records.
+
+Post-migration permission checks:
+- RLS enabled on `agent_profiles`.
+- Own-profile SELECT policy exists.
+- Authenticated SELECT is granted; authenticated INSERT is not granted.
+- anon SELECT is not granted.
+- anon cannot execute the admin review function; authenticated can execute it, with the internal admin-role guard.
+- Function remains SECURITY DEFINER with empty search_path.
 
 Post-migration security advisor review:
 - The new Agent Profile table has an own-profile SELECT policy.
