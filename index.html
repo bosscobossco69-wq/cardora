@@ -4310,4 +4310,110 @@ renderAll();
 document.addEventListener('DOMContentLoaded',renderAll);
 })();
 </script>
+
+<!-- Cardora Agent Profile live read + secure manual approval bridge -->
+<style id="cardora-agent-profile-live-v1">
+#ptxRealPageContent .ca-agent-panel{border:1px solid #4a3670;border-radius:17px;padding:16px;background:linear-gradient(145deg,#171027,#0b0812);margin-top:12px}
+#ptxRealPageContent .ca-agent-kv{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #30243f;font-size:13px}
+#ptxRealPageContent .ca-agent-kv:last-child{border-bottom:0}
+#ptxRealPageContent .ca-agent-code{font:800 22px ui-monospace,monospace;letter-spacing:.08em;color:#f5c542;overflow-wrap:anywhere}
+#ptxRealPageContent .ca-agent-note{font-size:12px;color:#aaa0b2;line-height:1.6}
+#ptxRealPageContent .ca-agent-state{display:inline-block;border:1px solid #5a4479;border-radius:99px;padding:5px 9px;font-size:11px;color:#e5d9f2}
+</style>
+<script id="cardora-agent-profile-live-v1">
+(function(){
+ const oldGo=window.ptxIPGo;
+ const host=()=>document.getElementById('ptxRealPageContent');
+ const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function intro(){
+  const h=host(); if(!h)return;
+  h.innerHTML='<div class="ptx-page-intro"><strong>Agent Program</strong><br>Your Agent status and referral identity are shown here after approval. Referral tracking and payouts are not active yet.</div><div class="ca-agent-panel" id="caAgentLivePanel"><div class="ptx-ip-muted">Checking your account…</div></div>';
+ }
+ async function render(){
+  intro();
+  const box=document.getElementById('caAgentLivePanel'); if(!box)return;
+  try{
+   await window.ptxEnsureSupabase?.();
+   const client=window.ptxSupabase;
+   if(!client)throw new Error('Database connection is not ready. Refresh and try again.');
+   const {data:sessionData,error:sessionError}=await client.auth.getSession();
+   if(sessionError)throw sessionError;
+   const user=sessionData?.session?.user;
+   if(!user){
+    box.innerHTML='<h2>Sign in required</h2><p class="ca-agent-note">Sign in to check your Agent application or Agent Profile.</p><button class="ptx-ip-action primary" onclick="ptxOpenAuth(\'login\')">Sign In</button>';
+    return;
+   }
+   const {data:userRow,error:userError}=await client.rpc('current_user_row_id');
+   if(userError)throw userError;
+   if(!userRow)throw new Error('Your Cardora account profile is not ready. Sign out and sign in again.');
+   const [profileRes,appRes]=await Promise.all([
+    client.from('agent_profiles').select('id,status,referral_code,display_name,created_at').eq('user_id',userRow).maybeSingle(),
+    client.from('seller_applications').select('id,status,created_at,name').eq('user_id',userRow).eq('role','agent').order('created_at',{ascending:false}).limit(1)
+   ]);
+   if(profileRes.error)throw profileRes.error;
+   if(appRes.error)throw appRes.error;
+   const profile=profileRes.data;
+   const app=(appRes.data||[])[0]||null;
+   if(profile){
+    const state=profile.status==='active'?'Active':profile.status==='suspended'?'Suspended':'Closed';
+    box.innerHTML='<div class="ptx-live"><i></i> YOUR AGENT PROFILE</div><h2 style="margin:9px 0">'+esc(profile.display_name||'Cardora Agent')+'</h2><span class="ca-agent-state">'+state+'</span><div class="ca-agent-kv"><span>Referral Code</span><b class="ca-agent-code">'+esc(profile.referral_code)+'</b></div><div class="ca-agent-kv"><span>Profile created</span><b>'+esc(new Date(profile.created_at).toLocaleDateString())+'</b></div><div class="ca-agent-panel" style="margin:14px 0 0;background:#100c18"><b>Referral program status</b><p class="ca-agent-note">Your Agent identity is active, but referral attribution, qualifying transactions, reward posting and payouts are not connected yet. This code is an Agent identity code only; do not promise or calculate earnings from it.</p><div class="ca-agent-kv"><span>Current platform commission</span><b>0%</b></div><div class="ca-agent-kv"><span>Current referral reward</span><b>0</b></div><div class="ca-agent-kv"><span>Future commission</span><b>1% · inactive</b></div><p class="ca-agent-note">The planned Agent share is 25% of actual platform commission only. Since current commission is 0%, no referral reward is earned or payable.</p></div><div class="ca-agent-panel" style="margin-top:12px"><b>Agent service fees</b><p class="ca-agent-note">Service work and service fees are separate from referral rewards. Service types, prices, fee beneficiary and payment workflow are not enabled here; any service must be agreed in a written quote.</p></div>';
+    return;
+   }
+   if(app){
+    const status=app.status||'pending';
+    const label=status==='pending'?'Pending manual review':status==='contacted'?'Cardora has contacted you':status==='rejected'?'Application not approved':'Approved — profile setup pending';
+    box.innerHTML='<div class="ptx-live"><i></i> AGENT APPLICATION</div><h2 style="margin:9px 0">'+label+'</h2><span class="ca-agent-state">'+esc(status)+'</span><p class="ca-agent-note" style="margin-top:12px">Submitted '+esc(new Date(app.created_at).toLocaleDateString())+'. Agent Profile is created only after the administrator approves the application. No referral tracking or reward is active yet.</p>'+(status==='rejected'?'<button class="ptx-ip-action" onclick="ptxIPGo(\'apply\');setTimeout(window.cardoraSelectAgentApplication,100)">Submit a new application</button>':'');
+    return;
+   }
+   box.innerHTML='<h2>You are not an approved Agent yet</h2><p class="ca-agent-note">Apply to join Cardora as an Agent. Applications are reviewed manually; submitting an application does not activate a referral code or create a payable reward.</p><button class="ptx-ip-action primary" onclick="ptxIPGo(\'apply\');setTimeout(window.cardoraSelectAgentApplication,100)">Apply as Agent</button>';
+  }catch(e){
+   console.error('Cardora Agent Profile',e);
+   box.innerHTML='<h2>Agent information unavailable</h2><p class="ca-agent-note">'+esc(e?.message||'Could not load Agent information. Please try again.')+'</p><button class="ptx-ip-action" onclick="window.cardoraRenderAgentPage&&window.cardoraRenderAgentPage()">Retry</button>';
+  }
+ }
+ window.cardoraSelectAgentApplication=function(){
+  const role=document.querySelector('#ptxApplyHost select[name="role"]');
+  if(role){role.value='agent';role.dispatchEvent(new Event('change',{bubbles:true}));}
+ };
+ window.cardoraRenderAgentPage=render;
+ window.ptxIPGo=function(page){
+  if(page!=='agent')return oldGo?oldGo(page):undefined;
+  const shell=document.getElementById('ptxIndependentShell');
+  shell?.classList.add('open');shell?.setAttribute('aria-hidden','false');document.body.classList.add('ptx-ip-open');
+  document.getElementById('ptxIpTitle').textContent='Agent Program';
+  document.getElementById('ptxIpSub').textContent='Agent profile, application status and program rules';
+  document.querySelectorAll('#ptxIpNav button').forEach(b=>b.classList.toggle('active',b.dataset.ip==='agent'));
+  render();
+  try{history.replaceState(null,'',location.pathname+location.search+'#agent')}catch(e){}
+ };
+ window.addEventListener('hashchange',function(){if((location.hash||'').slice(1)==='agent')window.ptxIPGo('agent')});
+ // Approval must go through the guarded SECURITY DEFINER RPC. Direct table updates
+ // would only change application status and would bypass Agent/Seller profile provisioning.
+ window.ptxSetApplicationStatus=async function(id,status){
+  if(status==='pending'){
+   if(window.ptxToast)window.ptxToast('Pending is the initial state; applications cannot be reset to pending.');
+   if(window.ptxLoadAdminApplications)await window.ptxLoadAdminApplications();
+   return;
+  }
+  if(!['approved','rejected','contacted'].includes(status)){
+   if(window.ptxToast)window.ptxToast('Invalid application status.');
+   return;
+  }
+  try{
+   await window.ptxEnsureSupabase();
+   const {data,error}=await window.ptxSupabase.rpc('admin_review_seller_application',{
+    p_application_id:id,p_status:status,p_note:null
+   });
+   if(error)throw error;
+   if(data!==true)throw new Error('The review function did not confirm the update.');
+   if(window.ptxToast)window.ptxToast('Application '+status+'. Profile provisioning has been processed by the server.');
+   if(window.ptxLoadAdminApplications)await window.ptxLoadAdminApplications();
+  }catch(e){
+   console.error('secure application review',e);
+   if(window.ptxToast)window.ptxToast('Could not review application: '+(e?.message||'unknown error'));
+  }
+ };
+})();
+</script>
+
 </body></html>
