@@ -4340,7 +4340,7 @@ document.addEventListener('DOMContentLoaded',renderAll);
    if(sessionError)throw sessionError;
    const user=sessionData?.session?.user;
    if(!user){
-    box.innerHTML='<h2>Sign in required</h2><p class="ca-agent-note">Sign in to check your Agent application or Agent Profile.</p><button class="ptx-ip-action primary" onclick="ptxOpenAuth(\'login\')">Sign In</button>';
+    box.innerHTML='<h2>Sign in required</h2><p class="ca-agent-note">Sign in to check your Agent application or Agent Profile.</p><button class="ptx-ip-action primary" onclick="ptxOpenAuth(&quot;login&quot;)">Sign In</button>';
     return;
    }
    const {data:userRow,error:userError}=await client.rpc('current_user_row_id');
@@ -4362,10 +4362,10 @@ document.addEventListener('DOMContentLoaded',renderAll);
    if(app){
     const status=app.status||'pending';
     const label=status==='pending'?'Pending manual review':status==='contacted'?'Cardora has contacted you':status==='rejected'?'Application not approved':'Approved — profile setup pending';
-    box.innerHTML='<div class="ptx-live"><i></i> AGENT APPLICATION</div><h2 style="margin:9px 0">'+label+'</h2><span class="ca-agent-state">'+esc(status)+'</span><p class="ca-agent-note" style="margin-top:12px">Submitted '+esc(new Date(app.created_at).toLocaleDateString())+'. Agent Profile is created only after the administrator approves the application. No referral tracking or reward is active yet.</p>'+(status==='rejected'?'<button class="ptx-ip-action" onclick="ptxIPGo(\'apply\');setTimeout(window.cardoraSelectAgentApplication,100)">Submit a new application</button>':'');
+    box.innerHTML='<div class="ptx-live"><i></i> AGENT APPLICATION</div><h2 style="margin:9px 0">'+label+'</h2><span class="ca-agent-state">'+esc(status)+'</span><p class="ca-agent-note" style="margin-top:12px">Submitted '+esc(new Date(app.created_at).toLocaleDateString())+'. Agent Profile is created only after the administrator approves the application. No referral tracking or reward is active yet.</p>'+(status==='rejected'?'<button class="ptx-ip-action" onclick="ptxIPGo(&quot;apply&quot;);setTimeout(window.cardoraSelectAgentApplication,100)">Submit a new application</button>':'');
     return;
    }
-   box.innerHTML='<h2>You are not an approved Agent yet</h2><p class="ca-agent-note">Apply to join Cardora as an Agent. Applications are reviewed manually; submitting an application does not activate a referral code or create a payable reward.</p><button class="ptx-ip-action primary" onclick="ptxIPGo(\'apply\');setTimeout(window.cardoraSelectAgentApplication,100)">Apply as Agent</button>';
+   box.innerHTML='<h2>You are not an approved Agent yet</h2><p class="ca-agent-note">Apply to join Cardora as an Agent. Applications are reviewed manually; submitting an application does not activate a referral code or create a payable reward.</p><button class="ptx-ip-action primary" onclick="ptxIPGo(&quot;apply&quot;);setTimeout(window.cardoraSelectAgentApplication,100)">Apply as Agent</button>';
   }catch(e){
    console.error('Cardora Agent Profile',e);
    box.innerHTML='<h2>Agent information unavailable</h2><p class="ca-agent-note">'+esc(e?.message||'Could not load Agent information. Please try again.')+'</p><button class="ptx-ip-action" onclick="window.cardoraRenderAgentPage&&window.cardoraRenderAgentPage()">Retry</button>';
