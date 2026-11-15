@@ -1069,7 +1069,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </div>
 <div class="ptx-ai">
 <b>🔎 How Cardora reviews listing evidence before it goes live</b>
-<p class="ptx-muted">Cardora does not run its own image-matching service, so authenticity rests on evidence you supply: front and back photos of the physical card, the printed card number together with the set named on the card, and a cross-check of the printed card name, set and number against a card checklist or database. The three listing checks below are mandatory.</p>
+<p class="ptx-muted">Cardora does not run its own image-matching service, so listing review relies on the evidence you supply: front and back photos of the physical card, the printed card number together with the set named on the card, and a cross-check of the printed card name, set and number against a card checklist or database. The three listing checks below are mandatory.</p>
 <button class="ptx-btn alt" onclick="document.getElementById('ptxAuthGate').scrollIntoView({behavior:'smooth',block:'center'});window.ptxRunAuthChecks&&ptxRunAuthChecks()">Go to the listing checks</button>
 </div>
 <div class="ptx-fields" style="margin-top:14px">
@@ -1213,7 +1213,7 @@ window.ptxAuthIssues=function(){
  if(!photosOk)out.push('Upload both a front and a back photo of the physical card.');
  const num=window.ptxParseCardNumber(v('ptxNumber'));
  const numOk=num.state==='ok'||num.state==='secret';
- cardoraSetGate('ptxGateNumber',numOk,num.state==='secret'?'secret rare · scan decides':'possible');
+ cardoraSetGate('ptxGateNumber',numOk,num.state==='secret'?'secret rare · check set list':'possible');
  if(!numOk)out.push(num.reason);
  if(!v('ptxName').trim())out.push('Enter the card name exactly as printed.');
  if(!v('ptxSet').trim())out.push('Enter the set name printed at the bottom of the card.');
@@ -1255,7 +1255,7 @@ window.ptxSubmitListing=async function(){
  const gate=document.getElementById('ptxAuthGate');
  if(issues.length){
   if(gate)gate.scrollIntoView({behavior:'smooth',block:'center'});
-  if(window.ptxToast)window.ptxToast(issues.length+' authenticity check'+(issues.length>1?'s':'')+' failed — see the red list');
+  if(window.ptxToast)window.ptxToast(issues.length+' listing check'+(issues.length>1?'s':'')+' failed — see the red list');
   return;
  }
  const val=id=>{const e=document.getElementById(id);return e?String(e.value||'').trim():''};
