@@ -3720,7 +3720,7 @@ Two honest limits: this is a preview site, so no payment is live, and I cannot s
   home:['Home','Welcome to Cardora','Browse the marketplace, continue collecting, or manage your account.'],
   market:['Market','Browse Pokémon cards','Search, compare card listings, and review card details in one place.'],
   sell:['Sell','Seller Center','Create listings and manage your active cards and sales.'],
-  apply:['Join','Become a Cardora seller or agent','Apply to list cards or bring buyers. Applications are reviewed by hand, usually within 2 working days.'],
+  apply:['Join','Become a Cardora seller or agent','Apply to list cards or bring buyers. Seller accounts are approved automatically. Agent applications remain subject to manual review.'],
   cart:['Cart','Your shopping cart','Review your selected cards before proceeding to checkout.'],
   orders:['Orders','Orders and delivery','Follow payment status, shipping updates, and order notifications.'],
   wallet:['Wallet','Payments and transaction history','Review local payment options and USD-based transaction records.'],
@@ -3955,10 +3955,10 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
   return '<div class="ptx-apply">'
    +'<div class="ptx-apply-hero">'
    +'<h2>🤝 Become a Cardora seller or agent</h2>'
-   +'<p class="ptx-muted">List your cards on Cardora, or join as an agent and bring buyers and sellers. Every application is reviewed by hand.</p>'
+   +'<p class="ptx-muted">List your cards on Cardora, or join as an agent and bring buyers and sellers. Seller accounts are approved automatically; Agent applications are reviewed by our team.</p>'
    +'<div class="ptx-apply-steps">'
    +'<div><b>1</b><span>Apply<small><br>Fill in the form</small></span></div>'
-   +'<div><b>2</b><span>Review<small><br>Checks, then a person</small></span></div>'
+   +'<div><b>2</b><span>Choose review mode<small><br>AI Smart Review or Human Review</small></span></div>'
    +'<div><b>3</b><span>List<small><br>Add your cards</small></span></div>'
    +'</div>'
    +'<p class="ptx-apply-note">Card payments and seller payouts are not live yet. Applying now puts your cards in the review queue. Approval happens after the business is activated, so no listing and no payment is promised.</p>'
@@ -4048,7 +4048,7 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
     const r=await window.ptxSupabase.from('seller_applications').insert(payload);
     if(r.error)throw r.error;
     form.reset();
-    say('Application received. We will contact you within 2 working days.','ptx-apply-ok');
+    say('Application submitted. Seller access is approved automatically; choose your subscription and review mode next. Agent applications remain pending manual review.','ptx-apply-ok');
    }catch(err){
     console.error('seller application',err);
     if(err&&err.code==='42P01')say('The application form is not connected yet. Please try again later.','ptx-apply-err');
