@@ -3983,7 +3983,7 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
    +'<label>WhatsApp *<input name="whatsapp" maxlength="30" placeholder="+60 12 345 6789" required></label>'
    +'<label>City / country<input name="city" maxlength="80" placeholder="Kuala Lumpur, MY"></label>'
    +'<label>I am applying as<select name="role"><option value="seller">Seller — I have cards to list</option><option value="agent">Agent — I bring buyers and sellers</option></select></label>'
-   +'<label>Expected listing quantity *<input name="card_count" type="number" min="1" max="100000" inputmode="numeric" placeholder="e.g. 20" required></label>'
+   +'<label>Expected listing quantity *<input name="card_count" type="number" min="1" max="100000" inputmode="numeric" placeholder="e.g. 20"></label>'
    +'<label>Review mode<select name="requested_review_mode"><option value="ai_auto">AI Smart Review</option><option value="human_manual">Human Review — every listing checked by a person</option></select></label>'
    +'<label class="wide">Choose subscription plan<select name="requested_plan_code"><option value="ai_free">AI Free — RM0 / 5 listings</option><option value="ai_basic">AI Basic — RM39 / 30 listings</option><option value="ai_pro">AI Pro — RM99 / 150 listings</option><option value="ai_business">AI Business — RM249 / 600 listings</option><option value="human_starter">Human Starter — RM29 / 5 listings</option><option value="human_basic">Human Basic — RM69 / 30 listings</option><option value="human_pro">Human Pro — RM199 / 150 listings</option><option value="human_business">Human Business — RM599 / 600 listings</select></label>'
    +'<label class="wide">Shop or profile links<input name="shop_links" maxlength="400" placeholder="Shopee, Carousell, Instagram, Facebook page…"></label>'
@@ -4012,6 +4012,22 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
    if(feeHead)feeHead.textContent=role==='agent'?'Fees as an agent':'Fees as a seller';
   };
   if(roleSel){roleSel.addEventListener('change',syncFees);syncFees();}
+  const countInput=form.querySelector('input[name="card_count"]');
+  const reviewMode=form.querySelector('select[name="requested_review_mode"]');
+  const planSelect=form.querySelector('select[name="requested_plan_code"]');
+  const syncPlan=function(){
+   if(!countInput||!reviewMode||!planSelect)return;
+   const count=Math.max(0,parseInt(countInput.value||'0',10)||0);
+   const mode=reviewMode.value==='human_manual'?'human_manual':'ai_auto';
+   const tier=count<=5?'starter':count<=30?'basic':count<=150?'pro':count<=600?'business':'custom';
+   const code=mode==='ai_auto'?(tier==='starter'?'ai_free':tier==='custom'?'custom_quote':'ai_'+tier):(tier==='custom'?'custom_quote':'human_'+tier);
+   if(Array.from(planSelect.options).some(function(o){return o.value===code;}))planSelect.value=code;
+   else planSelect.value=mode==='ai_auto'?'ai_free':'human_starter';
+  };
+  if(countInput)countInput.addEventListener('change',syncPlan);
+  if(reviewMode)reviewMode.addEventListener('change',syncPlan);
+  if(roleSel)roleSel.addEventListener('change',function(){const seller=roleSel.value!=='agent';[countInput,reviewMode,planSelect].forEach(function(el){if(el){el.closest('label').hidden=!seller;}});});
+  syncPlan();
   form.addEventListener('submit',async function(e){
    e.preventDefault();
    const fd=new FormData(form);
@@ -4046,7 +4062,7 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
       card_count:(n===null||isNaN(n))?null:Math.max(0,Math.min(100000,n)),
       expected_listing_count:(n===null||isNaN(n))?null:Math.max(0,Math.min(100000,n)),
       requested_review_mode:(fd.get('role')==='agent'?null:(fd.get('requested_review_mode')==='human_manual'?'human_manual':'ai_auto')),
-      requested_plan_code:(fd.get('role')==='agent'?null:String(fd.get('requested_plan_code')||'ai_free')),
+      requested_plan_code:(fd.get('role')==='agent'||String(fd.get('requested_plan_code')||'').startsWith('custom_')?null:String(fd.get('requested_plan_code')||'ai_free')),
       categories:val(fd,'categories'),
       monthly_volume:val(fd,'monthly_volume'),
       message:val(fd,'message')
