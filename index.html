@@ -1069,7 +1069,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </div>
 <div class="ptx-ai">
 <b>🔎 How Cardora checks a card before it goes live</b>
-<p class="ptx-muted">Cardora does not run its own image-matching service, so authenticity rests on evidence you supply: front and back photos of the physical card, the printed card number together with the set named on the card, and a scan taken with the official Pokémon TCG app on your phone. The three checks below are mandatory.</p>
+<p class="ptx-muted">Cardora does not run its own image-matching service, so authenticity rests on evidence you supply: front and back photos of the physical card, the printed card number together with the set named on the card, and a cross-check of the printed card name, set and number against a card checklist or database. The three checks below are mandatory.</p>
 <button class="ptx-btn alt" onclick="document.getElementById('ptxAuthGate').scrollIntoView({behavior:'smooth',block:'center'});window.ptxRunAuthChecks&&ptxRunAuthChecks()">Go to the authenticity checks</button>
 </div>
 <div class="ptx-fields" style="margin-top:14px">
@@ -1093,16 +1093,16 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <div class="ptx-authgate" id="ptxAuthGate">
 <div class="ptx-gatestep"><b>1 · Photos of the physical card</b><span class="ptx-muted">Front and back are both required. A back photo catches reprints and wrong-stock prints, which a front photo alone cannot.</span><span class="ptx-gatestate" id="ptxGatePhotos">not filled</span></div>
 <div class="ptx-gatestep"><b>2 · Printed number must be consistent</b><span class="ptx-muted">"012/078" means card 12 of a 78-card set. Genuine sets also print secret rares above the set total, so a number larger than the total is not proof of a fake — arithmetic on its own cannot verify a card. Step 3 is what makes a listing reviewable. <a href="pokemon-card-numbers-explained.html" target="_blank" rel="noopener" style="color:#ffd35a;text-decoration:underline">Why a number alone cannot verify a card →</a></span><span class="ptx-gatestate" id="ptxGateNumber">not checked</span></div>
-<div class="ptx-gatestep"><b>3 · Official Pokémon TCG app scan</b><span class="ptx-muted">Open the official Pokémon TCG app on your phone, tap Scan, point it at the card, and check that the app recognises the same name, set and number you typed. Cardora cannot see the card, so the app scan is the reference a human reviewer compares your entry against.</span><span class="ptx-gatestate" id="ptxGateScan">not declared</span></div>
+<div class="ptx-gatestep"><b>3 · Cross-check the printed card details</b><span class="ptx-muted">Compare the printed name, set and collector number with a reliable set checklist or card database. The optional TCGdex check below can confirm that the combination exists in its community-maintained database. A database match does not authenticate the physical card; reviewers still need the original front and back photos.</span><span class="ptx-gatestate" id="ptxGateScan">not declared</span></div>
 <div class="ptx-field" style="margin-top:10px">
 <button class="ptx-btn alt" type="button" onclick="window.ptxTcgCheck()">🗂 Auto-check against the TCGdex card database</button>
 <div class="ptx-muted" style="margin-top:6px">Sends only the typed name, set and number to TCGdex, a community-maintained Pokémon TCG database — it is not an official Pokémon service. Your photos are never sent. A match proves the combination exists; it cannot prove the physical card is genuine.</div>
 <div class="ptx-tcgresult" id="ptxTcgResult" hidden></div>
 </div>
-<label class="ptx-gatecheck"><input id="ptxAckScan" type="checkbox"/> I scanned this exact physical card with the official Pokémon TCG app and it recognised the name, set and number I entered.</label>
+<label class="ptx-gatecheck"><input id="ptxAckScan" type="checkbox"/> I checked the printed name, set and collector number against a card checklist or database. I understand that a database match does not prove the physical card is genuine.</label>
 <label class="ptx-gatecheck"><input id="ptxAckOwn" type="checkbox"/> Both photos are of this card in my possession, unedited — not a stock photo, a screenshot or another seller's image.</label>
 <label class="ptx-gatecheck"><input id="ptxAckReal" type="checkbox"/> This is not a replica, reprint, proxy, custom-sleeved, altered or digitally edited card, and I have no off-platform contact or payment details in my description.</label>
-<div class="ptx-field" style="margin-top:10px"><label>What the official app scan reported</label><input id="ptxScanResult" placeholder="e.g. Pikachu ex — 151 012/165 EN"/></div>
+<div class="ptx-field" style="margin-top:10px"><label>What your card-list cross-check returned</label><input id="ptxScanResult" placeholder="e.g. TCGdex match — Pikachu ex, 151, 012/165"/></div>
 <div class="ptx-gateverdict" id="ptxGateVerdict"></div>
 <button class="ptx-btn alt" type="button" onclick="ptxRunAuthChecks()">Run the three checks</button>
 </div>
@@ -1221,8 +1221,8 @@ window.ptxAuthIssues=function(){
  if(!price||price<=0)out.push('Enter your price in USD.');
  const acks=['ptxAckScan','ptxAckOwn','ptxAckReal'].map(function(id){return document.getElementById(id)});
  const ackState=acks.map(function(el){return !!(el&&el.checked)});
- cardoraSetGate('ptxGateScan',ackState[0],ackState[0]?'declared':'tick the app-scan box');
- if(!ackState[0])out.push('Tick the declaration that you scanned this card with the official Pokémon TCG app.');
+ cardoraSetGate('ptxGateScan',ackState[0],ackState[0]?'declared':'confirm the card-list cross-check');
+ if(!ackState[0])out.push('Confirm that you checked the printed card details against a card checklist or database.');
  if(!ackState[1])out.push('Tick the declaration that both photos are of the card you hold.');
  if(!ackState[2])out.push('Tick the declaration that the card is not a replica, reprint or altered print.');
  const scanText=v('ptxScanResult').trim();
@@ -1231,7 +1231,7 @@ window.ptxAuthIssues=function(){
    const setName=String(v('ptxSet')).trim().toLowerCase().replace(/\s+/g,'');
    const numDigits=String(v('ptxNumber')).replace(/\D/g,'');
    if(setName&&hay.indexOf(setName.slice(0,6))<0&&!(numDigits&&hay.indexOf(numDigits.slice(0,3))>=0))
-     out.push('The app result you typed ("'+scanText+'") shares no set name or number with the listing. Fix the details or list the card the app actually recognised.');
+     out.push('The reference result you typed ("'+scanText+'") shares no set name or number with the listing. Fix the details or list the card the app actually recognised.');
  } else if(ackState[0]) out.push('Type what the official app scan reported — a declaration with no result cannot be reviewed.');
  const tcg=window.ptxTcgCheckState;
  if(tcg&&tcg.ran&&!tcg.ok)out.push('The official database check did not confirm your name/set/number combination. Fix the details and press the database-check button again, or a reviewer sends it back.');
@@ -1268,7 +1268,7 @@ window.ptxSubmitListing=async function(){
  if(!val('ptxSet'))flags.push('missing set');
  if(!val('ptxNumber'))flags.push('missing card number');
  if(!val('ptxCondition'))flags.push('condition not selected');
- if(!val('ptxScanResult'))flags.push('official app scan not filled');
+ if(!val('ptxScanResult'))flags.push('card-list cross-check not filled');
  if(price>50000)flags.push('price above 50000');
  if(!window.ptxSupabase){ if(window.ptxToast)window.ptxToast('Database offline — please try again in a moment'); return; }
  try{
@@ -1325,7 +1325,7 @@ window.ptxLoadSubmissionQueue=async function(){
    const flag=r.flag?'<p style="color:#ffd35a;font-size:12px">⚠ Auto-flag: '+esc(r.flag)+'</p>':'';
    const actions=r.status==='pending'?'<div class="ptx-actions"><button class="ptx-btn" onclick="ptxDecideSubmission(\''+esc(r.id)+'\',\'approve\')">Approve</button> <button class="ptx-btn alt" onclick="ptxDecideSubmission(\''+esc(r.id)+'\',\'reject\')">Reject</button></div>':'';
    const meta=[r.card_set,r.card_number,r.rarity,r.condition].filter(Boolean).join(' · ')||'—';
-   return '<div class="ptx-review"><div class="ptx-review-img">🃏</div><div><b>'+esc(r.card_name)+'</b> '+pill+'<br><span class="ptx-pill">'+Number(r.price).toFixed(2)+' '+esc(r.currency||'USD')+'</span><p class="ptx-muted">'+esc(meta)+'</p>'+flag+(r.description?'<p class="ptx-muted">'+esc(r.description)+'</p>':'')+'<p class="ptx-muted">App scan: '+esc(r.scan_result||'—')+'</p><p class="ptx-muted">Submitted: '+esc(new Date(r.created_at).toLocaleString())+'</p></div>'+actions+'</div>';
+   return '<div class="ptx-review"><div class="ptx-review-img">🃏</div><div><b>'+esc(r.card_name)+'</b> '+pill+'<br><span class="ptx-pill">'+Number(r.price).toFixed(2)+' '+esc(r.currency||'USD')+'</span><p class="ptx-muted">'+esc(meta)+'</p>'+flag+(r.description?'<p class="ptx-muted">'+esc(r.description)+'</p>':'')+'<p class="ptx-muted">Reference check: '+esc(r.scan_result||'—')+'</p><p class="ptx-muted">Submitted: '+esc(new Date(r.created_at).toLocaleString())+'</p></div>'+actions+'</div>';
   }).join('');
  }catch(e){
   console.error('submission queue',e);
