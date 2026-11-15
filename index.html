@@ -3762,7 +3762,7 @@ Two honest limits: this is a preview site, so no payment is live, and I cannot s
   }
   if(page==='sell'){
     const cta=document.createElement('div');cta.className='ptx-page-empty';
-    cta.innerHTML='<h2>🤝 Not a seller yet?</h2><p>Apply to sell cards or to become an agent. Applications are reviewed by hand, usually within 2 working days.</p><button class="ptx-ip-action primary" type="button" onclick="ptxIPGo(\'apply\')">Open application form</button>';
+    cta.innerHTML='<h2>🤝 Not a seller yet?</h2><p>Apply to sell cards or to become an agent. Seller access is approved automatically. Agent applications remain subject to manual review.</p><button class="ptx-ip-action primary" type="button" onclick="ptxIPGo(\'apply\')">Open application form</button>';
     host.appendChild(cta);
   }
   if(page==='apply'){
@@ -3961,13 +3961,14 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
    +'<div><b>2</b><span>Choose review mode<small><br>AI Smart Review or Human Review</small></span></div>'
    +'<div><b>3</b><span>List<small><br>Add your cards</small></span></div>'
    +'</div>'
-   +'<p class="ptx-apply-note">Card payments and seller payouts are not live yet. Applying now puts your cards in the review queue. Approval happens after the business is activated, so no listing and no payment is promised.</p>'
+   +'<p class="ptx-apply-note">Card payments and seller payouts are not live yet. Seller accounts are approved automatically. Free AI access starts after application; paid plans require verified payment. Agent applications remain under manual review.</p>'
    +'</div>'
    +'<div class="ptx-apply-fees">'
    +'<div class="ptx-apply-fee-head" id="ptxApplyFeeHead">Fees as a seller</div>'
    +'<div class="ptx-apply-fee-body" data-role="seller">'
-   +'<p>Current platform commission: <b>0%</b>. Applying costs nothing and there is nothing to pay today, because card payments and payouts are not connected yet.</p>'
-   +'<p>Seller plans are separate from commission: Free RM0 / 5 listings; Basic RM29 / 30 listings; Pro RM79 / 150 listings; Business RM199 / 600 listings. The future platform commission is <b>1%</b>, not active until Cardora publishes an effective date. There is no 100-listing free allowance.</p>'
+   +'<p>Current platform commission: <b>0%</b>. Seller plans are separate from commission.</p>'
+   +'<p><b>AI Smart Review:</b> Free RM0 / 5 listings / 2 human-review cases; Basic RM39 / 30 / 10 cases; Pro RM99 / 150 / 30 cases; Business RM249 / 600 / 100 cases.</p>'
+   +'<p><b>Human Review:</b> Starter RM29 / 5 listings; Basic RM69 / 30; Pro RM199 / 150; Business RM599 / 600. Above 600 listings: custom quote. 7-day trial and 7-day grace where eligible. Live checkout is not enabled.</p>'
    +'</div>'
    +'<div class="ptx-apply-fee-body" data-role="agent" hidden>'
    +'<p>Agent applications cost nothing. The referral reward is <b>25% of actual platform commission</b> on eligible completed sales attributed to the Agent — not 25% of the sale price. At today's 0% platform commission, the referral reward is USD 0.</p>'
@@ -3982,7 +3983,9 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
    +'<label>WhatsApp *<input name="whatsapp" maxlength="30" placeholder="+60 12 345 6789" required></label>'
    +'<label>City / country<input name="city" maxlength="80" placeholder="Kuala Lumpur, MY"></label>'
    +'<label>I am applying as<select name="role"><option value="seller">Seller — I have cards to list</option><option value="agent">Agent — I bring buyers and sellers</option></select></label>'
-   +'<label>Cards in stock (approx.)<input name="card_count" type="number" min="0" max="100000" inputmode="numeric" placeholder="50"></label>'
+   +'<label>Expected listing quantity *<input name="card_count" type="number" min="1" max="100000" inputmode="numeric" placeholder="e.g. 20" required></label>'
+   +'<label>Review mode<select name="requested_review_mode"><option value="ai_auto">AI Smart Review</option><option value="human_manual">Human Review — every listing checked by a person</option></select></label>'
+   +'<label class="wide">Choose subscription plan<select name="requested_plan_code"><option value="ai_free">AI Free — RM0 / 5 listings</option><option value="ai_basic">AI Basic — RM39 / 30 listings</option><option value="ai_pro">AI Pro — RM99 / 150 listings</option><option value="ai_business">AI Business — RM249 / 600 listings</option><option value="human_starter">Human Starter — RM29 / 5 listings</option><option value="human_basic">Human Basic — RM69 / 30 listings</option><option value="human_pro">Human Pro — RM199 / 150 listings</option><option value="human_business">Human Business — RM599 / 600 listings</select></label>'
    +'<label class="wide">Shop or profile links<input name="shop_links" maxlength="400" placeholder="Shopee, Carousell, Instagram, Facebook page…"></label>'
    +'<label class="wide">What do you sell?<input name="categories" maxlength="200" placeholder="Pokémon singles, sealed, graded slabs, Japanese cards…"></label>'
    +'<label class="wide">Expected monthly sales<input name="monthly_volume" maxlength="120" placeholder="e.g. 40 cards per month"></label>'
@@ -4041,6 +4044,9 @@ html[data-ptx-auth="signed-out"] #ptxRealPageContent>section#ptxAccountCenter{di
       role:(fd.get('role')==='agent'?'agent':'seller'),
       shop_links:val(fd,'shop_links'),
       card_count:(n===null||isNaN(n))?null:Math.max(0,Math.min(100000,n)),
+      expected_listing_count:(n===null||isNaN(n))?null:Math.max(0,Math.min(100000,n)),
+      requested_review_mode:(fd.get('role')==='agent'?null:(fd.get('requested_review_mode')==='human_manual'?'human_manual':'ai_auto')),
+      requested_plan_code:(fd.get('role')==='agent'?null:String(fd.get('requested_plan_code')||'ai_free')),
       categories:val(fd,'categories'),
       monthly_volume:val(fd,'monthly_volume'),
       message:val(fd,'message')
