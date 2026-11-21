@@ -67,3 +67,10 @@ This is a review branch only. No SQL was executed, no Supabase Edge Functions de
 - Do not insert static payment badges promising all customers wallet availability until the device-based acceptance tests have passed.
 - No changes to existing MYR amounts, subscription products, seller data, Live Stripe settings, or deployment in this revision.
 - Official references: https://docs.stripe.com/apple-pay?platform=web ; https://docs.stripe.com/google-pay?platform=web ; https://docs.stripe.com/testing/wallets
+
+## 22 November 2026 — additional draft checkout hardening
+- Customer identity is verified with Supabase Auth `getUser()`; public users/seller rows are then resolved by a server-side service-role client **using only that verified Auth UUID**. No browser-provided seller or owner ID is trusted.
+- Before creating Checkout, the server now fetches the selected Stripe Price and validates Sandbox-only, active, MYR, monthly recurring, and exact unit amount (RM29/RM79/RM199). This prevents accidentally accepting a wrong configured price ID.
+- Added a fail-closed `CARDORA_CHECKOUT_RESERVATION_VERIFIED` flag. **Do not set it to true.** A read-before-create check and a one-hour idempotency key are insufficient to prevent concurrent first-time purchases; an atomic server-side reservation must be developed and integration-tested before lifting this gate.
+- This change deliberately does **not** create or charge any payments and does **not** make Checkout production-ready. The next engineering requirement is transaction-safe reservation with expiry/recovery, verified against Stripe Checkout session lifecycle.
+- Do not grant general users access to any Stripe service-role API. The server-side service key stays in function secrets only.
