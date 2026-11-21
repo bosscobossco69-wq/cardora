@@ -25,3 +25,38 @@ Current production frontend points to old Supabase `crqqockaetgacddxkqpb`; new C
 - Never put Stripe secret keys, Supabase service-role keys or OAuth client secrets in browser code or public repo.
 - Do not enable Stripe Live, database wallet flow, ToyyibPay or auto-credit.
 - No new production deployment, SQL execution or GitHub main changes are authorized by this document.
+
+
+## 22 November 2026 — read-only Auth and feature-compatibility preflight
+
+### Verified live database inventory (aggregate counts only)
+| Dataset | Legacy `pokemon-treasure-demo` | New `cardora` |
+|---|---:|---:|
+| Auth users | 2 | 5 |
+| `public.users` profiles | 2 | 5 |
+| `seller_applications` | 3 | 2 |
+| `listing_submissions` | 1 | 0 |
+| `listings` | 0 | 5 |
+| `orders` | 0 | 1 |
+| `admin_users` | 2 | **table absent** |
+| `seller_subscriptions` | Not used by legacy website | 2 |
+
+Read-only `SELECT count(*)` was used; no production data was edited, and no personally identifying user rows were exported. These counts are a point-in-time snapshot, not a migration or backup.
+
+### Browser code confirmed from draft branch `index.html`
+- Auth URL is still legacy `crqqockaetgacddxkqpb`. The browser uses `signInWithOAuth({provider:'google'})`, `signInWithOtp({shouldCreateUser:true})`, PKCE callbacks, `localStorage` auth key `cardora-supabase-auth-v1`, and `rpc('is_admin')` for admin UI visibility.
+- Orders, seller profile, seller applications, listing review, wallet and legacy `ai-support` functionality all depend on the selected Supabase project. Replacing the URL globally redirects **all** these operations, not just Login.
+- The frontend has wallet/admin interactions and legacy service function paths. A preview pointed at the new Cardora project is **not** read-only unless these flows are explicitly isolated/disabled.
+- New Cardora backend has no `admin_users` table. Legacy admin status must **never** be copied on email match alone. Approved users and admin grants require independent verification against the correct Auth UUID and separate explicit authorization.
+
+### Fail-closed migration requirements before any staging rollout
+1. Preserve old website and both backend databases unchanged. Snapshot Auth account mapping, admins, seller applications, reviews, orders and existing subscription relationships, with explicit rollback.
+2. Test in an independent disposable database, using artificial accounts, not old refresh tokens, password hashes or production wallet balances.
+3. Record a verified one-to-one mapping old Auth UUID -> new Auth UUID for accounts that have been re-authenticated and proven to belong to the same person. Do not match by email alone; never assign admin/seller privileges via email.
+4. Test new project OAuth redirect, email OTP, RLS and admin RPC. Deny access until role ownership is verifiable. Recheck seller approval/KYC and subscription ownership separately.
+5. Audit every query/RPC/Edge Function called by `index.html` against the new project before switching its URL. In particular: applications, listings, orders, review queues, old wallet and AI support.
+6. For Preview builds, explicitly disable side-effecting legacy wallet/admin/order paths and never use the new production Cardora project for destructive migration tests.
+7. Confirm fallback behavior for no profile, signed-out sessions, expired access token, two tabs, PKCE redirect, missing admin RPC and mismatched seller profile. Re-run mobile navigation/refresh.
+8. Only after isolated testing and explicit authorization should any production Auth migration or deployment be considered.
+
+**Release blocker remains:** no isolated Supabase staging available on the user's current Free tier; avoid changing either live project to run this test. Supabase Preview branching requires a paid plan; the user does not want to upgrade, and local Docker is unavailable.
