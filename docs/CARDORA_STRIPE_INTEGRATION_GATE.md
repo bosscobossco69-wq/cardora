@@ -103,3 +103,10 @@ This is a review branch only. No SQL was executed, no Supabase Edge Functions de
 - The entitlement period is taken from **that invoice line's `period.start/end`**, not the subscription's current period. This reduces risk from delayed renewal notifications.
 - **Remaining:** Stripe SDK 17.7.0 / configured API-version compatibility needs integration testing against actual sandbox invoice payloads. Zero-value trial and heavily discounted invoices are deliberately not auto-activated; must define a separate explicit trial policy. Multiple-subscription-item invoices are intentionally blocked until reviewed.
 - This does not solve all out-of-order events or reconciliation. No SQL migration executed, no Stripe payment initiated, no Edge Function deployed.
+
+## 22 November 2026 — cancellation safety review (draft only)
+- Stripe's `customer.subscription.deleted` event is allowed to revoke a previously linked membership even if the canceled subscription no longer exposes the originally purchased Price ID. Seller metadata, Cardora project identity, configured plan tier, and the database's exact seller/subscription link are still required.
+- The webhook ignores a stale deletion if a fresh Stripe subscription lookup reports a status other than `canceled`.
+- The SQL event watermark permits a `canceled` event from the **same second** as the previous event, because the webhook checks Stripe's currently canceled state; older timestamps still cannot override newer state. Ambiguous same-second payment events are not auto-promoted.
+- Regression checks still required in disposable staging: canceled plan with missing Price, canceled-after-paid in same second, delayed cancellation after a replacement, canceled event with wrong seller, repeated cancellation, refunded payment and dispute lifecycle. **Refunds/disputes are not yet handled**; do not go live.
+- No production SQL, Stripe webhook endpoint, or payment was changed.
