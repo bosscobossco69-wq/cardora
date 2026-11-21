@@ -48,6 +48,11 @@ Deno.serve(async(req)=>{
       return response({received:true,ignored_stale_failure:true});
     const sellerId=subscription.metadata?.seller_profile_id || "";
     const tier=subscription.metadata?.tier || "";
+    // Exact Checkout reservation ID is Stripe-owned subscription metadata, never request JSON.
+    const checkoutRequestId=subscription.metadata?.checkout_request_id || "";
+    const validReservationId=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(checkoutRequestId);
+    if(event.type==="invoice.paid" && !validReservationId)
+      return response({error:"MISSING_CHECKOUT_RESERVATION"},422);
     const expectedPrice:Record<string,string>={
       basic:Deno.env.get("STRIPE_PRICE_BASIC")||"",
       pro:Deno.env.get("STRIPE_PRICE_PRO")||"",
@@ -73,7 +78,8 @@ Deno.serve(async(req)=>{
     const {error}=await db.rpc("cardora_apply_verified_stripe_event",{
       p_event_id:event.id,p_kind:kind,p_seller_profile_id:sellerId,p_plan_code:dbPlanCode[tier],
       p_stripe_customer_id:customerId,p_stripe_subscription_id:subscriptionId,
-      p_period_start:periodStart,p_period_end:periodEnd
+      p_period_start:periodStart,p_period_end:periodEnd,
+      p_checkout_request_id:validReservationId?checkoutRequestId:null
     });
     if(error){console.error("STRIPE_EVENT_APPLY_FAILED",error.code);return response({error:"EVENT_PERSIST_FAILED"},500);}
     return response({received:true});
