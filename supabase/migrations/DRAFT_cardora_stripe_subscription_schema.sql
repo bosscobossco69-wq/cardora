@@ -133,9 +133,14 @@ begin
    on conflict (event_id) do nothing;
   if not found then return true; end if;
 
-  -- An older (or same-second ambiguous) event must not overwrite newer state.
-  -- Event receipt remains recorded for auditing but does not change membership.
-  if v_existing_owner is not null and p_event_created <= v_last_event_created then
+  -- Older events cannot overwrite newer membership state. When Stripe's
+  -- current retrieved status is canceled, allow a cancellation delivered in
+  -- the same second as the previous event. (The webhook confirms that state.)
+  -- Same-second paid/failure ambiguity remains fail-closed.
+  if v_existing_owner is not null and (
+    p_event_created < v_last_event_created or
+    (p_event_created = v_last_event_created and p_kind <> 'canceled')
+  ) then
     return true;
   end if;
 
