@@ -22,6 +22,29 @@ Deno.serve(async(req)=>{
     const raw=await req.text();
     event=await stripe.webhooks.constructEventAsync(raw,signature,whsec,undefined,Stripe.createSubtleCryptoProvider());
   } catch {return response({error:"INVALID_SIGNATURE"},400);}
+  // Charge refunds and disputes need review before altering membership:
+  // a partial refund or open dispute is not identical to a canceled subscription.
+  const reviewEvents=["charge.refunded","charge.dispute.created","charge.dispute.closed"];
+  if(reviewEvents.includes(event.type)) {
+    const object=event.data.object as Stripe.Charge | Stripe.Dispute;
+    const chargeId=event.type==="charge.refunded"
+      ? (object as Stripe.Charge).id
+      : (typeof (object as Stripe.Dispute).charge==="string"
+          ? (object as Stripe.Dispute).charge as string
+          : (object as Stripe.Dispute).charge?.id || "");
+    if(!/^ch_[A-Za-z0-9_]+$/.test(chargeId))
+      return response({error:"CHARGE_REFERENCE_INVALID"},422);
+    const db=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+    const {error}=await db.rpc("cardora_record_verified_stripe_risk_event",{
+      p_event_id:event.id,p_event_kind:event.type,
+      p_charge_id:chargeId,p_event_created:event.created
+    });
+    if(error) {
+      console.error("RISK_EVENT_REVIEW_QUEUE_FAILED",error.code);
+      return response({error:"RISK_EVENT_NOT_RECORDED"},500);
+    }
+    return response({received:true,review_required:true});
+  }
   if(!["checkout.session.completed","invoice.paid","invoice.payment_failed","customer.subscription.deleted"].includes(event.type))
     return response({received:true,ignored:true});
   try {
