@@ -1,5 +1,62 @@
 -- DRAFT ONLY. Do not run against production until Cardora Auth/DB alignment is fixed.
 -- Apply with reviewed migration, not from client. Never copy old wallet balances.
+
+-- Atomic seller Checkout reservation, staging draft only.
+-- Do not auto-expire and recycle a reservation: Stripe may have created a
+-- subscription while the event is still in flight. Admin must reconcile first.
+create table if not exists public.cardora_stripe_checkout_reservations (
+  seller_profile_id uuid primary key references public.seller_profiles(id),
+  request_id uuid not null unique default gen_random_uuid(),
+  tier_code text not null check (tier_code in ('basic','pro','business')),
+  created_at timestamptz not null default now(),
+  status text not null default 'reserved' check (status in ('reserved','fulfilled'))
+);
+alter table public.cardora_stripe_checkout_reservations enable row level security;
+revoke all on public.cardora_stripe_checkout_reservations from public, anon, authenticated;
+grant select, insert, update on public.cardora_stripe_checkout_reservations to service_role;
+
+create or replace function public.cardora_reserve_stripe_checkout(
+  p_seller_profile_id uuid, p_tier_code text
+) returns uuid
+language plpgsql security definer set search_path=''
+as $
+declare
+  v_res record;
+begin
+  if p_tier_code not in ('basic','pro','business') then
+    raise exception 'Invalid membership tier';
+  end if;
+  if not exists (
+    select 1 from public.seller_profiles s
+    where s.id=p_seller_profile_id
+      and s.status='approved'
+      and s.verification_status='verified'
+  ) then
+    raise exception 'Seller not eligible';
+  end if;
+  -- The reservation is unique per seller and remains durable through retries.
+  insert into public.cardora_stripe_checkout_reservations(seller_profile_id,tier_code)
+    values (p_seller_profile_id,p_tier_code)
+    on conflict(seller_profile_id) do nothing;
+  select request_id,tier_code,created_at,status into v_res
+    from public.cardora_stripe_checkout_reservations
+    where seller_profile_id=p_seller_profile_id
+    for update;
+  if not found or v_res.tier_code<>p_tier_code or v_res.status<>'reserved'
+    or v_res.created_at <= now()-interval '20 hours' then
+    raise exception 'Checkout pending manual reconciliation';
+  end if;
+  if exists(select 1 from public.cardora_stripe_subscription_links
+            where seller_profile_id=p_seller_profile_id) then
+    raise exception 'Stripe subscription already exists';
+  end if;
+  return v_res.request_id;
+end; $;
+revoke all on function public.cardora_reserve_stripe_checkout(uuid,text)
+  from public, anon, authenticated;
+grant execute on function public.cardora_reserve_stripe_checkout(uuid,text)
+  to service_role;
+
 create table if not exists public.cardora_stripe_event_receipts (
   event_id text primary key,
   event_kind text not null,
