@@ -19,7 +19,7 @@ create or replace function public.cardora_reserve_stripe_checkout(
   p_seller_profile_id uuid, p_tier_code text
 ) returns uuid
 language plpgsql security definer set search_path=''
-as $
+as $cardora_reservation$
 declare
   v_res record;
 begin
@@ -51,7 +51,7 @@ begin
     raise exception 'Stripe subscription already exists';
   end if;
   return v_res.request_id;
-end; $;
+end; $cardora_reservation$;
 revoke all on function public.cardora_reserve_stripe_checkout(uuid,text)
   from public, anon, authenticated;
 grant execute on function public.cardora_reserve_stripe_checkout(uuid,text)
