@@ -17,6 +17,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return json({ok:true});
   if (req.method !== "POST") return json({error:"METHOD_NOT_ALLOWED"},405);
   if (Deno.env.get("CARDORA_AUTH_MIGRATION_VERIFIED") !== "true") return json({error:"AUTH_MIGRATION_NOT_VERIFIED"},503);
+  // Never allow checkout until atomic reservation and race-condition tests pass.
+  if (Deno.env.get("CARDORA_CHECKOUT_RESERVATION_VERIFIED") !== "true") return json({error:"SUBSCRIPTION_RESERVATION_NOT_VERIFIED"},503);
   const secret = Deno.env.get("STRIPE_SECRET_KEY") || "";
   const url = Deno.env.get("SUPABASE_URL") || "";
   const anon = Deno.env.get("SUPABASE_ANON_KEY") || "";
@@ -36,18 +38,19 @@ Deno.serve(async (req) => {
     business:Deno.env.get("STRIPE_PRICE_BUSINESS") || ""
   };
   if (!prices[tier].startsWith("price_")) return json({error:"PRICE_NOT_CONFIGURED"},503);
-  const {data:appUser,error:userError} = await client.from("users")
-    .select("id,status").eq("auth_user_id",user.id).maybeSingle();
-  if (userError || !appUser || appUser.status!=="active") return json({error:"CARDORA_USER_NOT_FOUND"},403);
-  const {data:seller,error:sellerError} = await client.from("seller_profiles")
-    .select("id,user_id,status,verification_status").eq("user_id",appUser.id).maybeSingle();
-  if (sellerError || !seller) return json({error:"SELLER_PROFILE_REQUIRED"},403);
-  // Fail closed until seller approval and KYC status are explicitly confirmed.
-  if (seller.status !== "approved" || seller.verification_status !== "verified")
-    return json({error:"SELLER_NOT_APPROVED"},403);
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
   if (!serviceKey) return json({error:"BILLING_SERVER_NOT_CONFIGURED"},503);
+  // After Supabase Auth verifies the bearer JWT, resolve the owner server-side.
+  // Do not rely on arbitrary client-provided IDs or public table RLS visibility.
   const service = createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+  const {data:appUser,error:userError} = await service.from("users")
+    .select("id,status").eq("auth_user_id",user.id).maybeSingle();
+  if (userError || !appUser || appUser.status!=="active") return json({error:"CARDORA_USER_NOT_FOUND"},403);
+  const {data:seller,error:sellerError} = await service.from("seller_profiles")
+    .select("id,user_id,status,verification_status").eq("user_id",appUser.id).maybeSingle();
+  if (sellerError || !seller) return json({error:"SELLER_PROFILE_REQUIRED"},403);
+  if (seller.status !== "approved" || seller.verification_status !== "verified")
+    return json({error:"SELLER_NOT_APPROVED"},403);
   // A billing link already present indicates an existing subscription: block a second Checkout.
   // Race-free prevention and managed upgrades still require a separate server reservation/lock.
   const {data:existing,error:existingError} = await service.from("cardora_stripe_subscription_links")
@@ -56,6 +59,13 @@ Deno.serve(async (req) => {
   if (existing) return json({error:"EXISTING_SUBSCRIPTION_MANAGE_IN_PORTAL"},409);
   try {
     const stripe = new Stripe(secret);
+    // Stripe price IDs are server-selected but must also match the expected MYR recurring product.
+    const expectedAmounts: Record<string,number> = {basic:2900,pro:7900,business:19900};
+    const price = await stripe.prices.retrieve(prices[tier]);
+    if (price.livemode || price.active!==true || price.currency!=="myr" ||
+        price.unit_amount!==expectedAmounts[tier] ||
+        price.recurring?.interval!=="month" || price.recurring?.interval_count!==1)
+      return json({error:"PRICE_CONFIGURATION_MISMATCH"},503);
     const session = await stripe.checkout.sessions.create({
       mode:"subscription",
       line_items:[{price:prices[tier],quantity:1}],
