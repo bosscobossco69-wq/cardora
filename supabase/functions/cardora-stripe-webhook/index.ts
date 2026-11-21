@@ -79,7 +79,8 @@ Deno.serve(async(req)=>{
       p_event_id:event.id,p_kind:kind,p_seller_profile_id:sellerId,p_plan_code:dbPlanCode[tier],
       p_stripe_customer_id:customerId,p_stripe_subscription_id:subscriptionId,
       p_period_start:periodStart,p_period_end:periodEnd,
-      p_checkout_request_id:validReservationId?checkoutRequestId:null
+      p_checkout_request_id:validReservationId?checkoutRequestId:null,
+      p_event_created:event.created
     });
     if(error){console.error("STRIPE_EVENT_APPLY_FAILED",error.code);return response({error:"EVENT_PERSIST_FAILED"},500);}
     return response({received:true});
