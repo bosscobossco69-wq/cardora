@@ -74,3 +74,11 @@ This is a review branch only. No SQL was executed, no Supabase Edge Functions de
 - Added a fail-closed `CARDORA_CHECKOUT_RESERVATION_VERIFIED` flag. **Do not set it to true.** A read-before-create check and a one-hour idempotency key are insufficient to prevent concurrent first-time purchases; an atomic server-side reservation must be developed and integration-tested before lifting this gate.
 - This change deliberately does **not** create or charge any payments and does **not** make Checkout production-ready. The next engineering requirement is transaction-safe reservation with expiry/recovery, verified against Stripe Checkout session lifecycle.
 - Do not grant general users access to any Stripe service-role API. The server-side service key stays in function secrets only.
+
+## 22 November 2026 — atomic Checkout reservation draft (not tested/deployed)
+- Added `cardora_stripe_checkout_reservations`, keyed uniquely by seller, and service-role-only `cardora_reserve_stripe_checkout(uuid,text)`. Concurrent requests for the same seller/tier get one durable request UUID.
+- Checkout uses that request UUID as its Stripe idempotency key. The same tier can retry the same request; a different tier is blocked. After **20 hours**, the reservation is **not automatically recycled**; a human must reconcile the Stripe Checkout Session/subscription and decide whether clearing it is safe.
+- This intentionally favors preventing duplicate charges over automatic self-service retries. Missing/failed callbacks, sessions abandoned by a buyer, or an unknown Stripe response can leave a reservation that requires manual support.
+- This is **not** evidence of race-free correctness yet: migration must be rehearsed in disposable staging and tested under simultaneous requests, Stripe API timeouts, retries, late webhook events and session expiration. The launch flag `CARDORA_CHECKOUT_RESERVATION_VERIFIED` MUST remain unset.
+- No separate auto-release RPC exists. Do not delete reservations without verifying that the linked Stripe session is expired and no active subscription/payment exists.
+- Back-end code still does not implement a seller subscription portal, automatic checkout recovery after a canceled session, or complete subscription lifecycle semantics.
