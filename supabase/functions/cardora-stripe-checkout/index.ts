@@ -66,6 +66,15 @@ Deno.serve(async (req) => {
         price.unit_amount!==expectedAmounts[tier] ||
         price.recurring?.interval!=="month" || price.recurring?.interval_count!==1)
       return json({error:"PRICE_CONFIGURATION_MISMATCH"},503);
+    // Database UNIQUE(seller_profile_id) atomically assigns one durable request ID.
+    // Every retry for the same seller+tier uses exactly the same Stripe idempotency key.
+    const {data:requestId,error:reservationError} = await service.rpc("cardora_reserve_stripe_checkout",{
+      p_seller_profile_id:seller.id,p_tier_code:tier
+    });
+    if (reservationError || typeof requestId!=="string") {
+      console.error("CHECKOUT_RESERVATION_FAILED",reservationError?.code || "invalid_result");
+      return json({error:"CHECKOUT_RESERVATION_UNAVAILABLE"},409);
+    }
     const session = await stripe.checkout.sessions.create({
       mode:"subscription",
       line_items:[{price:prices[tier],quantity:1}],
@@ -73,9 +82,9 @@ Deno.serve(async (req) => {
       customer_email:user.email || undefined,
       success_url:origin+"/?stripe_checkout=success&session_id={CHECKOUT_SESSION_ID}",
       cancel_url:origin+"/?stripe_checkout=cancel",
-      metadata:{project:"cardora",seller_profile_id:seller.id,tier},
-      subscription_data:{metadata:{project:"cardora",seller_profile_id:seller.id,tier}}
-    },{idempotencyKey:`cardora_checkout_${seller.id}_${tier}_${Math.floor(Date.now()/3600000)}`});
+      metadata:{project:"cardora",seller_profile_id:seller.id,tier,checkout_request_id:requestId},
+      subscription_data:{metadata:{project:"cardora",seller_profile_id:seller.id,tier,checkout_request_id:requestId}}
+    },{idempotencyKey:`cardora_checkout_${requestId}`});
     return json({checkout_url:session.url,environment:"sandbox"});
   } catch (e) {
     console.error("STRIPE_CHECKOUT_FAILED", e instanceof Error ? e.message : "unknown");
