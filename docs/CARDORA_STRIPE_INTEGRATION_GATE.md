@@ -110,3 +110,11 @@ This is a review branch only. No SQL was executed, no Supabase Edge Functions de
 - The SQL event watermark permits a `canceled` event from the **same second** as the previous event, because the webhook checks Stripe's currently canceled state; older timestamps still cannot override newer state. Ambiguous same-second payment events are not auto-promoted.
 - Regression checks still required in disposable staging: canceled plan with missing Price, canceled-after-paid in same second, delayed cancellation after a replacement, canceled event with wrong seller, repeated cancellation, refunded payment and dispute lifecycle. **Refunds/disputes are not yet handled**; do not go live.
 - No production SQL, Stripe webhook endpoint, or payment was changed.
+
+## 22 November 2026 — refund / dispute event intake (draft only)
+- Added private `cardora_stripe_risk_review_events` table and service-role-only RPC `cardora_record_verified_stripe_risk_event`. The webhook verifies Stripe signature before persisting event ID, event type, charge ID and event timestamp. Duplicate events are idempotent.
+- Recognized events: `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`. On successful durable recording, the webhook acknowledges receipt with `review_required:true`. On persistence failure it returns 500 so Stripe can retry.
+- **Intentionally no automatic membership changes** from a refund or dispute; partial refunds, evidence submission, won/lost disputes and renewed subscription invoices need a reconciliation policy. This is an audit/review intake, not a complete refund or dispute lifecycle.
+- A reviewer must verify that the charge belongs to this Cardora Sandbox account and map it through the paid invoice and Stripe subscription to the correct seller before any membership action. Review records do **not** claim a seller association.
+- **Required before staging:** apply migration only in disposable isolated database; add the three event types to sandbox webhook destination; test duplicate deliveries, bad signature, incorrect charge, partial/full refunds, dispute created and closed; define how access is suspended or restored only after matching an affected paid period.
+- Do not enable Live billing while review handling is manual and untested. No SQL has been executed in production; these changes exist only in the GitHub draft PR.
