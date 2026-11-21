@@ -46,3 +46,13 @@
 - No Stripe Portal or plan upgrade/proration/discount policy yet.
 
 This is a review branch only. No SQL was executed, no Supabase Edge Functions deployed, and no Stripe Live payments or Webhook endpoints created.
+
+## 21 Nov audit hardening (draft branch only)
+- Checkout explicitly fails closed unless `CARDORA_AUTH_MIGRATION_VERIFIED=true`; this flag MUST NOT be enabled until Auth mapping is actually verified.
+- Checkout requires seller `status=approved` and `verification_status=verified`. Confirm exact enum values and seller onboarding policy in a staging database before enabling the flag.
+- Existing subscription links are blocked; a one-hour Stripe idempotency key reduces repeated session requests, but does **not** replace a transactional reservation. Concurrent first-time sessions remain a **blocking issue**.
+- Webhook ignores `invoice.paid` when Stripe currently marks subscription not active/trialing, and also fails closed until migration is confirmed.
+- Draft SQL rejects replacement of an existing Stripe subscription and will not shorten an already recorded paid billing period.
+- **Still blocking:** Stripe event ordering for failures and cancellation, exact Stripe SDK invoice payload compatibility, race-free session creation, subscription cancellation portal, service policy eligibility, and database Auth migration.
+- **Security note:** A checkout success redirect is never proof of payment; only signature-checked server notifications may update membership.
+- **Review requirement:** Staged migration has not been executed. The code has not passed integration or build tests. No Stripe webhook endpoint exists.
