@@ -56,3 +56,14 @@ This is a review branch only. No SQL was executed, no Supabase Edge Functions de
 - **Still blocking:** Stripe event ordering for failures and cancellation, exact Stripe SDK invoice payload compatibility, race-free session creation, subscription cancellation portal, service policy eligibility, and database Auth migration.
 - **Security note:** A checkout success redirect is never proof of payment; only signature-checked server notifications may update membership.
 - **Review requirement:** Staged migration has not been executed. The code has not passed integration or build tests. No Stripe webhook endpoint exists.
+
+
+## Wallet payment methods: Apple Pay and Google Pay (21 Nov 2026)
+- **Decision:** Stripe-hosted Checkout for Basic RM29 / Pro RM79 / Business RM199 subscriptions; allow compatible cards, Apple Pay and Google Pay through Stripe's eligible payment method selection.
+- Existing Checkout session draft has `mode:"subscription"` and **does not force** `payment_method_types`, so there is no wallet-specific code requirement for the hosted flow. Do not assume wallets appear on every device or for every customer.
+- Stripe documentation states hosted Checkout needs no extra Apple Pay domain registration (embedded Checkout/Elements have different requirements). If moving away from hosted Checkout, reassess domain registration and iframe/browser support.
+- Stripe documentation lists Apple Pay and Google Pay as supporting recurring subscriptions, subject to device, browser, region, and wallet/card eligibility.
+- **Sandbox QA gate:** after independent staging Auth migration, payment link setup and webhook deployment, verify (1) card checkout succeeds; (2) Apple Pay displays and completes on supported Apple device with card provisioned; (3) Google Pay displays and completes on supported Android/Chrome with eligible saved card; (4) wallets absent on noneligible devices while card payment remains available; (5) `invoice.paid` webhook applies membership exactly once; (6) payment failure, cancellation, renewal, and out-of-order delivery are handled; (7) zero live charges.
+- Do not insert static payment badges promising all customers wallet availability until the device-based acceptance tests have passed.
+- No changes to existing MYR amounts, subscription products, seller data, Live Stripe settings, or deployment in this revision.
+- Official references: https://docs.stripe.com/apple-pay?platform=web ; https://docs.stripe.com/google-pay?platform=web ; https://docs.stripe.com/testing/wallets
