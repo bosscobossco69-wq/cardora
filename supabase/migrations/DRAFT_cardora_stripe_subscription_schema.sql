@@ -107,6 +107,17 @@ begin
     raise exception 'Subscription ownership conflict';
   end if;
 
+  -- Paid events must belong to a seller who completed a server-reserved Checkout.
+  -- On cancellation/failure the existing subscription link is the authority.
+  if p_kind='paid' and not exists (
+      select 1 from public.cardora_stripe_checkout_reservations r
+      where r.seller_profile_id=p_seller_profile_id
+        and r.status in ('reserved','fulfilled')
+        and r.tier_code=p_plan_code
+  ) then
+    raise exception 'Missing Stripe Checkout reservation';
+  end if;
+
   -- Events are durable and idempotent. On any exception the INSERT rolls back.
   insert into public.cardora_stripe_event_receipts
    (event_id,event_kind,stripe_subscription_id,seller_profile_id)
@@ -137,6 +148,9 @@ begin
                    where code=p_plan_code and is_active=true and billing_currency='MYR') then
        raise exception 'Unrecognized plan';
     end if;
+    update public.cardora_stripe_checkout_reservations
+      set status='fulfilled'
+      where seller_profile_id=p_seller_profile_id and tier_code=p_plan_code;
     insert into public.cardora_stripe_subscription_links
       (seller_profile_id,stripe_customer_id,stripe_subscription_id,plan_code)
     values (p_seller_profile_id,p_stripe_customer_id,p_stripe_subscription_id,p_plan_code)
