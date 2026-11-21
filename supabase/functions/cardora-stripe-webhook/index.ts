@@ -43,6 +43,9 @@ Deno.serve(async(req)=>{
     // Do not reactivate a subscription Stripe currently considers canceled/incomplete.
     if(event.type==="invoice.paid" && !["active","trialing"].includes(subscription.status))
       return response({received:true,ignored_stale_invoice:true});
+    // An older failed invoice cannot downgrade a subscription now recovered to active.
+    if(event.type==="invoice.payment_failed" && !["past_due","unpaid","incomplete"].includes(subscription.status))
+      return response({received:true,ignored_stale_failure:true});
     const sellerId=subscription.metadata?.seller_profile_id || "";
     const tier=subscription.metadata?.tier || "";
     const expectedPrice:Record<string,string>={
