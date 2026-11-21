@@ -60,3 +60,14 @@ Read-only `SELECT count(*)` was used; no production data was edited, and no pers
 8. Only after isolated testing and explicit authorization should any production Auth migration or deployment be considered.
 
 **Release blocker remains:** no isolated Supabase staging available on the user's current Free tier; avoid changing either live project to run this test. Supabase Preview branching requires a paid plan; the user does not want to upgrade, and local Docker is unavailable.
+
+## 22 November 2026 — quick RLS / admin compatibility check (READ ONLY)
+- Inspected new Cardora `pg_policies` for `users`, `seller_profiles`, `seller_applications`, `listings` and `seller_subscriptions` without executing changes.
+- `users_select_own` restricts the browser to `auth_user_id=auth.uid()`.
+- `seller_profiles_select_own` and the seller application's select/insert policies require `user_id=current_user_row_id()`.
+- `listings_select_active` allows public reads only when listing status is active.
+- **Confirmed blocker:** none of the examined policies grants browser administrators general seller-applications listing or seller-profile access. The frontend's `rpc('is_admin')` is only a visibility check and **does not grant RLS access**. The staged `is_admin()` compatibility SQL alone therefore cannot make the old admin review interface work against new Cardora.
+- Review of any admin-facing SELECT, UPDATE and rejection/approval operation needs separate authorization design, explicit review of privileged RPCs and ownership constraints, and isolated integration tests. Do **not** open `SELECT` on sellers/applications to all authenticated users.
+- No `seller_subscriptions` public RLS policy was returned by this narrow policy query; verify which privileged server RPC is authorized to change subscription status rather than attempting direct browser writes.
+- For admin dashboard compatibility, keep `is_admin()` role-check **separate** from privileged review actions. Prefer narrowly scoped `SECURITY DEFINER` RPCs with `auth.uid()`-based role checks and explicit column/row allowlists, not broad admin RLS bypass.
+- No GitHub main, Supabase roles/policies/data or Vercel deployment changed. **Still a release blocker.**
