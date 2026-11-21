@@ -8,6 +8,7 @@ const response=(body:unknown,status=200)=>new Response(JSON.stringify(body),{
 });
 Deno.serve(async(req)=>{
   if(req.method!=="POST") return response({error:"METHOD_NOT_ALLOWED"},405);
+  if(Deno.env.get("CARDORA_AUTH_MIGRATION_VERIFIED")!=="true") return response({error:"AUTH_MIGRATION_NOT_VERIFIED"},503);
   const key=Deno.env.get("STRIPE_SECRET_KEY")||"";
   const whsec=Deno.env.get("STRIPE_WEBHOOK_SECRET")||"";
   const url=Deno.env.get("SUPABASE_URL")||"";
@@ -39,6 +40,9 @@ Deno.serve(async(req)=>{
     }
     if(!subscriptionId) return response({error:"SUBSCRIPTION_ID_MISSING"},422);
     const subscription=await stripe.subscriptions.retrieve(subscriptionId);
+    // Do not reactivate a subscription Stripe currently considers canceled/incomplete.
+    if(event.type==="invoice.paid" && !["active","trialing"].includes(subscription.status))
+      return response({received:true,ignored_stale_invoice:true});
     const sellerId=subscription.metadata?.seller_profile_id || "";
     const tier=subscription.metadata?.tier || "";
     const expectedPrice:Record<string,string>={
