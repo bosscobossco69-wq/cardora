@@ -68,11 +68,61 @@ Deno.serve(async(req)=>{
     // Only invoice.paid confirms recurring payments. Checkout completion is NOT fulfillment.
     if(event.type==="checkout.session.completed") return response({received:true,awaiting_invoice:true});
     const kind=event.type==="invoice.paid"?"paid":event.type==="invoice.payment_failed"?"past_due":"canceled";
-    const item=subscription.items.data.find(i=>i.price.id===expectedPrice[tier]);
-    // Period dates must come from authoritative Stripe objects, not browser input.
-    const periodStart=item?.current_period_start ? new Date(item.current_period_start*1000).toISOString():null;
-    const periodEnd=item?.current_period_end ? new Date(item.current_period_end*1000).toISOString():null;
-    if(kind==="paid"&&(!periodStart||!periodEnd)) return response({error:"PERIOD_NOT_VERIFIED"},422);
+    let periodStart:string|null=null;
+    let periodEnd:string|null=null;
+    if(kind==="paid") {
+      // The subscription item reflects its CURRENT period, which may have advanced
+      // since this invoice was paid. Credit only the invoice's actual billed period.
+      const eventInvoice=event.data.object as Stripe.Invoice;
+      if(!eventInvoice.id || !eventInvoice.id.startsWith("in_"))
+        return response({error:"INVOICE_ID_INVALID"},422);
+      const invoice=await stripe.invoices.retrieve(eventInvoice.id);
+      if(invoice.livemode || invoice.status!=="paid" || invoice.currency!=="myr" ||
+         (invoice.amount_paid??0)<=0 || invoice.collection_method!=="charge_automatically")
+        return response({error:"INVOICE_NOT_ELIGIBLE_FOR_FULFILLMENT"},422);
+      const invoiceSub=(invoice as unknown as {
+        parent?:{subscription_details?:{subscription?:string|{id:string}}},
+        subscription?:string|{id:string}
+      });
+      const invSub=invoiceSub.parent?.subscription_details?.subscription || invoiceSub.subscription;
+      const invSubId=typeof invSub==="string"?invSub:invSub?.id || "";
+      if(invSubId!==subscriptionId)
+        return response({error:"INVOICE_SUBSCRIPTION_MISMATCH"},422);
+      // Fetch ALL invoice lines, instead of trusting the truncated lines embedded in an invoice.
+      // In the first staging version reject invoices requiring pagination or with multiple
+      // matching subscription lines; this avoids extending membership for an ambiguous bill.
+      const lines=await stripe.invoices.listLineItems(invoice.id,{limit:100});
+      if(lines.has_more) return response({error:"INVOICE_LINES_TOO_MANY"},422);
+      const matches=lines.data.filter((entry)=>{
+        const line=entry as unknown as {
+          pricing?:{price_details?:{price?:string|{id:string}}},
+          price?:{id:string}|string,
+          parent?:{type?:string,subscription_item_details?:{
+            subscription?:string|{id:string},subscription_item?:string,proration?:boolean
+          }},
+          subscription?:string|{id:string},subscription_item?:string,
+          proration?:boolean,period?:{start:number,end:number},
+          currency?:string,amount?:number
+        };
+        const p=line.pricing?.price_details?.price || line.price;
+        const priceId=typeof p==="string"?p:p?.id || "";
+        const parent=line.parent?.subscription_item_details;
+        const owner=parent?.subscription || line.subscription;
+        const ownerId=typeof owner==="string"?owner:owner?.id || "";
+        const subscriptionItem=subscription.items.data.find(i=>i.price.id===expectedPrice[tier]);
+        const itemId=parent?.subscription_item || line.subscription_item;
+        return priceId===expectedPrice[tier] && ownerId===subscriptionId &&
+          itemId===subscriptionItem?.id &&
+          parent?.proration!==true && line.proration!==true &&
+          line.currency==="myr" && (line.amount??0)>0 &&
+          Number.isInteger(line.period?.start) && Number.isInteger(line.period?.end) &&
+          (line.period?.end??0)>(line.period?.start??0);
+      });
+      if(matches.length!==1) return response({error:"PAID_INVOICE_PERIOD_UNVERIFIED"},422);
+      const paidLine=matches[0] as {period:{start:number,end:number}};
+      periodStart=new Date(paidLine.period.start*1000).toISOString();
+      periodEnd=new Date(paidLine.period.end*1000).toISOString();
+    }
     const customerId=typeof subscription.customer==="string"?subscription.customer:subscription.customer.id;
     const db=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
     const {error}=await db.rpc("cardora_apply_verified_stripe_event",{
