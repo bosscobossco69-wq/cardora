@@ -63,8 +63,18 @@ Deno.serve(async(req)=>{
       pro:Deno.env.get("STRIPE_DB_PLAN_PRO")||"",
       business:Deno.env.get("STRIPE_DB_PLAN_BUSINESS")||""
     };
-    if(subscription.metadata?.project!=="cardora"||!sellerId||!expectedPrice[tier]||!dbPlanCode[tier]||
-      !subscription.items.data.some(item=>item.price.id===expectedPrice[tier]) ) return response({error:"UNRECOGNIZED_SUBSCRIPTION"},422);
+    // Cancellation must still revoke access when Stripe no longer retains the
+    // original Price on the deleted Subscription. The SQL RPC only updates an
+    // existing link for the exact seller + Stripe subscription ID.
+    const isDeletion=event.type==="customer.subscription.deleted";
+    if(subscription.metadata?.project!=="cardora" || !sellerId ||
+      !expectedPrice[tier] || !dbPlanCode[tier] ||
+      (!isDeletion && !subscription.items.data.some(item=>item.price.id===expectedPrice[tier])))
+      return response({error:"UNRECOGNIZED_SUBSCRIPTION"},422);
+    // A historical deletion event must not cancel a subscription still active in
+    // Stripe. Use the retrieved current state as an additional fail-closed guard.
+    if(isDeletion && subscription.status!=="canceled")
+      return response({received:true,ignored_stale_deletion:true});
     // Only invoice.paid confirms recurring payments. Checkout completion is NOT fulfillment.
     if(event.type==="checkout.session.completed") return response({received:true,awaiting_invoice:true});
     const kind=event.type==="invoice.paid"?"paid":event.type==="invoice.payment_failed"?"past_due":"canceled";
