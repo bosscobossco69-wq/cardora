@@ -82,7 +82,8 @@ grant select, insert, update on public.cardora_stripe_subscription_links to serv
 create or replace function public.cardora_apply_verified_stripe_event(
   p_event_id text,p_kind text,p_seller_profile_id uuid,p_plan_code text,
   p_stripe_customer_id text,p_stripe_subscription_id text,
-  p_period_start timestamptz,p_period_end timestamptz
+  p_period_start timestamptz,p_period_end timestamptz,
+  p_checkout_request_id uuid
 ) returns boolean
 language plpgsql security definer set search_path = ''
 as $$
@@ -107,15 +108,19 @@ begin
     raise exception 'Subscription ownership conflict';
   end if;
 
-  -- Paid events must belong to a seller who completed a server-reserved Checkout.
-  -- On cancellation/failure the existing subscription link is the authority.
-  if p_kind='paid' and not exists (
-      select 1 from public.cardora_stripe_checkout_reservations r
-      where r.seller_profile_id=p_seller_profile_id
-        and r.status in ('reserved','fulfilled')
-        and r.tier_code=p_plan_code
+  -- Paid events require exact server-issued request UUID from Stripe metadata,
+  -- in addition to seller ownership and the selected membership tier.
+  -- Cancellation/failure events require an existing linked subscription instead.
+  if p_kind='paid' and (
+      p_checkout_request_id is null or not exists (
+        select 1 from public.cardora_stripe_checkout_reservations r
+        where r.seller_profile_id=p_seller_profile_id
+          and r.request_id=p_checkout_request_id
+          and r.status in ('reserved','fulfilled')
+          and r.tier_code=p_plan_code
+      )
   ) then
-    raise exception 'Missing Stripe Checkout reservation';
+    raise exception 'Stripe Checkout reservation mismatch';
   end if;
 
   -- Events are durable and idempotent. On any exception the INSERT rolls back.
@@ -194,6 +199,6 @@ begin
 end; $$;
 
 revoke all on function public.cardora_apply_verified_stripe_event(
- text,text,uuid,text,text,text,timestamptz,timestamptz) from public, anon, authenticated;
+ text,text,uuid,text,text,text,timestamptz,timestamptz,uuid) from public, anon, authenticated;
 grant execute on function public.cardora_apply_verified_stripe_event(
- text,text,uuid,text,text,text,timestamptz,timestamptz) to service_role;
+ text,text,uuid,text,text,text,timestamptz,timestamptz,uuid) to service_role;
