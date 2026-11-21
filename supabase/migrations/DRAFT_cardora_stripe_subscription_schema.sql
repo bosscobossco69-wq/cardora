@@ -57,6 +57,540 @@ revoke all on function public.cardora_reserve_stripe_checkout(uuid,text)
 grant execute on function public.cardora_reserve_stripe_checkout(uuid,text)
   to service_role;
 
+-- Refund and dispute audit queue: do not change membership automatically.
+-- The webhook verifies Stripe signatures, then stores the verified event ID
+-- and charge reference for manual correlation to paid invoices/subscriptions.
+create table if not exists public.cardora_stripe_risk_review_events (
+  event_id text primary key,
+  event_kind text not null check (event_kind in (
+    'charge.refunded','charge.dispute.created','charge.dispute.closed'
+  )),
+  charge_id text not null check (charge_id ~ '^ch_[A-Za-z0-9_]+
+  event_id text primary key,
+  event_kind text not null,
+  stripe_subscription_id text not null,
+  seller_profile_id uuid not null references public.seller_profiles(id),
+  received_at timestamptz not null default now()
+);
+alter table public.cardora_stripe_event_receipts enable row level security;
+revoke all on public.cardora_stripe_event_receipts from public, anon, authenticated;
+grant select, insert on public.cardora_stripe_event_receipts to service_role;
+
+create table if not exists public.cardora_stripe_subscription_links (
+  seller_profile_id uuid primary key references public.seller_profiles(id),
+  stripe_customer_id text not null,
+  stripe_subscription_id text not null unique,
+  plan_code text not null references public.seller_subscription_plans(code),
+  last_event_created bigint not null default 0,
+  updated_at timestamptz not null default now()
+);
+alter table public.cardora_stripe_subscription_links enable row level security;
+revoke all on public.cardora_stripe_subscription_links from public, anon, authenticated;
+grant select, insert, update on public.cardora_stripe_subscription_links to service_role;
+
+create or replace function public.cardora_apply_verified_stripe_event(
+  p_event_id text,p_kind text,p_seller_profile_id uuid,p_plan_code text,
+  p_stripe_customer_id text,p_stripe_subscription_id text,
+  p_period_start timestamptz,p_period_end timestamptz,
+  p_checkout_request_id uuid,p_event_created bigint
+) returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_current uuid;
+  v_current_plan text;
+  v_existing_owner uuid;
+  v_last_event_created bigint;
+begin
+  -- This function must ONLY be callable by service_role from the signature-verified Edge Function.
+  if p_event_id !~ '^evt_' or p_kind not in ('paid','past_due','canceled')
+     or length(p_stripe_customer_id)<4 or length(p_stripe_subscription_id)<4
+     or p_event_created is null or p_event_created <= 0 then
+     raise exception 'Invalid Stripe event';
+  end if;
+  if not exists (select 1 from public.seller_profiles where id=p_seller_profile_id) then
+    raise exception 'Unknown seller';
+  end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_seller_profile_id::text));
+  select seller_profile_id,last_event_created into v_existing_owner,v_last_event_created
+    from public.cardora_stripe_subscription_links
+    where stripe_subscription_id=p_stripe_subscription_id;
+  if v_existing_owner is not null and v_existing_owner<>p_seller_profile_id then
+    raise exception 'Subscription ownership conflict';
+  end if;
+
+  -- Paid events require exact server-issued request UUID from Stripe metadata,
+  -- in addition to seller ownership and the selected membership tier.
+  -- Cancellation/failure events require an existing linked subscription instead.
+  if p_kind='paid' and (
+      p_checkout_request_id is null or not exists (
+        select 1 from public.cardora_stripe_checkout_reservations r
+        where r.seller_profile_id=p_seller_profile_id
+          and r.request_id=p_checkout_request_id
+          and r.status in ('reserved','fulfilled')
+          and r.tier_code=p_plan_code
+      )
+  ) then
+    raise exception 'Stripe Checkout reservation mismatch';
+  end if;
+
+  -- Events are durable and idempotent. On any exception the INSERT rolls back.
+  insert into public.cardora_stripe_event_receipts
+   (event_id,event_kind,stripe_subscription_id,seller_profile_id)
+   values(p_event_id,p_kind,p_stripe_subscription_id,p_seller_profile_id)
+   on conflict (event_id) do nothing;
+  if not found then return true; end if;
+
+  -- Older events cannot overwrite newer membership state. When Stripe's
+  -- current retrieved status is canceled, allow a cancellation delivered in
+  -- the same second as the previous event. (The webhook confirms that state.)
+  -- Same-second paid/failure ambiguity remains fail-closed.
+  if v_existing_owner is not null and (
+    p_event_created < v_last_event_created or
+    (p_event_created = v_last_event_created and p_kind <> 'canceled')
+  ) then
+    return true;
+  end if;
+
+  if p_kind='paid' then
+    -- Do not silently replace an existing subscription: upgrades must use a separate controlled flow.
+    if exists(select 1 from public.cardora_stripe_subscription_links
+       where seller_profile_id=p_seller_profile_id
+       and stripe_subscription_id<>p_stripe_subscription_id) then
+       raise exception 'Another Stripe subscription is already linked';
+    end if;
+    -- Later deliveries of older invoices must not shorten an existing paid period.
+    if exists(select 1 from public.cardora_stripe_subscription_links link
+       join public.seller_subscriptions sub on sub.seller_profile_id=link.seller_profile_id
+       where link.seller_profile_id=p_seller_profile_id
+       and link.stripe_subscription_id=p_stripe_subscription_id
+       and sub.is_current=true and sub.current_period_ends_at is not null
+       and p_period_end <= sub.current_period_ends_at) then
+       return true;
+    end if;
+    if p_period_start is null or p_period_end is null or p_period_end<=p_period_start then
+       raise exception 'Invalid billing period';
+    end if;
+    if not exists (select 1 from public.seller_subscription_plans
+                   where code=p_plan_code and is_active=true and billing_currency='MYR') then
+       raise exception 'Unrecognized plan';
+    end if;
+    update public.cardora_stripe_checkout_reservations
+      set status='fulfilled'
+      where seller_profile_id=p_seller_profile_id and tier_code=p_plan_code;
+    insert into public.cardora_stripe_subscription_links
+      (seller_profile_id,stripe_customer_id,stripe_subscription_id,plan_code,last_event_created)
+    values (p_seller_profile_id,p_stripe_customer_id,p_stripe_subscription_id,p_plan_code,p_event_created)
+    on conflict(seller_profile_id) do update set
+      stripe_customer_id=excluded.stripe_customer_id,
+      stripe_subscription_id=excluded.stripe_subscription_id,
+      plan_code=excluded.plan_code,
+      last_event_created=excluded.last_event_created, updated_at=now();
+
+    select id,plan_code into v_current,v_current_plan
+    from public.seller_subscriptions
+    where seller_profile_id=p_seller_profile_id and is_current=true
+    order by created_at desc limit 1 for update;
+
+    if v_current is not null and v_current_plan=p_plan_code then
+      update public.seller_subscriptions set status='active',
+        current_period_starts_at=p_period_start,current_period_ends_at=p_period_end,
+        grace_ends_at=null,cancel_at_period_end=false,updated_at=now()
+      where id=v_current;
+    else
+      update public.seller_subscriptions set is_current=false,updated_at=now()
+        where seller_profile_id=p_seller_profile_id and is_current=true;
+      insert into public.seller_subscriptions
+        (seller_profile_id,plan_code,status,is_current,started_at,
+         current_period_starts_at,current_period_ends_at,cancel_at_period_end)
+      values (p_seller_profile_id,p_plan_code,'active',true,now(),
+              p_period_start,p_period_end,false);
+    end if;
+  else
+    -- Ignore delayed failures/cancellations for an already-replaced Stripe subscription.
+    if exists(select 1 from public.cardora_stripe_subscription_links
+      where seller_profile_id=p_seller_profile_id
+        and stripe_subscription_id=p_stripe_subscription_id) then
+      update public.cardora_stripe_subscription_links
+      set last_event_created=p_event_created,updated_at=now()
+      where seller_profile_id=p_seller_profile_id
+        and stripe_subscription_id=p_stripe_subscription_id;
+      update public.seller_subscriptions
+      set status=case when p_kind='past_due' then 'past_due' else 'cancelled' end,
+          is_current=case when p_kind='canceled' then false else is_current end,
+          updated_at=now()
+      where seller_profile_id=p_seller_profile_id and is_current=true;
+    end if;
+  end if;
+  return true;
+end; $$;
+
+revoke all on function public.cardora_apply_verified_stripe_event(
+ text,text,uuid,text,text,text,timestamptz,timestamptz,uuid,bigint) from public, anon, authenticated;
+grant execute on function public.cardora_apply_verified_stripe_event(
+ text,text,uuid,text,text,text,timestamptz,timestamptz,uuid,bigint) to service_role;
+),
+  event_created bigint not null check (event_created > 0),
+  review_status text not null default 'pending'
+    check (review_status in ('pending','reviewed')),
+  received_at timestamptz not null default now()
+);
+alter table public.cardora_stripe_risk_review_events enable row level security;
+revoke all on public.cardora_stripe_risk_review_events from public, anon, authenticated;
+grant select, insert on public.cardora_stripe_risk_review_events to service_role;
+
+create or replace function public.cardora_record_verified_stripe_risk_event(
+  p_event_id text,p_event_kind text,p_charge_id text,p_event_created bigint
+) returns boolean
+language plpgsql security definer set search_path=''
+as $cardora_risk$
+begin
+  if p_event_id !~ '^evt_[A-Za-z0-9_]+
+  event_id text primary key,
+  event_kind text not null,
+  stripe_subscription_id text not null,
+  seller_profile_id uuid not null references public.seller_profiles(id),
+  received_at timestamptz not null default now()
+);
+alter table public.cardora_stripe_event_receipts enable row level security;
+revoke all on public.cardora_stripe_event_receipts from public, anon, authenticated;
+grant select, insert on public.cardora_stripe_event_receipts to service_role;
+
+create table if not exists public.cardora_stripe_subscription_links (
+  seller_profile_id uuid primary key references public.seller_profiles(id),
+  stripe_customer_id text not null,
+  stripe_subscription_id text not null unique,
+  plan_code text not null references public.seller_subscription_plans(code),
+  last_event_created bigint not null default 0,
+  updated_at timestamptz not null default now()
+);
+alter table public.cardora_stripe_subscription_links enable row level security;
+revoke all on public.cardora_stripe_subscription_links from public, anon, authenticated;
+grant select, insert, update on public.cardora_stripe_subscription_links to service_role;
+
+create or replace function public.cardora_apply_verified_stripe_event(
+  p_event_id text,p_kind text,p_seller_profile_id uuid,p_plan_code text,
+  p_stripe_customer_id text,p_stripe_subscription_id text,
+  p_period_start timestamptz,p_period_end timestamptz,
+  p_checkout_request_id uuid,p_event_created bigint
+) returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_current uuid;
+  v_current_plan text;
+  v_existing_owner uuid;
+  v_last_event_created bigint;
+begin
+  -- This function must ONLY be callable by service_role from the signature-verified Edge Function.
+  if p_event_id !~ '^evt_' or p_kind not in ('paid','past_due','canceled')
+     or length(p_stripe_customer_id)<4 or length(p_stripe_subscription_id)<4
+     or p_event_created is null or p_event_created <= 0 then
+     raise exception 'Invalid Stripe event';
+  end if;
+  if not exists (select 1 from public.seller_profiles where id=p_seller_profile_id) then
+    raise exception 'Unknown seller';
+  end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_seller_profile_id::text));
+  select seller_profile_id,last_event_created into v_existing_owner,v_last_event_created
+    from public.cardora_stripe_subscription_links
+    where stripe_subscription_id=p_stripe_subscription_id;
+  if v_existing_owner is not null and v_existing_owner<>p_seller_profile_id then
+    raise exception 'Subscription ownership conflict';
+  end if;
+
+  -- Paid events require exact server-issued request UUID from Stripe metadata,
+  -- in addition to seller ownership and the selected membership tier.
+  -- Cancellation/failure events require an existing linked subscription instead.
+  if p_kind='paid' and (
+      p_checkout_request_id is null or not exists (
+        select 1 from public.cardora_stripe_checkout_reservations r
+        where r.seller_profile_id=p_seller_profile_id
+          and r.request_id=p_checkout_request_id
+          and r.status in ('reserved','fulfilled')
+          and r.tier_code=p_plan_code
+      )
+  ) then
+    raise exception 'Stripe Checkout reservation mismatch';
+  end if;
+
+  -- Events are durable and idempotent. On any exception the INSERT rolls back.
+  insert into public.cardora_stripe_event_receipts
+   (event_id,event_kind,stripe_subscription_id,seller_profile_id)
+   values(p_event_id,p_kind,p_stripe_subscription_id,p_seller_profile_id)
+   on conflict (event_id) do nothing;
+  if not found then return true; end if;
+
+  -- Older events cannot overwrite newer membership state. When Stripe's
+  -- current retrieved status is canceled, allow a cancellation delivered in
+  -- the same second as the previous event. (The webhook confirms that state.)
+  -- Same-second paid/failure ambiguity remains fail-closed.
+  if v_existing_owner is not null and (
+    p_event_created < v_last_event_created or
+    (p_event_created = v_last_event_created and p_kind <> 'canceled')
+  ) then
+    return true;
+  end if;
+
+  if p_kind='paid' then
+    -- Do not silently replace an existing subscription: upgrades must use a separate controlled flow.
+    if exists(select 1 from public.cardora_stripe_subscription_links
+       where seller_profile_id=p_seller_profile_id
+       and stripe_subscription_id<>p_stripe_subscription_id) then
+       raise exception 'Another Stripe subscription is already linked';
+    end if;
+    -- Later deliveries of older invoices must not shorten an existing paid period.
+    if exists(select 1 from public.cardora_stripe_subscription_links link
+       join public.seller_subscriptions sub on sub.seller_profile_id=link.seller_profile_id
+       where link.seller_profile_id=p_seller_profile_id
+       and link.stripe_subscription_id=p_stripe_subscription_id
+       and sub.is_current=true and sub.current_period_ends_at is not null
+       and p_period_end <= sub.current_period_ends_at) then
+       return true;
+    end if;
+    if p_period_start is null or p_period_end is null or p_period_end<=p_period_start then
+       raise exception 'Invalid billing period';
+    end if;
+    if not exists (select 1 from public.seller_subscription_plans
+                   where code=p_plan_code and is_active=true and billing_currency='MYR') then
+       raise exception 'Unrecognized plan';
+    end if;
+    update public.cardora_stripe_checkout_reservations
+      set status='fulfilled'
+      where seller_profile_id=p_seller_profile_id and tier_code=p_plan_code;
+    insert into public.cardora_stripe_subscription_links
+      (seller_profile_id,stripe_customer_id,stripe_subscription_id,plan_code,last_event_created)
+    values (p_seller_profile_id,p_stripe_customer_id,p_stripe_subscription_id,p_plan_code,p_event_created)
+    on conflict(seller_profile_id) do update set
+      stripe_customer_id=excluded.stripe_customer_id,
+      stripe_subscription_id=excluded.stripe_subscription_id,
+      plan_code=excluded.plan_code,
+      last_event_created=excluded.last_event_created, updated_at=now();
+
+    select id,plan_code into v_current,v_current_plan
+    from public.seller_subscriptions
+    where seller_profile_id=p_seller_profile_id and is_current=true
+    order by created_at desc limit 1 for update;
+
+    if v_current is not null and v_current_plan=p_plan_code then
+      update public.seller_subscriptions set status='active',
+        current_period_starts_at=p_period_start,current_period_ends_at=p_period_end,
+        grace_ends_at=null,cancel_at_period_end=false,updated_at=now()
+      where id=v_current;
+    else
+      update public.seller_subscriptions set is_current=false,updated_at=now()
+        where seller_profile_id=p_seller_profile_id and is_current=true;
+      insert into public.seller_subscriptions
+        (seller_profile_id,plan_code,status,is_current,started_at,
+         current_period_starts_at,current_period_ends_at,cancel_at_period_end)
+      values (p_seller_profile_id,p_plan_code,'active',true,now(),
+              p_period_start,p_period_end,false);
+    end if;
+  else
+    -- Ignore delayed failures/cancellations for an already-replaced Stripe subscription.
+    if exists(select 1 from public.cardora_stripe_subscription_links
+      where seller_profile_id=p_seller_profile_id
+        and stripe_subscription_id=p_stripe_subscription_id) then
+      update public.cardora_stripe_subscription_links
+      set last_event_created=p_event_created,updated_at=now()
+      where seller_profile_id=p_seller_profile_id
+        and stripe_subscription_id=p_stripe_subscription_id;
+      update public.seller_subscriptions
+      set status=case when p_kind='past_due' then 'past_due' else 'cancelled' end,
+          is_current=case when p_kind='canceled' then false else is_current end,
+          updated_at=now()
+      where seller_profile_id=p_seller_profile_id and is_current=true;
+    end if;
+  end if;
+  return true;
+end; $$;
+
+revoke all on function public.cardora_apply_verified_stripe_event(
+ text,text,uuid,text,text,text,timestamptz,timestamptz,uuid,bigint) from public, anon, authenticated;
+grant execute on function public.cardora_apply_verified_stripe_event(
+ text,text,uuid,text,text,text,timestamptz,timestamptz,uuid,bigint) to service_role;
+
+    or p_event_kind not in (
+      'charge.refunded','charge.dispute.created','charge.dispute.closed')
+    or p_charge_id !~ '^ch_[A-Za-z0-9_]+
+  event_id text primary key,
+  event_kind text not null,
+  stripe_subscription_id text not null,
+  seller_profile_id uuid not null references public.seller_profiles(id),
+  received_at timestamptz not null default now()
+);
+alter table public.cardora_stripe_event_receipts enable row level security;
+revoke all on public.cardora_stripe_event_receipts from public, anon, authenticated;
+grant select, insert on public.cardora_stripe_event_receipts to service_role;
+
+create table if not exists public.cardora_stripe_subscription_links (
+  seller_profile_id uuid primary key references public.seller_profiles(id),
+  stripe_customer_id text not null,
+  stripe_subscription_id text not null unique,
+  plan_code text not null references public.seller_subscription_plans(code),
+  last_event_created bigint not null default 0,
+  updated_at timestamptz not null default now()
+);
+alter table public.cardora_stripe_subscription_links enable row level security;
+revoke all on public.cardora_stripe_subscription_links from public, anon, authenticated;
+grant select, insert, update on public.cardora_stripe_subscription_links to service_role;
+
+create or replace function public.cardora_apply_verified_stripe_event(
+  p_event_id text,p_kind text,p_seller_profile_id uuid,p_plan_code text,
+  p_stripe_customer_id text,p_stripe_subscription_id text,
+  p_period_start timestamptz,p_period_end timestamptz,
+  p_checkout_request_id uuid,p_event_created bigint
+) returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_current uuid;
+  v_current_plan text;
+  v_existing_owner uuid;
+  v_last_event_created bigint;
+begin
+  -- This function must ONLY be callable by service_role from the signature-verified Edge Function.
+  if p_event_id !~ '^evt_' or p_kind not in ('paid','past_due','canceled')
+     or length(p_stripe_customer_id)<4 or length(p_stripe_subscription_id)<4
+     or p_event_created is null or p_event_created <= 0 then
+     raise exception 'Invalid Stripe event';
+  end if;
+  if not exists (select 1 from public.seller_profiles where id=p_seller_profile_id) then
+    raise exception 'Unknown seller';
+  end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_seller_profile_id::text));
+  select seller_profile_id,last_event_created into v_existing_owner,v_last_event_created
+    from public.cardora_stripe_subscription_links
+    where stripe_subscription_id=p_stripe_subscription_id;
+  if v_existing_owner is not null and v_existing_owner<>p_seller_profile_id then
+    raise exception 'Subscription ownership conflict';
+  end if;
+
+  -- Paid events require exact server-issued request UUID from Stripe metadata,
+  -- in addition to seller ownership and the selected membership tier.
+  -- Cancellation/failure events require an existing linked subscription instead.
+  if p_kind='paid' and (
+      p_checkout_request_id is null or not exists (
+        select 1 from public.cardora_stripe_checkout_reservations r
+        where r.seller_profile_id=p_seller_profile_id
+          and r.request_id=p_checkout_request_id
+          and r.status in ('reserved','fulfilled')
+          and r.tier_code=p_plan_code
+      )
+  ) then
+    raise exception 'Stripe Checkout reservation mismatch';
+  end if;
+
+  -- Events are durable and idempotent. On any exception the INSERT rolls back.
+  insert into public.cardora_stripe_event_receipts
+   (event_id,event_kind,stripe_subscription_id,seller_profile_id)
+   values(p_event_id,p_kind,p_stripe_subscription_id,p_seller_profile_id)
+   on conflict (event_id) do nothing;
+  if not found then return true; end if;
+
+  -- Older events cannot overwrite newer membership state. When Stripe's
+  -- current retrieved status is canceled, allow a cancellation delivered in
+  -- the same second as the previous event. (The webhook confirms that state.)
+  -- Same-second paid/failure ambiguity remains fail-closed.
+  if v_existing_owner is not null and (
+    p_event_created < v_last_event_created or
+    (p_event_created = v_last_event_created and p_kind <> 'canceled')
+  ) then
+    return true;
+  end if;
+
+  if p_kind='paid' then
+    -- Do not silently replace an existing subscription: upgrades must use a separate controlled flow.
+    if exists(select 1 from public.cardora_stripe_subscription_links
+       where seller_profile_id=p_seller_profile_id
+       and stripe_subscription_id<>p_stripe_subscription_id) then
+       raise exception 'Another Stripe subscription is already linked';
+    end if;
+    -- Later deliveries of older invoices must not shorten an existing paid period.
+    if exists(select 1 from public.cardora_stripe_subscription_links link
+       join public.seller_subscriptions sub on sub.seller_profile_id=link.seller_profile_id
+       where link.seller_profile_id=p_seller_profile_id
+       and link.stripe_subscription_id=p_stripe_subscription_id
+       and sub.is_current=true and sub.current_period_ends_at is not null
+       and p_period_end <= sub.current_period_ends_at) then
+       return true;
+    end if;
+    if p_period_start is null or p_period_end is null or p_period_end<=p_period_start then
+       raise exception 'Invalid billing period';
+    end if;
+    if not exists (select 1 from public.seller_subscription_plans
+                   where code=p_plan_code and is_active=true and billing_currency='MYR') then
+       raise exception 'Unrecognized plan';
+    end if;
+    update public.cardora_stripe_checkout_reservations
+      set status='fulfilled'
+      where seller_profile_id=p_seller_profile_id and tier_code=p_plan_code;
+    insert into public.cardora_stripe_subscription_links
+      (seller_profile_id,stripe_customer_id,stripe_subscription_id,plan_code,last_event_created)
+    values (p_seller_profile_id,p_stripe_customer_id,p_stripe_subscription_id,p_plan_code,p_event_created)
+    on conflict(seller_profile_id) do update set
+      stripe_customer_id=excluded.stripe_customer_id,
+      stripe_subscription_id=excluded.stripe_subscription_id,
+      plan_code=excluded.plan_code,
+      last_event_created=excluded.last_event_created, updated_at=now();
+
+    select id,plan_code into v_current,v_current_plan
+    from public.seller_subscriptions
+    where seller_profile_id=p_seller_profile_id and is_current=true
+    order by created_at desc limit 1 for update;
+
+    if v_current is not null and v_current_plan=p_plan_code then
+      update public.seller_subscriptions set status='active',
+        current_period_starts_at=p_period_start,current_period_ends_at=p_period_end,
+        grace_ends_at=null,cancel_at_period_end=false,updated_at=now()
+      where id=v_current;
+    else
+      update public.seller_subscriptions set is_current=false,updated_at=now()
+        where seller_profile_id=p_seller_profile_id and is_current=true;
+      insert into public.seller_subscriptions
+        (seller_profile_id,plan_code,status,is_current,started_at,
+         current_period_starts_at,current_period_ends_at,cancel_at_period_end)
+      values (p_seller_profile_id,p_plan_code,'active',true,now(),
+              p_period_start,p_period_end,false);
+    end if;
+  else
+    -- Ignore delayed failures/cancellations for an already-replaced Stripe subscription.
+    if exists(select 1 from public.cardora_stripe_subscription_links
+      where seller_profile_id=p_seller_profile_id
+        and stripe_subscription_id=p_stripe_subscription_id) then
+      update public.cardora_stripe_subscription_links
+      set last_event_created=p_event_created,updated_at=now()
+      where seller_profile_id=p_seller_profile_id
+        and stripe_subscription_id=p_stripe_subscription_id;
+      update public.seller_subscriptions
+      set status=case when p_kind='past_due' then 'past_due' else 'cancelled' end,
+          is_current=case when p_kind='canceled' then false else is_current end,
+          updated_at=now()
+      where seller_profile_id=p_seller_profile_id and is_current=true;
+    end if;
+  end if;
+  return true;
+end; $$;
+
+revoke all on function public.cardora_apply_verified_stripe_event(
+ text,text,uuid,text,text,text,timestamptz,timestamptz,uuid,bigint) from public, anon, authenticated;
+grant execute on function public.cardora_apply_verified_stripe_event(
+ text,text,uuid,text,text,text,timestamptz,timestamptz,uuid,bigint) to service_role;
+
+    or p_event_created is null or p_event_created <= 0 then
+    raise exception 'Invalid verified risk event';
+  end if;
+  insert into public.cardora_stripe_risk_review_events
+    (event_id,event_kind,charge_id,event_created)
+  values(p_event_id,p_event_kind,p_charge_id,p_event_created)
+    on conflict(event_id) do nothing;
+  return true;
+end; $cardora_risk$;
+revoke all on function public.cardora_record_verified_stripe_risk_event(text,text,text,bigint)
+  from public, anon, authenticated;
+grant execute on function public.cardora_record_verified_stripe_risk_event(text,text,text,bigint)
+  to service_role;
+
 create table if not exists public.cardora_stripe_event_receipts (
   event_id text primary key,
   event_kind text not null,
