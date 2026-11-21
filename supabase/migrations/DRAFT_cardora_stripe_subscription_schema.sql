@@ -113,7 +113,7 @@ begin
       where seller_profile_id=p_seller_profile_id
         and stripe_subscription_id=p_stripe_subscription_id) then
       update public.seller_subscriptions
-      set status=case when p_kind='past_due' then 'past_due' else 'canceled' end,
+      set status=case when p_kind='past_due' then 'past_due' else 'cancelled' end,
           is_current=case when p_kind='canceled' then false else is_current end,
           updated_at=now()
       where seller_profile_id=p_seller_profile_id and is_current=true;
