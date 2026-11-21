@@ -96,3 +96,10 @@ This is a review branch only. No SQL was executed, no Supabase Edge Functions de
 - **Known limitation:** different legitimate Stripe events can share the same second; the current policy ignores the second event rather than risk unauthorized elevation. This requires a reconciliation process and tests before launch.
 - **Critical remaining gate:** `invoice.paid` currently calculates the credited period using the **retrieved subscription item's current period**, not the signed invoice line's actual paid period. Delayed invoice delivery could otherwise grant a later cycle than was actually paid. Must replace this with validated invoice-line period and amount before deployment.
 - Neither the SQL migration nor Stripe Edge Functions have been run in a database or integration test. Vercel Preview status does not validate SQL or Stripe Webhook behavior.
+
+## 22 November 2026 — paid invoice period verified from invoice lines (draft only)
+- For `invoice.paid`, the webhook now retrieves the paid Stripe invoice and requires test mode, `status=paid`, MYR, automatic collection and a positive paid amount; it requires the invoice's subscription to equal the Stripe subscription in the event.
+- It fetches up to 100 invoice lines and fails closed if there are more, or if there is not exactly one non-proration MYR line with the configured Stripe Price ID, matching subscription and subscription item ID and a valid positive-length billed period.
+- The entitlement period is taken from **that invoice line's `period.start/end`**, not the subscription's current period. This reduces risk from delayed renewal notifications.
+- **Remaining:** Stripe SDK 17.7.0 / configured API-version compatibility needs integration testing against actual sandbox invoice payloads. Zero-value trial and heavily discounted invoices are deliberately not auto-activated; must define a separate explicit trial policy. Multiple-subscription-item invoices are intentionally blocked until reviewed.
+- This does not solve all out-of-order events or reconciliation. No SQL migration executed, no Stripe payment initiated, no Edge Function deployed.
