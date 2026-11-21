@@ -58,6 +58,21 @@ begin
   if not found then return true; end if;
 
   if p_kind='paid' then
+    -- Do not silently replace an existing subscription: upgrades must use a separate controlled flow.
+    if exists(select 1 from public.cardora_stripe_subscription_links
+       where seller_profile_id=p_seller_profile_id
+       and stripe_subscription_id<>p_stripe_subscription_id) then
+       raise exception 'Another Stripe subscription is already linked';
+    end if;
+    -- Later deliveries of older invoices must not shorten an existing paid period.
+    if exists(select 1 from public.cardora_stripe_subscription_links link
+       join public.seller_subscriptions sub on sub.seller_profile_id=link.seller_profile_id
+       where link.seller_profile_id=p_seller_profile_id
+       and link.stripe_subscription_id=p_stripe_subscription_id
+       and sub.is_current=true and sub.current_period_ends_at is not null
+       and p_period_end <= sub.current_period_ends_at) then
+       return true;
+    end if;
     if p_period_start is null or p_period_end is null or p_period_end<=p_period_start then
        raise exception 'Invalid billing period';
     end if;
