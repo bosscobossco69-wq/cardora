@@ -63,6 +63,172 @@ must(webhook.includes('p_event_created:event.created'),'Webhook event time missi
 must(stripeSql.includes('r.request_id=p_checkout_request_id'),'SQL reservation ID matching absent');
 must(stripeSql.includes('p_event_created bigint'),'SQL event watermark missing');
 must(stripeSql.includes('cardora_stripe_risk_review_events'),'Risk review table absent');
+// The first draft contained repeated functions and malformed concatenation.
+// Enforce exactly one definition and balanced named PL/pgSQL delimiters.
+const once=(text,needle,label)=>{
+  const n=text.split(needle).length-1;
+  assert.equal(n,1,label+' must have exactly one definition, found '+n);
+};
+for(const [definition,label] of [
+ ['create or replace function public.cardora_apply_verified_stripe_event','event application'],
+ ['create or replace function public.cardora_reserve_stripe_checkout','reservation'],
+ ['create or replace function public.cardora_record_verified_stripe_risk_event','risk event'],
+ ['create table if not exists public.cardora_stripe_risk_review_events','risk table'],
+ ['create table if not exists public.cardora_stripe_event_receipts','receipt table'],
+ ['create table if not exists public.cardora_stripe_subscription_links','subscription links'],
+ ['create table if not exists public.cardora_stripe_checkout_reservations','reservation table']
+]) once(stripeSql,definition,label);
+for(const delimiter of ['$cardora_reservation
+for(const tier of approvedPlans) must(checkout.includes(tier) && webhook.includes(tier),'Tier missing: '+tier);
+
+const testdir=mkdtempSync(join(tmpdir(),'cardora-draft-check-'));
+try{
+  cpSync(resolve(repo,'index.html'),join(testdir,'index.html'));
+  cpSync(resolve(repo,'scripts/build-cardora-staging.mjs'),join(testdir,'build.mjs'));
+  const run=(env)=>spawnSync(process.execPath,['build.mjs'],{
+    cwd:testdir,env:{...process.env,...env},encoding:'utf8',timeout:15000
+  });
+  const disabled=run({CARDORA_STAGING_BUILD:'NO'});
+  assert.notEqual(disabled.status,0,'Build must refuse no explicit opt-in');
+  const mock={
+    CARDORA_STAGING_BUILD:'YES',
+    CARDORA_STAGING_SUPABASE_URL:'https://fdkfquvzbswxocyrhduk.supabase.co',
+    CARDORA_STAGING_SUPABASE_ANON_KEY:'sb_publishable_cardora_offline_mock_only'
+  };
+  const valid=run(mock);
+  assert.equal(valid.status,0,'Offline build failed: '+valid.stderr);
+  const output=readFileSync(join(testdir,'dist-staging/index.html'),'utf8');
+  must(output.includes('admin_get_seller_application_queue'),'Admin queue adapter absent');
+  must(output.includes('admin_review_seller_application'),'Admin review adapter absent');
+  must(output.includes('id="cardoraManageSandboxMembership"'),'Preview account membership button missing');
+  must(output.includes("client.functions.invoke('cardora-admin-overview'"),'Staging admin overview missing');
+  must(output.includes('Archived applications — OLD database'),'Old application archive tab absent');
+  must(output.includes('Possible TEST data — verify manually'),'Test flag presentation absent');
+  must(output.includes('Legacy archive unavailable / not configured'),'Missing legacy data not shown as zero');
+  must(!output.includes('CARDORA_LEGACY_READ_SERVICE_KEY'),'Legacy secret variable leaked into browser output');
+
+  must(output.includes("id='cardoraAdminOverview'"),'Read-only overview mount missing');
+  must(output.includes("apps.id='ptxIpAdminApplications'"),'Original application queue must remain visible');
+  must(output.includes('if(window.ptxLoadAdminApplications)window.ptxLoadAdminApplications()'),'Application review loader lost');
+  must(!html.includes('cardoraAdminOverview'),'Admin preview leaked into production source');
+  must(output.includes("client.functions.invoke('cardora-stripe-portal'"),'Authenticated portal invocation missing');
+  must(output.includes('if(result.error || !session?.access_token)'),'Portal session token check missing');
+  must(output.includes("portalUrl.startsWith('https://billing.stripe.com/')"),'Portal destination guard missing');
+  must(!html.includes('cardoraManageSandboxMembership'),'Membership preview leaked into committed production HTML');
+  must(output.includes("s==='pending'?' disabled':''"),'Invalid pending status choice is enabled');
+  must(output.includes("storageKey:'cardora-supabase-auth-v2-staging'"),'Auth storage isolation absent');
+  must(!output.includes('crqqockaetgacddxkqpb'),'Old project left in staging output');
+  must(output.includes(mock.CARDORA_STAGING_SUPABASE_ANON_KEY),'Mock public key not used');
+  must(!output.includes('service_role') || !output.includes('sk_test_'),'A secret placeholder leaked into HTML');
+  const refused=run({...mock,CARDORA_STAGING_SUPABASE_ANON_KEY:'sb_secret_forbidden'});
+  assert.notEqual(refused.status,0,'Secret key must be rejected');
+  console.log('PASS: offline staging build + admin RPC + Stripe guard checks; NO network or deployment.');
+}finally{rmSync(testdir,{recursive:true,force:true});}
+,'$cardora_risk
+for(const tier of approvedPlans) must(checkout.includes(tier) && webhook.includes(tier),'Tier missing: '+tier);
+
+const testdir=mkdtempSync(join(tmpdir(),'cardora-draft-check-'));
+try{
+  cpSync(resolve(repo,'index.html'),join(testdir,'index.html'));
+  cpSync(resolve(repo,'scripts/build-cardora-staging.mjs'),join(testdir,'build.mjs'));
+  const run=(env)=>spawnSync(process.execPath,['build.mjs'],{
+    cwd:testdir,env:{...process.env,...env},encoding:'utf8',timeout:15000
+  });
+  const disabled=run({CARDORA_STAGING_BUILD:'NO'});
+  assert.notEqual(disabled.status,0,'Build must refuse no explicit opt-in');
+  const mock={
+    CARDORA_STAGING_BUILD:'YES',
+    CARDORA_STAGING_SUPABASE_URL:'https://fdkfquvzbswxocyrhduk.supabase.co',
+    CARDORA_STAGING_SUPABASE_ANON_KEY:'sb_publishable_cardora_offline_mock_only'
+  };
+  const valid=run(mock);
+  assert.equal(valid.status,0,'Offline build failed: '+valid.stderr);
+  const output=readFileSync(join(testdir,'dist-staging/index.html'),'utf8');
+  must(output.includes('admin_get_seller_application_queue'),'Admin queue adapter absent');
+  must(output.includes('admin_review_seller_application'),'Admin review adapter absent');
+  must(output.includes('id="cardoraManageSandboxMembership"'),'Preview account membership button missing');
+  must(output.includes("client.functions.invoke('cardora-admin-overview'"),'Staging admin overview missing');
+  must(output.includes('Archived applications — OLD database'),'Old application archive tab absent');
+  must(output.includes('Possible TEST data — verify manually'),'Test flag presentation absent');
+  must(output.includes('Legacy archive unavailable / not configured'),'Missing legacy data not shown as zero');
+  must(!output.includes('CARDORA_LEGACY_READ_SERVICE_KEY'),'Legacy secret variable leaked into browser output');
+
+  must(output.includes("id='cardoraAdminOverview'"),'Read-only overview mount missing');
+  must(output.includes("apps.id='ptxIpAdminApplications'"),'Original application queue must remain visible');
+  must(output.includes('if(window.ptxLoadAdminApplications)window.ptxLoadAdminApplications()'),'Application review loader lost');
+  must(!html.includes('cardoraAdminOverview'),'Admin preview leaked into production source');
+  must(output.includes("client.functions.invoke('cardora-stripe-portal'"),'Authenticated portal invocation missing');
+  must(output.includes('if(result.error || !session?.access_token)'),'Portal session token check missing');
+  must(output.includes("portalUrl.startsWith('https://billing.stripe.com/')"),'Portal destination guard missing');
+  must(!html.includes('cardoraManageSandboxMembership'),'Membership preview leaked into committed production HTML');
+  must(output.includes("s==='pending'?' disabled':''"),'Invalid pending status choice is enabled');
+  must(output.includes("storageKey:'cardora-supabase-auth-v2-staging'"),'Auth storage isolation absent');
+  must(!output.includes('crqqockaetgacddxkqpb'),'Old project left in staging output');
+  must(output.includes(mock.CARDORA_STAGING_SUPABASE_ANON_KEY),'Mock public key not used');
+  must(!output.includes('service_role') || !output.includes('sk_test_'),'A secret placeholder leaked into HTML');
+  const refused=run({...mock,CARDORA_STAGING_SUPABASE_ANON_KEY:'sb_secret_forbidden'});
+  assert.notEqual(refused.status,0,'Secret key must be rejected');
+  console.log('PASS: offline staging build + admin RPC + Stripe guard checks; NO network or deployment.');
+}finally{rmSync(testdir,{recursive:true,force:true});}
+,'$cardora_event
+for(const tier of approvedPlans) must(checkout.includes(tier) && webhook.includes(tier),'Tier missing: '+tier);
+
+const testdir=mkdtempSync(join(tmpdir(),'cardora-draft-check-'));
+try{
+  cpSync(resolve(repo,'index.html'),join(testdir,'index.html'));
+  cpSync(resolve(repo,'scripts/build-cardora-staging.mjs'),join(testdir,'build.mjs'));
+  const run=(env)=>spawnSync(process.execPath,['build.mjs'],{
+    cwd:testdir,env:{...process.env,...env},encoding:'utf8',timeout:15000
+  });
+  const disabled=run({CARDORA_STAGING_BUILD:'NO'});
+  assert.notEqual(disabled.status,0,'Build must refuse no explicit opt-in');
+  const mock={
+    CARDORA_STAGING_BUILD:'YES',
+    CARDORA_STAGING_SUPABASE_URL:'https://fdkfquvzbswxocyrhduk.supabase.co',
+    CARDORA_STAGING_SUPABASE_ANON_KEY:'sb_publishable_cardora_offline_mock_only'
+  };
+  const valid=run(mock);
+  assert.equal(valid.status,0,'Offline build failed: '+valid.stderr);
+  const output=readFileSync(join(testdir,'dist-staging/index.html'),'utf8');
+  must(output.includes('admin_get_seller_application_queue'),'Admin queue adapter absent');
+  must(output.includes('admin_review_seller_application'),'Admin review adapter absent');
+  must(output.includes('id="cardoraManageSandboxMembership"'),'Preview account membership button missing');
+  must(output.includes("client.functions.invoke('cardora-admin-overview'"),'Staging admin overview missing');
+  must(output.includes('Archived applications — OLD database'),'Old application archive tab absent');
+  must(output.includes('Possible TEST data — verify manually'),'Test flag presentation absent');
+  must(output.includes('Legacy archive unavailable / not configured'),'Missing legacy data not shown as zero');
+  must(!output.includes('CARDORA_LEGACY_READ_SERVICE_KEY'),'Legacy secret variable leaked into browser output');
+
+  must(output.includes("id='cardoraAdminOverview'"),'Read-only overview mount missing');
+  must(output.includes("apps.id='ptxIpAdminApplications'"),'Original application queue must remain visible');
+  must(output.includes('if(window.ptxLoadAdminApplications)window.ptxLoadAdminApplications()'),'Application review loader lost');
+  must(!html.includes('cardoraAdminOverview'),'Admin preview leaked into production source');
+  must(output.includes("client.functions.invoke('cardora-stripe-portal'"),'Authenticated portal invocation missing');
+  must(output.includes('if(result.error || !session?.access_token)'),'Portal session token check missing');
+  must(output.includes("portalUrl.startsWith('https://billing.stripe.com/')"),'Portal destination guard missing');
+  must(!html.includes('cardoraManageSandboxMembership'),'Membership preview leaked into committed production HTML');
+  must(output.includes("s==='pending'?' disabled':''"),'Invalid pending status choice is enabled');
+  must(output.includes("storageKey:'cardora-supabase-auth-v2-staging'"),'Auth storage isolation absent');
+  must(!output.includes('crqqockaetgacddxkqpb'),'Old project left in staging output');
+  must(output.includes(mock.CARDORA_STAGING_SUPABASE_ANON_KEY),'Mock public key not used');
+  must(!output.includes('service_role') || !output.includes('sk_test_'),'A secret placeholder leaked into HTML');
+  const refused=run({...mock,CARDORA_STAGING_SUPABASE_ANON_KEY:'sb_secret_forbidden'});
+  assert.notEqual(refused.status,0,'Secret key must be rejected');
+  console.log('PASS: offline staging build + admin RPC + Stripe guard checks; NO network or deployment.');
+}finally{rmSync(testdir,{recursive:true,force:true});}
+])
+  assert.equal(stripeSql.split(delimiter).length-1,2,'Unbalanced SQL delimiter '+delimiter);
+must(!stripeSql.includes('end; $;'),'SQL draft uses older unchecked function delimiters');
+must(stripeSql.includes('v_link.stripe_customer_id<>p_stripe_customer_id'),
+  'Event must reject wrong Stripe customer');
+must(stripeSql.includes('v_link.plan_code<>p_plan_code'),
+  'Event must reject different subscription plan');
+must(stripeSql.includes('p_period_end<=v_sub_period_end'),
+  'Renewal must not shorten a paid billing period');
+must(stripeSql.includes('current_review_mode=case when v_plan.review_mode'),
+  'New paid subscription must derive review mode from plan');
+must(stripeSql.includes("from public,anon,authenticated"),
+  'Privileged RPC public grants must be revoked');
 for(const tier of approvedPlans) must(checkout.includes(tier) && webhook.includes(tier),'Tier missing: '+tier);
 
 const testdir=mkdtempSync(join(tmpdir(),'cardora-draft-check-'));
