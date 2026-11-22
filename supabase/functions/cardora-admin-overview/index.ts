@@ -4,16 +4,21 @@
 // Never put SUPABASE_SERVICE_ROLE_KEY into browser JavaScript.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
-const allowedOrigin=Deno.env.get("CARDORA_SITE_ORIGIN")||"https://cardora-rose.vercel.app";
-const respond=(value:unknown,status=200)=>new Response(JSON.stringify(value),{
+const productionOrigin=Deno.env.get("CARDORA_SITE_ORIGIN")||"https://cardora-rose.vercel.app";
+const previewOrigin=Deno.env.get("CARDORA_STAGING_SITE_ORIGIN")||"";
+// Explicit allowlist, never reflect an arbitrary Origin or use wildcard.
+// CORS is not authorization: getUser + protected admin role are still mandatory.
+const safeOrigins=new Set([productionOrigin,previewOrigin].filter(v=>/^https:\/\/[^/]+$/.test(v)));
+const respond=(value:unknown,status=200,origin=productionOrigin)=>new Response(JSON.stringify(value),{
  status,headers:{"content-type":"application/json; charset=utf-8",
  "cache-control":"no-store, private","vary":"Origin",
- "access-control-allow-origin":allowedOrigin,
+ "access-control-allow-origin":safeOrigins.has(origin)?origin:productionOrigin,
  "access-control-allow-headers":"authorization, apikey, content-type",
  "access-control-allow-methods":"POST, OPTIONS"}
 });
 Deno.serve(async(request)=>{
- if(request.headers.get("origin")&&request.headers.get("origin")!==allowedOrigin)
+ const origin=request.headers.get("origin")||productionOrigin;
+ if(!safeOrigins.has(origin))
    return respond({error:"INVALID_ORIGIN"},403);
  if(request.method==="OPTIONS")return respond({ok:true});
  if(request.method!=="POST")return respond({error:"METHOD_NOT_ALLOWED"},405);
