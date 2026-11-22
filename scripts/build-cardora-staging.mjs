@@ -302,6 +302,25 @@ submit('cardoraPwRecoveryForm','cardoraPwRecoveryStatus',async client=>{
 exact('</body>',1);
 html=html.replace('</body>',resetForm+passwordAuthScript+'</body>');
 
+// This canonical Supabase project currently grants NO INSERT on
+// public.listing_submissions and has NO insert RLS policy. Do not pretend that
+// the seller review queue works, or widen table privileges to make it work.
+// Preserve the source implementation for a later reviewed submission endpoint.
+const oldListingSubmissionButton='<button class="ptx-btn" onclick="ptxSubmitListing()">Submit for Review</button>';
+exact(oldListingSubmissionButton,1);
+html=html.replace(oldListingSubmissionButton,
+  '<button class="ptx-btn" type="button" onclick="cardoraShowSubmissionUnavailable()">Submit for Review (not live)</button>'+
+  '<p class="ptx-muted">Listing submission is unavailable in this test environment. Your details will not be submitted or saved.</p>');
+const listingUnavailableScript=`<script>
+window.cardoraShowSubmissionUnavailable=function(){
+ const reason='Seller listing submissions are not connected to the new Cardora review queue yet. Nothing has been submitted. Please keep a copy of your information and try again after launch.';
+ if(typeof window.ptxToast==='function')window.ptxToast(reason);
+ else window.alert(reason);
+};
+</script>`;
+exact('</body>',1);
+html=html.replace('</body>',listingUnavailableScript+'</body>');
+
 // Block preview functionality until separate testing of privilege-sensitive flows.
 const oldReviewRpc=`rpc('admin_review_seller_application'`;
 if(!html.includes(oldReviewRpc) || !html.includes("rpc('admin_get_seller_application_queue'"))
