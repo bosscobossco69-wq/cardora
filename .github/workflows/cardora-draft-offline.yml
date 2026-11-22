@@ -22,6 +22,7 @@ on:
       - 'supabase/migrations/DRAFT_cardora_auth_is_admin_compat.sql'
       - 'supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql'
       - 'supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql'
+      - 'supabase/drafts/CARDORA_DRAFT_private_listing_evidence_bucket.sql'
       - '.github/workflows/cardora-draft-offline.yml'
   workflow_dispatch:
 permissions:
@@ -156,8 +157,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Validate private seller evidence Storage policies (offline)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('supabase/drafts/CARDORA_DRAFT_private_listing_evidence_bucket.sql').read_text()
+          assert "false,10485760" in s
+          assert "cardora_evidence_owner_select" in s
+          assert "u.status='active'" in s and "sp.status='approved'" in s
+          assert "(storage.foldername(name))[1]=(select auth.uid())::text" in s
+          assert "storage.objects for select to authenticated" in s
+          assert "storage.objects for insert" not in s.lower()
+          assert "storage.objects for update" not in s.lower()
+          assert "storage.objects for delete" not in s.lower()
+          print('PASS: Evidence bucket draft is private and owner-read-only')
+          PY
       - name: Parse draft SQL without connecting to a database
         run: |
           python -m pip install --disable-pip-version-check pglast
-          python -c "from pglast import parse_sql; from pathlib import Path; parse_sql(Path('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql').read_text()); parse_sql(Path('supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql').read_text()); parse_sql(Path('supabase/migrations/DRAFT_cardora_admin_seller_queue.sql').read_text()); print('PASS: three PostgreSQL draft SQL files parsed; database not accessed')"
+          python -c "from pglast import parse_sql; from pathlib import Path; parse_sql(Path('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql').read_text()); parse_sql(Path('supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql').read_text()); parse_sql(Path('supabase/migrations/DRAFT_cardora_admin_seller_queue.sql').read_text()); parse_sql(Path('supabase/drafts/CARDORA_DRAFT_private_listing_evidence_bucket.sql').read_text()); print('PASS: three PostgreSQL draft SQL files parsed; database not accessed')"
 
