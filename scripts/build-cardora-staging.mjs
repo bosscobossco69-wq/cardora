@@ -149,12 +149,26 @@ window.cardoraLoadAdminOverview=async function(){
      const cell=document.createElement('div');cell.className='ptx-ip-card';grid.appendChild(cell);
      line('div',label,cell);line('strong',n,cell);
    }
-   line('h3','Recent applications (up to 50)');
-   for(const a of (response.data.applications||[])){
-     const div=document.createElement('div');div.className='ptx-ip-card';root.appendChild(div);
-     line('strong',(a.name||'Applicant')+' · '+(a.role||'unknown'),div);
-     line('p',(a.status||'unknown')+' · '+(a.created_at||''),div);
-     line('p',a.email||'',div);
+   line('h3','Cardora applications — new database (up to 50)');
+   line('p','Raw totals include test records. A test-looking flag is not a confirmed classification.');
+   const renderApplications=(arr,source)=>{
+     if(!arr.length)line('p','No records displayed for '+source);
+     for(const a of arr){
+       const div=document.createElement('div');div.className='ptx-ip-card';root.appendChild(div);
+       line('strong',(a.name||'Applicant')+' · '+(a.role||'unknown'),div);
+       line('p',source+' · '+(a.status||'unknown')+' · '+(a.created_at||''),div);
+       line('p',a.email||'',div);
+       if(a.suspected_test)line('p','Possible TEST data — verify manually',div);
+     }
+   };
+   renderApplications(response.data.applications||[],'Cardora new');
+   line('h3','Archived applications — OLD database');
+   const history=response.data.legacy_history;
+   if(!history?.available){
+     line('p','Legacy archive unavailable / not configured. No old records were merged or deleted.');
+   }else{
+     line('p','Old project application rows: '+history.record_count+'. Not counted as new Cardora applications.');
+     renderApplications(history.applications||[],'Old archive');
    }
    const refresh=document.createElement('button');refresh.type='button';refresh.className='ptx-btn';
    refresh.textContent='Refresh overview';refresh.onclick=window.cardoraLoadAdminOverview;
