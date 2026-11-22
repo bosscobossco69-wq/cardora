@@ -157,7 +157,7 @@ window.cardoraLoadAdminOverview=async function(){
        const div=document.createElement('div');div.className='ptx-ip-card';root.appendChild(div);
        line('strong',(a.name||'Applicant')+' · '+(a.role||'unknown'),div);
        line('p',source+' · '+(a.status||'unknown')+' · '+(a.created_at||''),div);
-       line('p',a.email||'',div);
+       line('p',a.email_masked||'',div);
        if(a.suspected_test)line('p','Possible TEST data — verify manually',div);
      }
    };
@@ -263,14 +263,24 @@ field('cardoraPwForgot')?.addEventListener('click',async()=>{
  if(!email){feedback('cardoraPwLoginStatus','Enter your email above to request a reset link.');return}
  const button=field('cardoraPwForgot');button.disabled=true;
  try{const client=endpoint();if(!client)throw Error('Unavailable');
-   await client.auth.resetPasswordForEmail(email,{redirectTo:root()});
+   const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:root()});
+   if(error)throw error;
    feedback('cardoraPwLoginStatus','If the account exists, a password-reset link will be emailed.');
  }catch(_error){feedback('cardoraPwLoginStatus','Reset request unavailable. Please retry later.')}
  finally{button.disabled=false}
 });
+// Register recovery listener when the Supabase client becomes ready.
+let recoveryListenerRegistered=false;
+let recoveryChecks=0;
 const initRecovery=()=>{
+ if(recoveryListenerRegistered)return;
  const client=endpoint();
- if(!client){setTimeout(initRecovery,150);return}
+ if(!client){
+   if(++recoveryChecks<40)setTimeout(initRecovery,250);
+   else feedback('cardoraPwLoginStatus','Authentication is unavailable. Refresh the page.');
+   return;
+ }
+ recoveryListenerRegistered=true;
  client.auth.onAuthStateChange((event)=>{
    if(event==='PASSWORD_RECOVERY'){field('cardoraPwRecovery').hidden=false;}
  });
@@ -290,7 +300,7 @@ submit('cardoraPwRecoveryForm','cardoraPwRecoveryStatus',async client=>{
 })();
 </script>`;
 exact('</body>',1);
-html=html.replace('</body>',resetForm+passwordAuthScript+'\\n</body>');
+html=html.replace('</body>',resetForm+passwordAuthScript+'</body>');
 
 // Block preview functionality until separate testing of privilege-sensitive flows.
 const oldReviewRpc=`rpc('admin_review_seller_application'`;
