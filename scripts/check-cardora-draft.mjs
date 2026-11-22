@@ -38,6 +38,10 @@ must(overview.includes('admin.role!=="admin"'),'Admin overview role gate missing
 must(overview.includes('admin.status!=="active"'),'Admin overview active gate missing');
 must(overview.includes('legacy_project_included:false'),'Admin overview must not combine old data silently');
 must(overview.includes('CARDORA_LEGACY_READ_SERVICE_KEY'),'Legacy credentials must remain on the server');
+must(overview.includes('CARDORA_STAGING_SITE_ORIGIN'),'Preview origin configuration absent');
+must(overview.includes('safeOrigins.has(origin)'),'Admin CORS allowlist guard missing');
+must(!overview.includes('"access-control-allow-origin":"*"'),'Wildcard cross-origin access forbidden');
+
 must(overview.includes('legacy_history:legacyHistory'),'Archived applications not separately returned');
 must(overview.includes('suspected_test:classify(a)'),'Test-like applications must be marked for review');
 must(overview.includes('available:false'),'Legacy outage must not look like an empty database');
