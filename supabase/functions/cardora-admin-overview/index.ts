@@ -4,11 +4,24 @@
 // Never put SUPABASE_SERVICE_ROLE_KEY into browser JavaScript.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
-const productionOrigin=Deno.env.get("CARDORA_SITE_ORIGIN")||"https://cardora-rose.vercel.app";
-const previewOrigin=Deno.env.get("CARDORA_STAGING_SITE_ORIGIN")||"";
-// Explicit allowlist, never reflect an arbitrary Origin or use wildcard.
-// CORS is not authorization: getUser + protected admin role are still mandatory.
-const safeOrigins=new Set([productionOrigin,previewOrigin].filter(v=>/^https:\/\/[^/]+$/.test(v)));
+// Preview origins must be exact HTTPS origins (no wildcard or shared suffix).
+// More than one exact Preview URL may be configured, separated by commas.
+// Production is opt-in separately, and is NOT allowed by default.
+const previewOrigins=(Deno.env.get("CARDORA_STAGING_SITE_ORIGINS")||
+  Deno.env.get("CARDORA_STAGING_SITE_ORIGIN")||"").split(",").map(v=>v.trim()).filter(Boolean);
+const productionOrigin=Deno.env.get("CARDORA_SITE_ORIGIN")||"";
+const allowProductionOrigin=Deno.env.get("CARDORA_ALLOW_PRODUCTION_ORIGIN")==="true";
+const isExactHttpsOrigin=(value:string)=>{
+  try{
+    const url=new URL(value);
+    return url.protocol==="https:"&&url.origin===value&&!url.username&&!url.password;
+  }catch{return false;}
+};
+// CORS is not authorization: getUser + protected active admin role are mandatory.
+const safeOrigins=new Set([
+  ...previewOrigins,
+  ...(allowProductionOrigin?[productionOrigin]:[])
+].filter(isExactHttpsOrigin));
 Deno.serve(async(request)=>{
  const origin=request.headers.get("origin");
  const respond=(value:unknown,status=200)=>{
