@@ -108,7 +108,11 @@ const oldAdminHook=`    const apps=document.createElement('div');apps.id='ptxIpA
     if(window.ptxLoadSubmissionQueue)window.ptxLoadSubmissionQueue();
     if(window.ptxLoadAdminApplications)window.ptxLoadAdminApplications();`;
 const newAdminHook=`    const overview=document.createElement('div');overview.id='cardoraAdminOverview';host.appendChild(overview);
-    if(window.cardoraLoadAdminOverview)window.cardoraLoadAdminOverview();`;
+    if(window.cardoraLoadAdminOverview)window.cardoraLoadAdminOverview();
+    const apps=document.createElement('div');apps.id='ptxIpAdminApplications';host.appendChild(apps);
+    if(window.ptxLoadAdminDeposits)window.ptxLoadAdminDeposits();
+    if(window.ptxLoadSubmissionQueue)window.ptxLoadSubmissionQueue();
+    if(window.ptxLoadAdminApplications)window.ptxLoadAdminApplications();`;
 exact(oldAdminHook,1);
 html=html.replace(oldAdminHook,newAdminHook);
 const adminOverviewScript=`<script>
