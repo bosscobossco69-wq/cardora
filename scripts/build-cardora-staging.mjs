@@ -105,16 +105,16 @@ html=html.replace('</body>',portalScript+'\n</body>');
 // Read-only admin overview in the isolated staging build, never index.html.
 const oldAdminHook=`    const apps=document.createElement('div');apps.id='ptxIpAdminApplications';host.appendChild(apps);
     if(window.ptxLoadAdminDeposits)window.ptxLoadAdminDeposits();
-    // Old listing_submissions queue is incompatible with canonical Cardora listings.
-    // It is intentionally hidden rather than presented as a working moderation tool.
-    const oldQueue=document.getElementById('ptxSubmissionQueue');
-    if(oldQueue)oldQueue.textContent='Legacy submission review is disabled in staging. Use the canonical pending-listing moderation workflow once verified.';
+    if(window.ptxLoadSubmissionQueue)window.ptxLoadSubmissionQueue();
     if(window.ptxLoadAdminApplications)window.ptxLoadAdminApplications();`;
 const newAdminHook=`    const overview=document.createElement('div');overview.id='cardoraAdminOverview';host.appendChild(overview);
     if(window.cardoraLoadAdminOverview)window.cardoraLoadAdminOverview();
     const apps=document.createElement('div');apps.id='ptxIpAdminApplications';host.appendChild(apps);
     if(window.ptxLoadAdminDeposits)window.ptxLoadAdminDeposits();
-    if(window.ptxLoadSubmissionQueue)window.ptxLoadSubmissionQueue();
+    // Old listing_submissions queue is incompatible with canonical Cardora listings.
+    // It is intentionally hidden rather than presented as a working moderation tool.
+    const oldQueue=document.getElementById('ptxSubmissionQueue');
+    if(oldQueue)oldQueue.textContent='Legacy submission review is disabled in staging. Use the canonical pending-listing moderation workflow once verified.';
     if(window.ptxLoadAdminApplications)window.ptxLoadAdminApplications();`;
 exact(oldAdminHook,1);
 html=html.replace(oldAdminHook,newAdminHook);
