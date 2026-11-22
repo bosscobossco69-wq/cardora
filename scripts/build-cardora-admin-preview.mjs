@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Strictly preview-only read-only admin entrypoint, never an alternative production storefront.
-// No writes: this page calls Auth signInWithPassword / signOut and read-only
-// cardora-admin-overview Edge Function. No application/order/payment mutation actions.
+// Auth-only requests: existing-user Email OTP/password and signOut;
+// data read only through admin-verified cardora-admin-overview Edge Function. No application/order/payment mutation actions.
 import {mkdirSync,writeFileSync} from 'node:fs';
 const fail=(m)=>{console.error('CARDORA PREVIEW BLOCKED:',m);process.exit(1)};
 const previewEnv=process.env.VERCEL_ENV||'';
@@ -39,11 +39,17 @@ a{color:#e9c775}small{color:#b6b3ce}
 <div class="warning"><strong>受保护的只读测试版</strong>：本页面连接新 Cardora 身份系统，不接受新注册、申请审核、订单操作、资金转账或 Stripe 支付。旧项目历史数据仅在已授权的管理员接口可用后单独展示。</div>
 <p id="loginState" role="status" aria-live="polite">正在检查登录状态……</p>
 <section id="authSection">
-<h2>现有管理员登录</h2>
+<h2>管理员邮箱验证码登录</h2>
+<form id="emailOtpForm"><label>已有 Cardora 管理员邮箱<input id="otpEmail" autocomplete="email" type="email" required></label>
+<button id="sendOtpButton" type="submit">发送邮箱验证码（不会创建用户）</button></form>
+<form id="verifyOtpForm" hidden><label>邮件中的验证码<input id="otpToken" inputmode="numeric" autocomplete="one-time-code" maxlength="12" required></label>
+<button id="verifyOtpButton" type="submit">验证并登录</button></form>
+<p class="muted">只接受新 Cardora 项目中已经存在的账号。邮件如提供登录链接，请使用发送验证码时的同一浏览器打开；需事先配置该 Preview 的允许跳转地址。若新项目尚未配置邮件模板或发信服务，验证码可能无法送达。</p>
+<h2>备用：已有密码登录</h2>
 <form id="loginForm"><label>邮箱<input id="email" autocomplete="username" type="email" required></label>
 <label>密码<input id="password" autocomplete="current-password" type="password" required></label>
 <button id="loginButton" type="submit">登录（不会创建新用户）</button></form>
-<p class="muted">目前仅支持已有密码的 Cardora 管理员。Google / OTP 登录需要在新项目中单独完成回调测试。</p>
+<p class="muted">Google OAuth 尚未联调。此页面不开放新用户注册，也不会把旧项目身份自动迁移到新项目。</p>
 </section>
 <section id="overview" hidden><div class="row"><button id="refreshButton" type="button">刷新只读统计</button><button class="secondary" id="logoutButton" type="button">退出</button></div>
 <p id="resultStatus" role="status" aria-live="polite">正在检查管理员权限……</p>
@@ -105,6 +111,33 @@ a{color:#e9c775}small{color:#b6b3ce}
    }else create('p','旧项目历史档案尚未连接（非 0 条）。',$('archive'));
    text($('resultStatus'),'管理员读取完成 · '+(result.updated_at||''));
  }
+ $('emailOtpForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const button=$('sendOtpButton');button.disabled=true;
+  text($('loginState'),'正在请求新 Cardora 项目的登录验证码……');
+  try{
+    const email=$('otpEmail').value.trim();
+    const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});
+    if(error)throw error;
+    $('verifyOtpForm').hidden=false;
+    text($('loginState'),'如果该邮箱是新 Cardora 的现有账号，请查收邮件中的验证码或登录链接。请勿向任何人提供验证码。');
+  }catch(err){text($('loginState'),'验证码请求未完成。请检查新项目的邮箱登录、发信限额及允许跳转地址；不会创建新用户。')}
+  finally{button.disabled=false}
+ });
+ $('verifyOtpForm').addEventListener('submit',async e=>{
+  e.preventDefault();const button=$('verifyOtpButton');button.disabled=true;
+  text($('loginState'),'正在验证邮箱验证码……');
+  try{
+    const email=$('otpEmail').value.trim();
+    const token=$('otpToken').value.trim();
+    if(!/^[0-9]{6,12}$/.test(token))throw new Error('invalid code format');
+    const {error}=await client.auth.verifyOtp({email,token,type:'email'});
+    if(error)throw error;
+    $('otpToken').value='';
+    await load();
+  }catch(err){text($('loginState'),'验证码验证失败。请确认使用新 Cardora 项目的有效验证码。')}
+  finally{button.disabled=false}
+ });
  $('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();$('loginButton').disabled=true;text($('loginState'),'正在验证已有账号……');
   try{const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
