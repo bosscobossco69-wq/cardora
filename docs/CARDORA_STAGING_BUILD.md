@@ -18,3 +18,10 @@ Output: `dist-staging/index.html` (ignored by `.gitignore` below). Never provide
 - Test OAuth PKCE callback, Email OTP, log in/out, refresh, buyer and seller access, and non-admin denial.
 - The script does not implement migration of Auth identities, it does not fix the remaining Stripe subscription flow, and it does not deploy anything.
 - Do not put public anon keys into logs or untrusted sources; do not commit `dist-staging`.
+
+### 22 November 2026 — offline automated draft checks
+- Added `scripts/check-cardora-draft.mjs` (Node built-ins only) to validate admin queue/role checks, Stripe fail-closed gates and the staging builder with a fake publishable key. It is designed to run without contacting Supabase or Stripe and removes its temporary HTML output after checks.
+- Added `.github/workflows/cardora-draft-offline.yml` to request this check on relevant PR changes. Workflow uses read-only repository permissions and has no deploy, DB, or payment steps.
+- The source assertion subset was cross-checked against the current PR files; **GitHub Actions has not yet reported a workflow run**, so do not label the script as fully executed/passing. `Vercel Success` (if present) does not imply these tests ran.
+- To validate from a trusted development runner: `node scripts/check-cardora-draft.mjs`. Do not provide real keys; the smoke test uses its own artificial placeholder.
+- This does not substitute for a separate disposable database, actual Supabase RLS test sessions, or Stripe Sandbox webhook integration.
