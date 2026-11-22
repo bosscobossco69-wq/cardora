@@ -47,6 +47,12 @@ jobs:
           grep -q "verifyOtp({email,token,type:'email'})" dist-preview/index.html
           grep -q 'cardora-admin-overview' dist-preview/index.html
           grep -q 'Customers · 客户管理' dist-preview/index.html
+          grep -q "status===401" dist-preview/index.html
+          grep -q "status===403" dist-preview/index.html
+          grep -q "status===404" dist-preview/index.html
+          grep -q "ADMIN_OVERVIEW_NOT_VERIFIED" dist-preview/index.html
+          grep -q "没有管理员访问权限" dist-preview/index.html
+          grep -q "Customers 后端接口尚未部署" dist-preview/index.html
           grep -q '营销同意：未配置' dist-preview/index.html
           grep -q '回访：未启用' dist-preview/index.html
           grep -q 'customers' supabase/functions/cardora-admin-overview/index.ts
