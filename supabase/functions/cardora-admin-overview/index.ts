@@ -84,6 +84,22 @@ Deno.serve(async(request)=>{
      .select("id,created_at,name,email,role,status")
      .order("created_at",{ascending:false}).limit(50);
    if(details.error)throw new Error("application list unavailable");
+   // Admin-only roster. Do not expose financial balances or export bulk contacts.
+   // This is a capped read-only preview. Consent tables are not configured yet.
+   const rosterResult=await adminClient.from("users")
+     .select("id,member_id,email,role,status,created_at")
+     .order("created_at",{ascending:false}).limit(50);
+   if(rosterResult.error)throw new Error("customer roster unavailable");
+   const customerRoster=(rosterResult.data||[]).map(u=>({
+     member_id:u.member_id||null,
+     email:u.email||null,
+     role:u.role||"user",
+     status:u.status||"unknown",
+     created_at:u.created_at||null,
+     suspected_test:classify({email:u.email}),
+     marketing_consent:"not_configured",
+     email_followup:"disabled"
+   }));
    // Keep source-specific records, never silently merging different identities.
    // A test flag is a review cue, not proof that a customer is fake.
    const canonical=(details.data||[]).map(a=>({
@@ -120,6 +136,11 @@ Deno.serve(async(request)=>{
        agent_applications:agentApplications,listings,orders,subscription_records:subscriptions},
      // Admin-only; do not log or cache personal application information.
      applications:canonical,legacy_history:legacyHistory,
+     customers:{source:"cardora",total_profiles:registered,
+       displayed_count:customerRoster.length,limit:50,
+       records:customerRoster,marketing_available:false,
+       followup_available:false,
+       note:"Only administrator-viewable read-only preview. Consent, email sending and engagement timestamps are not configured. Do not infer real customers from total profiles."},
      labels:{canonical:"Cardora (new)",legacy:"Old archive: pokemon-treasure-demo"},
      test_classification:"Name/email pattern only. Human review required; totals include test rows.",
      suspected_test_applications_in_recent_50:canonical.filter(a=>a.suspected_test).length,
