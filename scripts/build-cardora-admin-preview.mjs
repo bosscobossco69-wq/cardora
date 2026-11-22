@@ -115,7 +115,7 @@ a{color:#e9c775}small{color:#b6b3ce}
        const item=create('article','',customersRoot);
        create('strong',(u.member_id||'无会员编号')+' · '+(u.role||'用户'),item);
        create('p','注册：'+(u.created_at||'未知')+' · 状态：'+(u.status||'未知'),item);
-       if(u.email)create('p',u.email,item);
+       if(u.email_masked)create('p',u.email_masked,item);
        if(u.suspected_test)create('small','疑似测试账号，需人工复核',item);
        create('small','回访：未启用 · 订阅同意：未配置',item);
      }
