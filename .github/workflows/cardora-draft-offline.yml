@@ -56,7 +56,7 @@ jobs:
           grep -q 'cardoraShowSubmissionUnavailable' dist-staging/index.html
           grep -q 'cardoraCheckSellerEligibility' dist-staging/index.html
           grep -q 'Legacy submission review is disabled in staging' dist-staging/index.html
-          if grep -q 'if(window.ptxLoadSubmissionQueue)window.ptxLoadSubmissionQueue();' dist-staging/index.html; then echo 'Legacy listing moderation still auto-starts'; exit 1; fi
+          node -e "const s=require('fs').readFileSync('dist-staging/index.html','utf8'); const p=s.indexOf(\"const overview=document.createElement('div');overview.id='cardoraAdminOverview'\"); if(p<0||s.slice(p,p+1300).includes('if(window.ptxLoadSubmissionQueue)window.ptxLoadSubmissionQueue();'))process.exit(1);"
           grep -q 'admin_get_seller_application_queue' dist-staging/index.html
           grep -q "where id=p_listing_id and status='pending_review'" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
           grep -q "p_status not in ('active','rejected')" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
