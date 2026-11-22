@@ -12,6 +12,7 @@ let source=readFileSync(path,"utf8")
   .replace("const classify=(r:{name?:string|null;email?:string|null})=>","const classify=(r)=>")
   .replace("const count=async(table:string,filter?:{field:string,value:string})=>","const count=async(table,filter)=>")
   .replace("const maskEmail=(value:string|null)=>","const maskEmail=(value)=>")
+  .replace("const isExactHttpsOrigin=(value:string)=>","const isExactHttpsOrigin=(value)=>")
   .replace("const maskApplication=(a:{email?:string|null})=>","const maskApplication=(a)=>")
   .replace(/let legacyHistory:\{[\s\S]*?\}=\{/,"let legacyHistory={");
 assert.ok(!source.includes("import { createClient }"));
@@ -27,6 +28,7 @@ function harness({role="admin",status="active",verified="user-1",
   let authCalls=0;
   const values={
     CARDORA_SITE_ORIGIN:"https://cardora-rose.vercel.app",
+    CARDORA_ALLOW_PRODUCTION_ORIGIN:"false",
     CARDORA_STAGING_SITE_ORIGIN:origin,
     CARDORA_ADMIN_OVERVIEW_VERIFIED:gate?"true":"false",
     CARDORA_AUTH_MIGRATION_VERIFIED:gate?"true":"false",
@@ -95,6 +97,11 @@ async function check(name,args,request,expected,assertExtra){
 }
 await check("untrusted origin gets 403 and no CORS permission",{},
  {site:"https://attacker.example"},403,({headers},h)=>{
+ assert.equal(headers.has("access-control-allow-origin"),false);
+ assert.equal(h.getReads(),0);
+});
+await check("production origin blocked by default",{},
+ {site:"https://cardora-rose.vercel.app"},403,({headers},h)=>{
  assert.equal(headers.has("access-control-allow-origin"),false);
  assert.equal(h.getReads(),0);
 });
