@@ -38,6 +38,7 @@ jobs:
       - name: Build customer password-auth staging offline without real accounts
         run: |
           CARDORA_STAGING_BUILD=YES CARDORA_STAGING_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_STAGING_SUPABASE_ANON_KEY=sb_publishable_offline_test_only node scripts/build-cardora-staging.mjs
+          node -e "const fs=require('node:fs'),vm=require('node:vm');const html=fs.readFileSync('dist-staging/index.html','utf8');const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(x=>x[1]);const auth=scripts.find(x=>x.includes('const pwValid=p=>'));if(!auth)throw Error('staging password script missing');new vm.Script(auth);console.log('PASS: password auth browser script parses');"
           grep -q 'cardoraPwLoginForm' dist-staging/index.html
           grep -q 'cardoraPwRegisterForm' dist-staging/index.html
           grep -q 'cardoraPwRecoveryForm' dist-staging/index.html
