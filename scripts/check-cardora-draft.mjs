@@ -66,6 +66,11 @@ try{
   const output=readFileSync(join(testdir,'dist-staging/index.html'),'utf8');
   must(output.includes('admin_get_seller_application_queue'),'Admin queue adapter absent');
   must(output.includes('admin_review_seller_application'),'Admin review adapter absent');
+  must(output.includes('id="cardoraManageSandboxMembership"'),'Preview account membership button missing');
+  must(output.includes("client.functions.invoke('cardora-stripe-portal'"),'Authenticated portal invocation missing');
+  must(output.includes('if(result.error || !session?.access_token)'),'Portal session token check missing');
+  must(output.includes("portalUrl.startsWith('https://billing.stripe.com/')"),'Portal destination guard missing');
+  must(!html.includes('cardoraManageSandboxMembership'),'Membership preview leaked into committed production HTML');
   must(output.includes("s==='pending'?' disabled':''"),'Invalid pending status choice is enabled');
   must(output.includes("storageKey:'cardora-supabase-auth-v2-staging'"),'Auth storage isolation absent');
   must(!output.includes('crqqockaetgacddxkqpb'),'Old project left in staging output');
