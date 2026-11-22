@@ -44,6 +44,11 @@ jobs:
           grep -q 'cardoraPwRecoveryForm' dist-staging/index.html
           grep -q 'Submit for Review (not live)' dist-staging/index.html
           grep -q 'cardoraShowSubmissionUnavailable' dist-staging/index.html
+          grep -q 'cardoraCheckSellerEligibility' dist-staging/index.html
+          grep -q "select('id,status').eq('user_id',profile.id)" dist-staging/index.html
+          grep -q "client.auth.getUser()" dist-staging/index.html
+          grep -q 'Listing submission is still paused' dist-staging/index.html || grep -q 'Listing submission is still paused' scripts/build-cardora-staging.mjs
+          if grep -q "rpc('create_seller_listing'" dist-staging/index.html; then echo "Unreviewed listing create enabled"; exit 1; fi
           grep -q 'Your details will not be submitted or saved' dist-staging/index.html
           if grep -q 'onclick="ptxSubmitListing()"' dist-staging/index.html; then echo "Unsafe seller submit button still active"; exit 1; fi
           grep -q 'signInWithPassword' dist-staging/index.html
