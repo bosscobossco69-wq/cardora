@@ -74,6 +74,11 @@ jobs:
           grep -q 'Submit for Review (not live)' dist-staging/index.html
           grep -q 'cardoraShowSubmissionUnavailable' dist-staging/index.html
           grep -q 'cardoraCheckSellerEligibility' dist-staging/index.html
+          grep -q 'cardoraCheckAuthAlignment' dist-staging/index.html
+          grep -q 'New Cardora Auth verified, but no linked profile exists' dist-staging/index.html
+          grep -q "eq('auth_user_id',identity.user.id)" dist-staging/index.html
+          grep -q 'Legacy sign-in does not transfer' dist-staging/index.html
+          grep -q 'This read-only check never grants admin access or enables payments' dist-staging/index.html
           grep -q 'Local preview only:' dist-staging/index.html
           grep -q 'photos stay in this browser and are NOT uploaded' dist-staging/index.html
           grep -q 'image/jpeg,image/png,image/webp' dist-staging/index.html
