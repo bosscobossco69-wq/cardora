@@ -46,6 +46,13 @@ const newReview = `const r=await window.ptxSupabase.rpc('admin_review_seller_app
    if(r.data!==true)throw new Error('review not confirmed');`;
 exact(oldReview,1);
 html=html.replace(oldReview,newReview);
+// New Cardora RPC accepts contacted/approved/rejected, but not a transition
+// back to pending. Keep pending visible for existing applications as a
+// disabled selection; prevent unsupported requests and misleading UI.
+const oldOptions=`+['pending','contacted','approved','rejected'].map(function(s){return '<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s+'</option>'}).join('')`;
+const newOptions=`+['pending','contacted','approved','rejected'].map(function(s){return '<option value="'+s+'"'+(a.status===s?' selected':'')+(s==='pending'?' disabled':'')+'>'+s+'</option>'}).join('')`;
+exact(oldOptions,1);
+html=html.replace(oldOptions,newOptions);
 // Block preview functionality until separate testing of privilege-sensitive flows.
 const oldReviewRpc=`rpc('admin_review_seller_application'`;
 if(!html.includes(oldReviewRpc) || !html.includes("rpc('admin_get_seller_application_queue'"))
