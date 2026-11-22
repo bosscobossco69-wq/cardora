@@ -77,6 +77,8 @@ try{
   must(output.includes('id="cardoraManageSandboxMembership"'),'Preview account membership button missing');
   must(output.includes("client.functions.invoke('cardora-admin-overview'"),'Staging admin overview missing');
   must(output.includes("id='cardoraAdminOverview'"),'Read-only overview mount missing');
+  must(output.includes("apps.id='ptxIpAdminApplications'"),'Original application queue must remain visible');
+  must(output.includes('if(window.ptxLoadAdminApplications)window.ptxLoadAdminApplications()'),'Application review loader lost');
   must(!html.includes('cardoraAdminOverview'),'Admin preview leaked into production source');
   must(output.includes("client.functions.invoke('cardora-stripe-portal'"),'Authenticated portal invocation missing');
   must(output.includes('if(result.error || !session?.access_token)'),'Portal session token check missing');
