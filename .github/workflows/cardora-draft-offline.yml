@@ -46,6 +46,11 @@ jobs:
           grep -q 'cardoraShowSubmissionUnavailable' dist-staging/index.html
           grep -q 'cardoraCheckSellerEligibility' dist-staging/index.html
           grep -q 'admin_get_seller_application_queue' dist-staging/index.html
+          grep -q "where id=p_listing_id and status='pending_review'" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
+          grep -q "p_status not in ('active','rejected')" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
+          grep -q "v_app.status not in ('pending','contacted')" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
+          grep -q "APPLICATION_ALREADY_DECIDED" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
+          grep -q "u.status='active'" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
           grep -q "u.role='admin' and u.status='active'" supabase/migrations/DRAFT_cardora_admin_seller_queue.sql
           grep -q 'limit least(greatest(coalesce(p_limit,100),1),100)' supabase/migrations/DRAFT_cardora_admin_seller_queue.sql
           grep -q 'grant execute on function public.admin_get_seller_application_queue(integer)' supabase/migrations/DRAFT_cardora_admin_seller_queue.sql
