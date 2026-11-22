@@ -18,6 +18,7 @@ const webhook=read('supabase/functions/cardora-stripe-webhook/index.ts');
 const portal=read('supabase/functions/cardora-stripe-portal/index.ts');
 const overview=read('supabase/functions/cardora-admin-overview/index.ts');
 const stripeSql=read('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql');
+const statusGuardSql=read('supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql');
 const privacyPolicy=read('privacy.html');
 const sellerTerms=read('terms.html');
 const approvedPlans=['basic','pro','business'];
@@ -39,6 +40,14 @@ must(checkout.includes('CARDORA_AUTH_MIGRATION_VERIFIED'),'Checkout Auth safety 
 must(checkout.includes('!secret.startsWith("sk_test_")'),'Checkout must stay Sandbox-only');
 must(webhook.includes('!key.startsWith("sk_test_")'),'Webhook must stay Sandbox-only');
 must(webhook.includes('constructEventAsync'),'Webhook signature validation absent');
+for(const functionName of ['admin_get_listing_review_queue','admin_review_listing','admin_review_seller_application']){
+  must(statusGuardSql.includes('CREATE OR REPLACE FUNCTION public.'+functionName),
+    'Active-admin patch missing '+functionName);
+}
+must(statusGuardSql.split("u.status='active'").length-1===3,
+  'Each privileged moderation function must reject inactive admins');
+must(statusGuardSql.includes('limit least(greatest(coalesce(p_limit,50),1),100)'),
+  'Listing moderation queue should cap untrusted limit arguments');
 must(overview.includes('CARDORA_ADMIN_OVERVIEW_VERIFIED'),'Admin overview verification gate missing');
 must(overview.includes('CARDORA_AUTH_MIGRATION_VERIFIED'),'Admin overview auth gate missing');
 must(overview.includes('authClient.auth.getUser()'),'Admin overview must verify JWT');
