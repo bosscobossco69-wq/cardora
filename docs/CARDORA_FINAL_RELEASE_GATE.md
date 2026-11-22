@@ -16,6 +16,23 @@
 - Read-only introspection found 3 admin moderation RPC functions checked role but **not** the admin user's active status: `admin_get_listing_review_queue`, `admin_review_listing`, `admin_review_seller_application`. The reviewed definitions were captured and hardened in `supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql`, preserving parameter signatures, with role+active requirement and an upper bound of 100 listing queue rows. This is **not applied** to the active database.
 - The PR offline GitHub workflow now parses both Stripe and admin SQL drafts with PostgreSQL grammar, and validates JavaScript syntax. Latest admin guard grammar run completed **successfully**, but this cannot substitute for database authorization tests.
 
+## Vercel and Supabase live deployment verification (read-only; 2026-11-22)
+
+- **ChatGPT Vercel authorization now works.** Verified team `pokemon-treasure`, project `cardora`, id `prj_6iPkqIVQOJbtBemiq9YJaIsq64mm`, and verified public domain `cardora-rose.vercel.app`. Earlier missing-project reports reflected incomplete connector authorization, not a deleted project.
+- Vercel production on `main` is `READY`, deployment `dpl_HhJy33tmhKkFGMueP8oxYDGuBgGL` at commit `2f95809594699dcd67e729e24cb2259766e52428`. It still points to legacy Supabase Auth.
+- PR #6 latest returned Preview is `READY` (deployment `dpl_H2iZSHipYRGvjBjyGVwe8qgyVmLm`), sourced from `draft/stripe-sandbox-subscriptions-20261121` commit `c8b8fbaf5f6a3bd9641b9c7aa229d845eefe16ce`. This **does not establish a working new-Supabase staging frontend**: Vercel public project environment-variable listing is empty; the `scripts/build-cardora-staging.mjs` builder is opt-in and cannot run without `CARDORA_STAGING_BUILD=YES`, new project URL and the public publishable key. Main source `index.html` still points to legacy Supabase. The deployment file-tree API cannot enumerate Git deployments (404) and is not evidence files are missing.
+- Preview deploy is protected by Vercel SSO `all_except_custom_domains`. Do **not** bypass its protection to expose an untested admin UI.
+- New Cardora Supabase Edge Functions currently deployed: `create-toyyibpay-subscription-bill`, `toyyibpay-subscription-callback`, `ai-support`, `ptx-email-otp`. The four draft functions `cardora-admin-overview`, `cardora-stripe-checkout`, `cardora-stripe-portal`, and `cardora-stripe-webhook` are **not deployed**. Do not enable their verification flags or assume they work.
+- GitHub offline checks remain separate from runtime authentication, RLS and signed webhook tests. **No production SQL, GitHub merge, Edge Function deployment, Live payment or Vercel promotion was performed.**
+
+### Safe next operator gates
+
+1. Create a **nonproduction** isolated browser build and verify it actually contains `cardoraAdminOverview`, the new Supabase public URL, isolated auth storage and the correct CSP. Never overwrite the production HTML.
+2. Verify all four new Supabase functions in a disposable staging environment, with role-based tests and approved secrets. No destructive test writes to either existing active Supabase project.
+3. Test admin/new-user OAuth and email OTP, including refresh and wrong-project tokens; prove legacy history is read-only and client secrets never leak.
+4. Complete Stripe Sandbox signed-webhook lifetime tests before deploying a separate Live billing implementation. Confirm real operator identity and legal documents.
+5. After all gates pass, require an explicit release review for production migrations, domain cutover and charging customers.
+
 ## Hard blockers to finish safely
 1. **Database isolation:** User currently has two active free Supabase projects; there is no disposable staging project. DO NOT run migrations on either active project to simulate staging, create a duplicate administrator, or reset accounts. Set up authorized isolated test environment or reliable reversible snapshot with real tests first.
 2. **Auth cutover:** Old public website signs into `crqqockaetgacddxkqpb`, while canonical Cardora data is in `fdkfquvzbswxocyrhduk`. The one overlapping email maps to different Auth UUIDs. Do not copy roles or passwords by email. Verify a new-project admin can actually sign in on a nonproduction origin and access review endpoints, and that ordinary users cannot.
