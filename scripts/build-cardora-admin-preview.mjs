@@ -75,7 +75,7 @@ a{color:#e9c775}small{color:#b6b3ce}
    for(const a of apps){const entry=create('article','',root);
     create('strong',(a.name||'申请人')+' · '+(a.role||'待确认'),entry);
     create('p',(a.status||'未知状态')+' · '+(a.created_at||''),entry);
-    if(a.email)create('p',a.email,entry);
+    if(a.email_masked)create('p',a.email_masked,entry);
     if(a.suspected_test)create('small','疑似测试记录（需要人工核对）',entry);
    }
  };
