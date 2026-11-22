@@ -86,3 +86,9 @@ Read-only `SELECT count(*)` was used; no production data was edited, and no pers
 - Updated `scripts/build-cardora-staging.mjs` to rewrite only the staging-generated HTML application list and status action to these admin RPCs. The committed production `index.html` stays unchanged.
 - Verified both exact old code snippets each occur once in draft `index.html`; the builder fails if its target changes.
 - **Still required:** verify admin list RPC column signatures, permissions, and front-end behavior with authorized users in disposable staging; make sure applicant status transition/auto-approval trigger is reviewed; QA admin queue loading, approve/reject/contact, submission and data visibility. No staging/production SQL applied, no preview published, no admin write executed.
+
+## 22 November 2026 — rapid staging builder verification
+- Verified existing join-application form already resolves `current_user_row_id()` and submits `user_id`; no fix required there. Database `current_user_row_id()` looks up `public.users.id` from the signed-in `auth.uid()`.
+- Source-target assertions for staging builder: legacy Supabase URL appears twice as expected, admin application queue and direct status update old snippets each appear once, and legacy auth storage key and CSP are present. These checks only establish source compatibility, **not** a successful Node execution or end-to-end browser test.
+- Staging admin review status dropdown now shows existing `pending` applications but disables selecting `pending`, which `admin_review_seller_application()` rejects; allowed transitions are `contacted`, `approved` and `rejected`.
+- Changes are limited to the offline staging build script; source `index.html` and the live website remain unchanged. Isolated database and authorized admin browser testing are still required.
