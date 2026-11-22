@@ -25,5 +25,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check scripts/build-cardora-staging.mjs
+          node --check scripts/check-cardora-draft.mjs
       - name: Verify draft builder and fail-closed guards (no network from test)
         run: node scripts/check-cardora-draft.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Parse draft SQL without connecting to a database
+        run: |
+          python -m pip install --disable-pip-version-check pglast
+          python -c "from pglast import parse_sql; from pathlib import Path; parse_sql(Path('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql').read_text()); print('PASS: PostgreSQL grammar parsed; database not accessed')"
+
