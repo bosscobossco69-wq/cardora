@@ -1,0 +1,32 @@
+-- DRAFT ONLY / NOT EXECUTED. Manual review and explicit production approval required.
+-- Supabase Cardora: seller_applications.status defaults to 'pending'.
+-- A BEFORE INSERT trigger currently force-approves sellers, creates profiles,
+-- and creates a subscription. This conflicts with manual approval policy.
+-- Verify existing sellers and back up before even considering this cutover.
+--
+-- PRECONDITIONS:
+-- 1. Verify no active application writers require auto-approval.
+-- 2. Verify admin_review_seller_application() can be called by a real admin.
+-- 3. Verify RLS and protected admin list/read APIs are functional.
+-- 4. Confirm how agents vs sellers are approved.
+-- 5. Confirm behavior of existing approved applications, seller profiles,
+--    subscriptions, verification_status and any client-side assumptions.
+-- 6. Test rollback independently using disposable staging.
+--
+-- MANUAL CUTOVER, AFTER APPROVAL ONLY:
+-- ALTER TABLE public.seller_applications
+--   DISABLE TRIGGER seller_application_auto_approve_seller;
+--
+-- MANUAL POST-CUTOVER CHECK:
+-- SELECT tgname,tgenabled
+-- FROM pg_trigger
+-- WHERE tgrelid='public.seller_applications'::regclass
+--   AND tgname='seller_application_auto_approve_seller';
+--
+-- MANUAL ROLLBACK, AFTER REVIEW ONLY:
+-- ALTER TABLE public.seller_applications
+--   ENABLE TRIGGER seller_application_auto_approve_seller;
+--
+-- WARNING: Re-enabling trigger restores auto-approval of NEW applications,
+-- not rollback of seller profiles/approvals previously applied.
+-- Do not automatically downgrade existing sellers or delete data.
