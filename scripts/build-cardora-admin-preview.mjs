@@ -92,7 +92,22 @@ a{color:#e9c775}small{color:#b6b3ce}
      method:'POST',body:{},headers:{Authorization:'Bearer '+session.access_token}
    });
    if(invokeError||!result?.counts){
-     text($('resultStatus'),'管理统计接口尚未安全部署或未通过权限验收。不会显示旧数据，也不会执行任何写入。');
+     // Only classify known response statuses/error codes; never echo raw error text,
+     // response bodies, bearer tokens, private emails, or server-side credentials.
+     const status=invokeError?.context?.status||0;
+     const code=result?.error||'';
+     if(status===401||code==='LOGIN_REQUIRED'||code==='INVALID_SESSION'){
+       showAuth(false);
+       text($('loginState'),'会话失效或登录验证失败，请重新使用管理员账号登录。');
+     }else if(status===403||code==='ADMIN_ONLY'){
+       text($('resultStatus'),'没有管理员访问权限：当前账号不能查看客户名单。');
+     }else if(code==='ADMIN_OVERVIEW_NOT_VERIFIED'){
+       text($('resultStatus'),'只读管理接口尚未通过上线验收，安全开关仍关闭。');
+     }else if(status===404){
+       text($('resultStatus'),'Customers 后端接口尚未部署（404），登录成功不代表数据接口已开放。');
+     }else{
+       text($('resultStatus'),'Customers 数据暂时不可用（可能为接口未部署、服务器故障或配置未完成）。不会显示虚构人数。');
+     }
      return;
    }
    const c=result.counts;
