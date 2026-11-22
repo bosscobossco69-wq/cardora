@@ -122,7 +122,7 @@ window.cardoraLoadAdminOverview=async function(){
  root.replaceChildren();
  const line=(tag,value,parent=root)=>{const el=document.createElement(tag);el.textContent=String(value);parent.appendChild(el);return el};
  line('h2','Cardora Admin Overview — preview');
- line('p','New Cardora database only. Legacy registrations and applications are NOT included.');
+ line('p','New Cardora statistics are authoritative here. Old applications appear separately as read-only history; counts are not combined. Registered-user totals are not deduplicated across projects.');
  const state=line('p','Checking admin authorization…');
  try {
    const client=window.ptxSupabase;
