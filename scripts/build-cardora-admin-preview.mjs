@@ -1,0 +1,120 @@
+#!/usr/bin/env node
+// Strictly preview-only read-only admin entrypoint, never an alternative production storefront.
+// No writes: this page calls Auth signInWithPassword / signOut and read-only
+// cardora-admin-overview Edge Function. No application/order/payment mutation actions.
+import {mkdirSync,writeFileSync} from 'node:fs';
+const fail=(m)=>{console.error('CARDORA PREVIEW BLOCKED:',m);process.exit(1)};
+const previewEnv=process.env.VERCEL_ENV||'';
+const previewBranch=process.env.VERCEL_GIT_COMMIT_REF||'';
+if(process.env.CARDORA_PREVIEW_BUILD!=='YES')fail('explicit opt-in missing');
+if(previewEnv!=='preview')fail('not in Vercel preview environment');
+if(previewBranch!=='draft/stripe-sandbox-subscriptions-20261121')fail('wrong Git branch');
+const url=(process.env.CARDORA_PREVIEW_SUPABASE_URL||'').replace(/\/$/,'');
+const key=process.env.CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY||'';
+if(url!=='https://fdkfquvzbswxocyrhduk.supabase.co')fail('wrong Supabase project');
+if(!/^sb_publishable_[A-Za-z0-9_-]+$/.test(key))fail('public key required');
+if(/service_role|sb_secret_|sk_live_|sk_test_/i.test(key))fail('secret refused');
+const csp="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' "+url+"; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+const data={url,key};
+const html=`<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="${csp}">
+<title>Cardora 管理后台｜只读预览</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0e1020;color:#f6f4ff;font:15px/1.65 system-ui,-apple-system,sans-serif}
+main{max-width:830px;margin:auto;padding:28px 16px 75px}h1{font-size:clamp(24px,5vw,34px)}h2{font-size:19px;margin-top:24px}
+p,.muted{color:#b6b3ce}.warning{border:1px solid #a7893b;background:#292315;border-radius:12px;padding:13px;color:#ffe7ac}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.card{border:1px solid #35334f;background:#191a2d;padding:16px;border-radius:12px}.value{font-size:29px;font-weight:800}
+form{display:grid;gap:10px;max-width:460px}label{display:grid;gap:5px}input{background:#131527;border:1px solid #57516e;color:white;border-radius:10px;padding:12px;font:inherit;width:100%}
+button{background:#e7c56f;border:0;border-radius:10px;padding:12px 18px;color:#17121a;font-weight:700;cursor:pointer}
+button.secondary{background:#39354e;color:white}button:disabled{opacity:.5}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
+article{border:1px solid #35334f;border-radius:12px;padding:12px 14px;margin:10px 0;overflow-wrap:anywhere}
+a{color:#e9c775}small{color:#b6b3ce}
+</style></head>
+<body><main>
+<h1>Cardora · 统一管理后台</h1>
+<div class="warning"><strong>受保护的只读测试版</strong>：本页面连接新 Cardora 身份系统，不接受新注册、申请审核、订单操作、资金转账或 Stripe 支付。旧项目历史数据仅在已授权的管理员接口可用后单独展示。</div>
+<p id="loginState" role="status" aria-live="polite">正在检查登录状态……</p>
+<section id="authSection">
+<h2>现有管理员登录</h2>
+<form id="loginForm"><label>邮箱<input id="email" autocomplete="username" type="email" required></label>
+<label>密码<input id="password" autocomplete="current-password" type="password" required></label>
+<button id="loginButton" type="submit">登录（不会创建新用户）</button></form>
+<p class="muted">目前仅支持已有密码的 Cardora 管理员。Google / OTP 登录需要在新项目中单独完成回调测试。</p>
+</section>
+<section id="overview" hidden><div class="row"><button id="refreshButton" type="button">刷新只读统计</button><button class="secondary" id="logoutButton" type="button">退出</button></div>
+<p id="resultStatus" role="status" aria-live="polite">正在检查管理员权限……</p>
+<div class="cards" id="cards"></div><section id="applications"></section><section id="archive"></section></section>
+<p style="margin-top:36px"><small>数据来源：新 Cardora Supabase。旧记录只显示为历史档案，不与新库人数直接相加。未配置接口时显示不可用，绝不展示虚构统计。</small></p>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+ 'use strict';
+ const config=${JSON.stringify(data)};
+ const $=(id)=>document.getElementById(id);
+ const client=window.supabase.createClient(config.url,config.key,{
+   auth:{storageKey:'cardora-admin-readonly-preview-v1',flowType:'pkce',autoRefreshToken:true,persistSession:true}
+ });
+ const text=(target,content)=>{target.textContent=String(content)};
+ const create=(tag,content,parent)=>{const n=document.createElement(tag);text(n,content);parent.appendChild(n);return n};
+ const showAuth=(signedIn)=>{$('authSection').hidden=signedIn;$('overview').hidden=!signedIn};
+ const metric=(label,value)=>{const item=create('div','',$('cards'));item.className='card';create('div',label,item);
+   const v=create('div',value,item);v.className='value'};
+ const renderApps=(id,title,apps)=>{
+   const root=$(id);root.replaceChildren();create('h2',title,root);
+   if(!Array.isArray(apps)||!apps.length){create('p','暂无记录',root);return}
+   for(const a of apps){const entry=create('article','',root);
+    create('strong',(a.name||'申请人')+' · '+(a.role||'待确认'),entry);
+    create('p',(a.status||'未知状态')+' · '+(a.created_at||''),entry);
+    if(a.email)create('p',a.email,entry);
+    if(a.suspected_test)create('small','疑似测试记录（需要人工核对）',entry);
+   }
+ };
+ async function load(){
+   $('cards').replaceChildren();$('applications').replaceChildren();$('archive').replaceChildren();
+   text($('resultStatus'),'验证管理员权限中……');
+   const {data:{session},error}=await client.auth.getSession();
+   if(error||!session?.access_token){showAuth(false);text($('loginState'),'请使用新 Cardora 项目的管理员账号登录。');return}
+   const verified=await client.auth.getUser();
+   if(verified.error||!verified.data?.user){showAuth(false);text($('loginState'),'登录会话已失效。');return}
+   showAuth(true);text($('loginState'),'已验证会话，等待只读管理员接口确认权限。');
+   // Explicitly no database .from() writes or privileged keys in this browser.
+   const {data:result,error:invokeError}=await client.functions.invoke('cardora-admin-overview',{
+     method:'POST',body:{},headers:{Authorization:'Bearer '+session.access_token}
+   });
+   if(invokeError||!result?.counts){
+     text($('resultStatus'),'管理统计接口尚未安全部署或未通过权限验收。不会显示旧数据，也不会执行任何写入。');
+     return;
+   }
+   const c=result.counts;
+   for(const [label,value] of Object.entries({
+     '注册资料':c.registered_profiles,'卖家资料':c.sellers,'代理资料':c.agents,
+     '申请总数':c.applications,'待审申请':c.pending,'批准申请':c.approved,
+     '卖家申请':c.seller_applications,'代理申请':c.agent_applications,
+     '商品记录':c.listings,'订单记录':c.orders,'订阅记录':c.subscription_records
+   })) metric(label,value??'—');
+   renderApps('applications','新 Cardora 申请（只读）',result.applications);
+   const old=result.legacy_history;
+   if(old?.available){create('p','旧项目历史申请 '+old.record_count+' 条，独立归档，不计入新库统计',$('archive'));
+     renderApps('archive','旧项目历史申请（只读）',old.applications);
+   }else create('p','旧项目历史档案尚未连接（非 0 条）。',$('archive'));
+   text($('resultStatus'),'管理员读取完成 · '+(result.updated_at||''));
+ }
+ $('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();$('loginButton').disabled=true;text($('loginState'),'正在验证已有账号……');
+  try{const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+      if(error)throw error;$('password').value='';await load();
+  }catch(err){text($('loginState'),'登录失败，请确认这是新 Cardora 项目中的现有账号，且启用了密码登录。')}
+  finally{$('loginButton').disabled=false}
+ });
+ $('refreshButton').addEventListener('click',load);
+ $('logoutButton').addEventListener('click',async()=>{await client.auth.signOut();showAuth(false);text($('loginState'),'已退出。')});
+ load().catch(()=>{showAuth(false);text($('loginState'),'初始化失败。')});
+})();
+</script></body></html>`;
+mkdirSync('dist-preview',{recursive:true});
+writeFileSync('dist-preview/index.html',html,'utf8');
+console.log('PASS: read-only Cardora preview built for correct branch; no active database write or payments.');
