@@ -46,6 +46,16 @@ Deno.serve(async(request)=>{
  if(roleError)return respond({error:"AUTHORIZATION_UNAVAILABLE"},503);
  if(!admin||admin.role!=="admin"||admin.status!=="active")
    return respond({error:"ADMIN_ONLY"},403);
+ // Legacy is history ONLY. Credentials stay server-side and read-only queries
+ // never update old applications, users, wallets or permissions.
+ const legacyUrl="https://crqqockaetgacddxkqpb.supabase.co";
+ const legacyKey=Deno.env.get("CARDORA_LEGACY_READ_SERVICE_KEY")||"";
+ const legacy=legacyKey?createClient(legacyUrl,legacyKey,{
+   auth:{persistSession:false,autoRefreshToken:false}
+ }):null;
+ const classify=(r:{name?:string|null;email?:string|null})=>
+   /(^|[^a-z])(test|demo|sample)([^a-z]|$)/i.test((r.name||"")+" "+(r.email||""))||
+   /@example\.(com|org|net)$/i.test(r.email||"");
  const count=async(table:string,filter?:{field:string,value:string})=>{
    let query=adminClient.from(table).select("id",{head:true,count:"exact"});
    if(filter)query=query.eq(filter.field,filter.value);
@@ -69,6 +79,34 @@ Deno.serve(async(request)=>{
      .select("id,created_at,name,email,role,status")
      .order("created_at",{ascending:false}).limit(50);
    if(details.error)throw new Error("application list unavailable");
+   // Keep source-specific records, never silently merging different identities.
+   // A test flag is a review cue, not proof that a customer is fake.
+   const canonical=(details.data||[]).map(a=>({
+      ...a,source:"cardora",suspected_test:classify(a)
+   }));
+   let legacyHistory:{source:string;available:boolean;error?:string;applications:unknown[];
+      record_count:number|null;suspected_test_count:number|null}={
+       source:"pokemon-treasure-demo",available:false,
+       error:"NOT_CONFIGURED",applications:[],record_count:null,
+       suspected_test_count:null
+   };
+   if(legacy){
+     const [legacyRows,legacyCount]=await Promise.all([
+       legacy.from("seller_applications").select("id,created_at,name,email,role,status")
+         .order("created_at",{ascending:false}).limit(50),
+       legacy.from("seller_applications").select("id",{head:true,count:"exact"})
+     ]);
+     if(legacyRows.error||legacyCount.error){
+       legacyHistory.error="LEGACY_READ_UNAVAILABLE";
+     }else{
+       const apps=(legacyRows.data||[]).map(a=>({
+         ...a,source:"legacy",suspected_test:classify(a)
+       }));
+       legacyHistory={source:"pokemon-treasure-demo",available:true,
+         applications:apps,record_count:legacyCount.count??0,
+         suspected_test_count:apps.filter(a=>a.suspected_test).length};
+     }
+   }
    return respond({
      source:"cardora_supabase",legacy_project_included:false,
      updated_at:new Date().toISOString(),
@@ -76,8 +114,11 @@ Deno.serve(async(request)=>{
        pending,approved,seller_applications:sellerApplications,
        agent_applications:agentApplications,listings,orders,subscription_records:subscriptions},
      // Admin-only; do not log or cache personal application information.
-     applications:details.data||[],
-     note:"Legacy application records and payment revenue are not included."
+     applications:canonical,legacy_history:legacyHistory,
+     labels:{canonical:"Cardora (new)",legacy:"Old archive: pokemon-treasure-demo"},
+     test_classification:"Name/email pattern only. Human review required; totals include test rows.",
+     suspected_test_applications_in_recent_50:canonical.filter(a=>a.suspected_test).length,
+     note:"Separate new and old sources; no deduplicated unique customer total or revenue."
    });
  } catch(e){
    console.error("CARDORA_ADMIN_OVERVIEW_FAILED",e instanceof Error?e.message:"unknown");
