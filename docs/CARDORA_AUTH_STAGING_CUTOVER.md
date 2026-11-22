@@ -71,3 +71,11 @@ Read-only `SELECT count(*)` was used; no production data was edited, and no pers
 - No `seller_subscriptions` public RLS policy was returned by this narrow policy query; verify which privileged server RPC is authorized to change subscription status rather than attempting direct browser writes.
 - For admin dashboard compatibility, keep `is_admin()` role-check **separate** from privileged review actions. Prefer narrowly scoped `SECURITY DEFINER` RPCs with `auth.uid()`-based role checks and explicit column/row allowlists, not broad admin RLS bypass.
 - No GitHub main, Supabase roles/policies/data or Vercel deployment changed. **Still a release blocker.**
+
+## 22 November 2026 — confirmed automatic seller approval trigger (read-only)
+- Production Cardora `public.seller_applications` has the **enabled BEFORE INSERT** trigger `seller_application_auto_approve_seller`, which runs `auto_approve_seller_application()`.
+- Inspected function body: for `role='seller'` (including the default), it creates/updates `seller_profiles` with `status='approved'`, `verification_status='pending'`, creates a free/current subscription when absent, and sets `NEW.status='approved'`. It does **not** verify the human reviewer's decision.
+- `seller_applications.status` column defaults to `pending`, so disabling this trigger would cause newly inserted applications to remain pending **unless other code changes their status**.
+- `admin_review_seller_application()` already exists as `SECURITY DEFINER`, callable by authenticated users and not anon; the function's body checks `public.users.role='admin'`. This means there is a draftable manual approval path, but the complete admin list/review UI still requires compatibility checks.
+- **Proposed change only:** see `supabase/migrations/DRAFT_cardora_manual_seller_approval_cutover.sql`. It contains commented instructions for a reviewed disable/re-enable operation; nothing executes automatically.
+- **Do not disable on production without isolated tests and explicit approval.** Check existing seller and agent applications and interactions with paid checkout eligibility; any already approved sellers remain unchanged by the proposed trigger toggle.
