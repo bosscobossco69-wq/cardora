@@ -10,6 +10,12 @@
 - Standalone /privacy.html and /terms.html draft pages created (both carry DRAFT notices and robots noindex). Do **NOT** submit them to Stripe as final until business identity and terms are verified.
 - App code changes remain in the Draft PR only; not merged to production.
 
+## Additional live read-only audit (2026-11-22)
+- Vercel connector: accessible team **Pokemon Treasure** (`pokemon-treasure`) lists **only** `kenji-smart-tools`. Neither `cardora` nor `cardora-rose` is visible to this connected Vercel scope. The website may be on another account or team; do not create a duplicate project or claim deployment is possible from this connection.
+- New Cardora Supabase security advisor reports 8 authenticated-callable SECURITY DEFINER functions. This is an advisory requiring per-function authorization review, not proof of external exploit.
+- Read-only introspection found 3 admin moderation RPC functions checked role but **not** the admin user's active status: `admin_get_listing_review_queue`, `admin_review_listing`, `admin_review_seller_application`. The reviewed definitions were captured and hardened in `supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql`, preserving parameter signatures, with role+active requirement and an upper bound of 100 listing queue rows. This is **not applied** to the active database.
+- The PR offline GitHub workflow now parses both Stripe and admin SQL drafts with PostgreSQL grammar, and validates JavaScript syntax. Latest admin guard grammar run completed **successfully**, but this cannot substitute for database authorization tests.
+
 ## Hard blockers to finish safely
 1. **Database isolation:** User currently has two active free Supabase projects; there is no disposable staging project. DO NOT run migrations on either active project to simulate staging, create a duplicate administrator, or reset accounts. Set up authorized isolated test environment or reliable reversible snapshot with real tests first.
 2. **Auth cutover:** Old public website signs into `crqqockaetgacddxkqpb`, while canonical Cardora data is in `fdkfquvzbswxocyrhduk`. The one overlapping email maps to different Auth UUIDs. Do not copy roles or passwords by email. Verify a new-project admin can actually sign in on a nonproduction origin and access review endpoints, and that ordinary users cannot.
