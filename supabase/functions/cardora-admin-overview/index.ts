@@ -9,15 +9,15 @@ const previewOrigin=Deno.env.get("CARDORA_STAGING_SITE_ORIGIN")||"";
 // Explicit allowlist, never reflect an arbitrary Origin or use wildcard.
 // CORS is not authorization: getUser + protected admin role are still mandatory.
 const safeOrigins=new Set([productionOrigin,previewOrigin].filter(v=>/^https:\/\/[^/]+$/.test(v)));
-const respond=(value:unknown,status=200,origin=productionOrigin)=>new Response(JSON.stringify(value),{
- status,headers:{"content-type":"application/json; charset=utf-8",
- "cache-control":"no-store, private","vary":"Origin",
- "access-control-allow-origin":safeOrigins.has(origin)?origin:productionOrigin,
- "access-control-allow-headers":"authorization, apikey, content-type",
- "access-control-allow-methods":"POST, OPTIONS"}
-});
 Deno.serve(async(request)=>{
  const origin=request.headers.get("origin")||productionOrigin;
+ const respond=(value:unknown,status=200)=>new Response(JSON.stringify(value),{
+   status,headers:{"content-type":"application/json; charset=utf-8",
+    "cache-control":"no-store, private","vary":"Origin",
+    "access-control-allow-origin":safeOrigins.has(origin)?origin:productionOrigin,
+    "access-control-allow-headers":"authorization, apikey, content-type",
+    "access-control-allow-methods":"POST, OPTIONS"}
+ });
  if(!safeOrigins.has(origin))
    return respond({error:"INVALID_ORIGIN"},403);
  if(request.method==="OPTIONS")return respond({ok:true});
