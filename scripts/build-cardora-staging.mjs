@@ -53,6 +53,55 @@ const oldOptions=`+['pending','contacted','approved','rejected'].map(function(s)
 const newOptions=`+['pending','contacted','approved','rejected'].map(function(s){return '<option value="'+s+'"'+(a.status===s?' selected':'')+(s==='pending'?' disabled':'')+'>'+s+'</option>'}).join('')`;
 exact(oldOptions,1);
 html=html.replace(oldOptions,newOptions);
+// Preview-only membership control. Supabase Functions adds the authenticated JWT;
+// the Edge Function independently authenticates the owner and fails closed until QA.
+// Keep the live index.html untouched.
+const accountAnchor = '<button class="ptx-btn" onclick="ptxLogout()" style="width:100%;margin-top:12px" type="button">Sign Out</button>';
+exact(accountAnchor,1);
+html=html.replace(accountAnchor, `<div class="ptx-card" style="margin-top:12px">
+  <b>Seller membership (Sandbox Preview)</b>
+  <p class="ptx-muted" style="margin-top:6px">Manage a linked TEST subscription only. Live payments are not enabled.</p>
+  <button class="ptx-btn" id="cardoraManageSandboxMembership" type="button" onclick="cardoraOpenSandboxMembership()" style="width:100%;margin-top:8px">Manage test membership</button>
+  <div id="cardoraManageSandboxStatus" class="ptx-muted" role="status" aria-live="polite" style="margin-top:8px"></div>
+</div>
+`+accountAnchor);
+const portalScript = `<script>
+window.cardoraOpenSandboxMembership = async function(){
+  const button=document.getElementById('cardoraManageSandboxMembership');
+  const status=document.getElementById('cardoraManageSandboxStatus');
+  if(!button || !status) return;
+  button.disabled=true;
+  status.textContent='Checking your seller subscription…';
+  try{
+    const client=window.ptxSupabase;
+    if(!client) throw new Error('Login is unavailable.');
+    const result=await client.auth.getSession();
+    const session=result.data?.session;
+    if(result.error || !session?.access_token)
+      throw new Error('Please sign in to Cardora first.');
+    const response=await client.functions.invoke('cardora-stripe-portal',{
+      method:'POST',body:{},headers:{Authorization:'Bearer '+session.access_token}
+    });
+    if(response.error) {
+      const reason=response.data?.error||'PORTAL_UNAVAILABLE';
+      if(reason==='PORTAL_NOT_VERIFIED')throw new Error('Sandbox portal is not enabled until security testing is complete.');
+      if(reason==='NO_STRIPE_SUBSCRIPTION')throw new Error('No linked test subscription found.');
+      throw new Error('Portal unavailable. No payment was initiated.');
+    }
+    const portalUrl=response.data?.portal_url||'';
+    if(!portalUrl.startsWith('https://billing.stripe.com/'))
+      throw new Error('Invalid portal destination.');
+    // Never grant membership from a redirect or trust client-provided owner IDs.
+    window.location.assign(portalUrl);
+  }catch(error){
+    status.textContent=error instanceof Error?error.message:'Portal unavailable.';
+  }finally{
+    button.disabled=false;
+  }
+};
+</script>`;
+exact('</body>',1);
+html=html.replace('</body>',portalScript+'\n</body>');
 // Block preview functionality until separate testing of privilege-sensitive flows.
 const oldReviewRpc=`rpc('admin_review_seller_application'`;
 if(!html.includes(oldReviewRpc) || !html.includes("rpc('admin_get_seller_application_queue'"))
