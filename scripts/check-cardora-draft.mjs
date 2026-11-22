@@ -16,6 +16,7 @@ const admin=read('supabase/migrations/DRAFT_cardora_auth_is_admin_compat.sql');
 const checkout=read('supabase/functions/cardora-stripe-checkout/index.ts');
 const webhook=read('supabase/functions/cardora-stripe-webhook/index.ts');
 const portal=read('supabase/functions/cardora-stripe-portal/index.ts');
+const overview=read('supabase/functions/cardora-admin-overview/index.ts');
 const stripeSql=read('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql');
 const approvedPlans=['basic','pro','business'];
 
@@ -30,6 +31,13 @@ must(checkout.includes('CARDORA_AUTH_MIGRATION_VERIFIED'),'Checkout Auth safety 
 must(checkout.includes('!secret.startsWith("sk_test_")'),'Checkout must stay Sandbox-only');
 must(webhook.includes('!key.startsWith("sk_test_")'),'Webhook must stay Sandbox-only');
 must(webhook.includes('constructEventAsync'),'Webhook signature validation absent');
+must(overview.includes('CARDORA_ADMIN_OVERVIEW_VERIFIED'),'Admin overview verification gate missing');
+must(overview.includes('CARDORA_AUTH_MIGRATION_VERIFIED'),'Admin overview auth gate missing');
+must(overview.includes('authClient.auth.getUser()'),'Admin overview must verify JWT');
+must(overview.includes('admin.role!=="admin"'),'Admin overview role gate missing');
+must(overview.includes('admin.status!=="active"'),'Admin overview active gate missing');
+must(overview.includes('legacy_project_included:false'),'Admin overview must not combine old data silently');
+must(overview.includes('eq("auth_user_id",authUser.id)'),'Admin overview identity matching missing');
 must(portal.includes('CARDORA_PORTAL_VERIFIED'),'Portal failsafe verification gate missing');
 must(portal.includes('CARDORA_AUTH_MIGRATION_VERIFIED'),'Portal migration gate missing');
 must(portal.includes('!secret.startsWith("sk_test_")'),'Portal must remain Sandbox-only');
@@ -67,6 +75,9 @@ try{
   must(output.includes('admin_get_seller_application_queue'),'Admin queue adapter absent');
   must(output.includes('admin_review_seller_application'),'Admin review adapter absent');
   must(output.includes('id="cardoraManageSandboxMembership"'),'Preview account membership button missing');
+  must(output.includes("client.functions.invoke('cardora-admin-overview'"),'Staging admin overview missing');
+  must(output.includes("id='cardoraAdminOverview'"),'Read-only overview mount missing');
+  must(!html.includes('cardoraAdminOverview'),'Admin preview leaked into production source');
   must(output.includes("client.functions.invoke('cardora-stripe-portal'"),'Authenticated portal invocation missing');
   must(output.includes('if(result.error || !session?.access_token)'),'Portal session token check missing');
   must(output.includes("portalUrl.startsWith('https://billing.stripe.com/')"),'Portal destination guard missing');
