@@ -5,6 +5,9 @@ on:
       - 'index.html'
       - 'seller-start.html'
       - 'pokemon-card-numbers-explained.html'
+      - 'listing-guide.html'
+      - 'sar-sir-ar-difference.html'
+      - 'fees.html'
       - 'how-to-spot-a-fake-pokemon-card.html'
       - 'scripts/build-cardora-staging.mjs'
       - 'scripts/build-cardora-admin-preview.mjs'
@@ -32,6 +35,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Reject broken Analytics script in all known public pages
+        run: |
+          for f in index.html listing-guide.html sar-sir-ar-difference.html fees.html pokemon-card-numbers-explained.html how-to-spot-a-fake-pokemon-card.html; do
+            if grep -Fq '<script defer src="/_vercel/insights/script.js"></script>' "$f"; then echo "Invalid script still included in $f"; exit 1; fi
+          done
       - name: Verify published article drafts have no broken Insights script or old brand
         run: |
           for f in pokemon-card-numbers-explained.html how-to-spot-a-fake-pokemon-card.html; do
