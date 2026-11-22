@@ -116,10 +116,15 @@ Deno.serve(async(request)=>{
      marketing_consent:"not_configured",
      email_followup:"disabled"
    }));
+   // Minimize PII in application history too. Full applicant email remains
+   // protected in Supabase and is never needed for this read-only dashboard.
+   const maskApplication=(a:{email?:string|null})=>({
+     ...a,email_masked:maskEmail(a.email||null),email:undefined
+   });
    // Keep source-specific records, never silently merging different identities.
    // A test flag is a review cue, not proof that a customer is fake.
    const canonical=(details.data||[]).map(a=>({
-      ...a,source:"cardora",suspected_test:classify(a)
+      ...maskApplication(a),source:"cardora",suspected_test:classify(a)
    }));
    let legacyHistory:{source:string;available:boolean;error?:string;applications:unknown[];
       record_count:number|null;suspected_test_count:number|null}={
@@ -137,7 +142,7 @@ Deno.serve(async(request)=>{
        legacyHistory.error="LEGACY_READ_UNAVAILABLE";
      }else{
        const apps=(legacyRows.data||[]).map(a=>({
-         ...a,source:"legacy",suspected_test:classify(a)
+         ...maskApplication(a),source:"legacy",suspected_test:classify(a)
        }));
        legacyHistory={source:"pokemon-treasure-demo",available:true,
          applications:apps,record_count:legacyCount.count??0,
