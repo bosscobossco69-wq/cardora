@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'index.html'
+      - 'seller-start.html'
       - 'scripts/build-cardora-staging.mjs'
       - 'scripts/build-cardora-admin-preview.mjs'
       - 'vercel.json'
@@ -29,6 +30,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify seller acquisition landing remains transparent and not live
+        run: |
+          grep -q 'Draft / Early access' seller-start.html
+          grep -q 'noindex,nofollow' seller-start.html
+          grep -q 'Applying is free' seller-start.html
+          grep -q 'No guaranteed sales' seller-start.html
+          grep -q 'There are no active cash rewards' seller-start.html
+          grep -q 'Checkout is not live' seller-start.html || grep -q 'checkout is not live' seller-start.html
+          if grep -Eq 'sk_(test|live)_[A-Za-z0-9]+|sb_secret_' seller-start.html; then echo "Secret in acquisition landing"; exit 1; fi
       - name: Check JavaScript syntax
         run: |
           node --check scripts/build-cardora-staging.mjs
