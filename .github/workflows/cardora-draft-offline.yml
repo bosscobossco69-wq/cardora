@@ -72,6 +72,12 @@ jobs:
           grep -q 'Submit for Review (not live)' dist-staging/index.html
           grep -q 'cardoraShowSubmissionUnavailable' dist-staging/index.html
           grep -q 'cardoraCheckSellerEligibility' dist-staging/index.html
+          grep -q 'Local preview only:' dist-staging/index.html
+          grep -q 'photos stay in this browser and are NOT uploaded' dist-staging/index.html
+          grep -q 'image/jpeg,image/png,image/webp' dist-staging/index.html
+          grep -q 'const maxSize=10\*1024\*1024;' dist-staging/index.html
+          grep -q 'window.ptxPhotoClear' dist-staging/index.html
+          grep -q 'Photo rejected.' dist-staging/index.html
           grep -q 'Legacy submission review is disabled in staging' dist-staging/index.html
           node -e "const s=require('fs').readFileSync('dist-staging/index.html','utf8'); const p=s.indexOf(\"const overview=document.createElement('div');overview.id='cardoraAdminOverview'\"); if(p<0||s.slice(p,p+1300).includes('if(window.ptxLoadSubmissionQueue)window.ptxLoadSubmissionQueue();'))process.exit(1);"
           grep -q 'admin_get_seller_application_queue' dist-staging/index.html
