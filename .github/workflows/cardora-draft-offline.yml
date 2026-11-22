@@ -68,6 +68,10 @@ jobs:
           grep -q 'authClient.auth.getUser()' supabase/functions/cardora-admin-overview/index.ts
           grep -q 'if(origin && !safeOrigins.has(origin))' supabase/functions/cardora-admin-overview/index.ts
           grep -q 'if(origin && safeOrigins.has(origin))' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'CARDORA_ALLOW_PRODUCTION_ORIGIN' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'CARDORA_STAGING_SITE_ORIGINS' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'isExactHttpsOrigin' supabase/functions/cardora-admin-overview/index.ts
+          if grep -q '||"https://cardora-rose.vercel.app"' supabase/functions/cardora-admin-overview/index.ts; then echo "Production origin allowed without opt-in"; exit 1; fi
           if grep -q 'safeOrigins.has(origin)?origin:productionOrigin' supabase/functions/cardora-admin-overview/index.ts; then echo "Unsafe CORS origin fallback"; exit 1; fi
           grep -q 'CARDORA_ADMIN_OVERVIEW_VERIFIED' supabase/functions/cardora-admin-overview/index.ts
           grep -q 'CARDORA_AUTH_MIGRATION_VERIFIED' supabase/functions/cardora-admin-overview/index.ts
