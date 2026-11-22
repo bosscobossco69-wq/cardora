@@ -23,7 +23,7 @@ AS $function$
   and l.status='pending_review'
   order by l.created_at asc
   limit least(greatest(coalesce(p_limit,50),1),100);
-$function$
+$function$;
 
 revoke all on function public.admin_get_listing_review_queue(integer) from public,anon,authenticated;
 grant execute on function public.admin_get_listing_review_queue(integer) to authenticated;
@@ -62,7 +62,7 @@ begin
 
   return true;
 end;
-$function$
+$function$;
 
 revoke all on function public.admin_review_listing(uuid,text,text) from public,anon,authenticated;
 grant execute on function public.admin_review_listing(uuid,text,text) to authenticated;
@@ -174,7 +174,7 @@ begin
 
   return true;
 end;
-$function$
+$function$;
 
 revoke all on function public.admin_review_seller_application(uuid,text,text) from public,anon,authenticated;
 grant execute on function public.admin_review_seller_application(uuid,text,text) to authenticated;
