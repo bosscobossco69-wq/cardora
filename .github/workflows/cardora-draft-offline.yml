@@ -49,6 +49,14 @@ jobs:
           grep -q '回访：未启用' dist-preview/index.html
           grep -q 'customers' supabase/functions/cardora-admin-overview/index.ts
           grep -q 'marketing_consent:"not_configured"' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'email_masked:maskEmail(u.email)' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'if(u.email_masked)' scripts/build-cardora-admin-preview.mjs
+          if grep -q 'email:u.email||null' supabase/functions/cardora-admin-overview/index.ts; then echo "Unmasked customer email returned"; exit 1; fi
+          grep -q 'admin.role!=="admin"||admin.status!=="active"' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'authClient.auth.getUser()' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'CARDORA_ADMIN_OVERVIEW_VERIFIED' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'CARDORA_AUTH_MIGRATION_VERIFIED' supabase/functions/cardora-admin-overview/index.ts
+          if grep -Eq '\.insert\(|\.update\(|\.delete\(|\.upsert\(' supabase/functions/cardora-admin-overview/index.ts; then echo "Mutation detected in read-only overview"; exit 1; fi
           if grep -Eq 'signUp\(|\.insert\(|\.update\(|\.delete\(|cardora-stripe-checkout' dist-preview/index.html; then echo "Dangerous API in read-only preview"; exit 1; fi
       - name: Verify draft builder and fail-closed guards (no network from test)
         run: node scripts/check-cardora-draft.mjs
