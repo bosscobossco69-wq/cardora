@@ -202,8 +202,8 @@ const registerPw=`<div class="ptx-auth-note">Or create an account using your own
 </form>
 <div class="ptx-auth-note">Promotional emails are not automatically enabled by registration.</div>
 <div id="cardoraPwRegisterStatus" role="status" aria-live="polite" class="ptx-auth-note"></div>`;
-html=html.replace(authLoginAnchor,loginPw+'\\n'+authLoginAnchor);
-html=html.replace(authRegisterAnchor,registerPw+'\\n'+authRegisterAnchor);
+html=html.replace(authLoginAnchor,loginPw+authLoginAnchor);
+html=html.replace(authRegisterAnchor,registerPw+authRegisterAnchor);
 const resetForm=`<section id="cardoraPwRecovery" hidden style="position:fixed;inset:0;z-index:9999;background:#080711;padding:24px;overflow:auto;color:white">
 <div style="max-width:400px;margin:5vh auto;padding:18px;background:#17112a;border-radius:18px">
 <h2>Set a new password</h2><p>Choose a new password for your existing account.</p>
@@ -290,7 +290,7 @@ submit('cardoraPwRecoveryForm','cardoraPwRecoveryStatus',async client=>{
 })();
 </script>`;
 exact('</body>',1);
-html=html.replace('</body>',resetForm+'\\n'+passwordAuthScript+'\\n</body>');
+html=html.replace('</body>',resetForm+passwordAuthScript+'\\n</body>');
 
 // Block preview functionality until separate testing of privilege-sensitive flows.
 const oldReviewRpc=`rpc('admin_review_seller_application'`;
