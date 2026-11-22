@@ -178,6 +178,120 @@ window.cardoraLoadAdminOverview=async function(){
 </script>`;
 exact('</body>',1);
 html=html.replace('</body>',adminOverviewScript+'\n</body>');
+// Customer password-auth UI exists ONLY in the opt-in staging build; the live
+// index.html and the currently deployed admin-only Preview are unchanged.
+const authLoginAnchor='<div class="ptx-auth-note">New to Trixovel?</div>';
+const authRegisterAnchor='<div class="ptx-auth-note">Already have an account?</div>';
+exact(authLoginAnchor,1);
+exact(authRegisterAnchor,1);
+const pwFormStyle='style="display:grid;gap:9px;margin:14px 0;text-align:left"';
+const loginPw=`<div class="ptx-auth-note">Or sign in with your email and password.</div>
+<form id="cardoraPwLoginForm" ${pwFormStyle}>
+<label>Email<input type="email" id="cardoraPwLoginEmail" autocomplete="username" required maxlength="254"></label>
+<label>Password<input type="password" id="cardoraPwLoginPassword" autocomplete="current-password" required></label>
+<button class="ptx-auth-main" type="submit">Sign in with password</button>
+</form>
+<button id="cardoraPwForgot" type="button" class="ptx-auth-switch">Forgot password?</button>
+<div id="cardoraPwLoginStatus" role="status" aria-live="polite" class="ptx-auth-note"></div>`;
+const registerPw=`<div class="ptx-auth-note">Or create an account using your own password. Email confirmation may be required.</div>
+<form id="cardoraPwRegisterForm" ${pwFormStyle}>
+<label>Email<input type="email" id="cardoraPwRegisterEmail" autocomplete="email" required maxlength="254"></label>
+<label>Password (12 characters minimum)<input type="password" id="cardoraPwRegisterPassword" autocomplete="new-password" required minlength="12"></label>
+<label>Confirm password<input type="password" id="cardoraPwRegisterConfirm" autocomplete="new-password" required minlength="12"></label>
+<button class="ptx-auth-main" type="submit">Create account with password</button>
+</form>
+<div class="ptx-auth-note">Promotional emails are not automatically enabled by registration.</div>
+<div id="cardoraPwRegisterStatus" role="status" aria-live="polite" class="ptx-auth-note"></div>`;
+html=html.replace(authLoginAnchor,loginPw+'\\n'+authLoginAnchor);
+html=html.replace(authRegisterAnchor,registerPw+'\\n'+authRegisterAnchor);
+const resetForm=`<section id="cardoraPwRecovery" hidden style="position:fixed;inset:0;z-index:9999;background:#080711;padding:24px;overflow:auto;color:white">
+<div style="max-width:400px;margin:5vh auto;padding:18px;background:#17112a;border-radius:18px">
+<h2>Set a new password</h2><p>Choose a new password for your existing account.</p>
+<form id="cardoraPwRecoveryForm" ${pwFormStyle}>
+<label>New password<input type="password" id="cardoraPwRecoveryPassword" autocomplete="new-password" minlength="12" required></label>
+<label>Confirm password<input type="password" id="cardoraPwRecoveryConfirm" autocomplete="new-password" minlength="12" required></label>
+<button type="submit" class="ptx-auth-main">Save new password</button>
+</form><p id="cardoraPwRecoveryStatus" role="status"></p>
+</div></section>`;
+const passwordAuthScript=`<script>
+(function(){
+'use strict';
+const field=id=>document.getElementById(id);
+const endpoint=()=>window.ptxSupabase;
+const feedback=(id,message)=>{const el=field(id);if(el)el.textContent=message};
+const pwValid=p=>typeof p==='string'&&p.length>=12&&p.length<=128;
+const root=()=>location.origin+location.pathname;
+const submit=async (formId,statusId,operation)=>{
+ const form=field(formId);if(!form)return;
+ form.addEventListener('submit',async event=>{
+   event.preventDefault();
+   const button=form.querySelector('button[type=submit]');if(button)button.disabled=true;
+   feedback(statusId,'Processing securely…');
+   try{const client=endpoint();if(!client)throw Error('Authentication unavailable.');
+     await operation(client);
+   }catch(_error){feedback(statusId,'Request not completed. Please check the details, your connection, or try later.')}
+   finally{if(button)button.disabled=false}
+ });
+};
+submit('cardoraPwLoginForm','cardoraPwLoginStatus',async client=>{
+ const email=field('cardoraPwLoginEmail').value.trim();
+ const password=field('cardoraPwLoginPassword').value;
+ const {data,error}=await client.auth.signInWithPassword({email,password});
+ field('cardoraPwLoginPassword').value='';
+ if(error||!data?.session){feedback('cardoraPwLoginStatus','Sign-in failed. Check email/password, and confirm your email if required.');return}
+ await window.ptxUpdateAuthUI(data.session);
+ window.ptxCloseAuth();
+ feedback('cardoraPwLoginStatus','Signed in.');
+});
+submit('cardoraPwRegisterForm','cardoraPwRegisterStatus',async client=>{
+ const email=field('cardoraPwRegisterEmail').value.trim();
+ const password=field('cardoraPwRegisterPassword').value;
+ const confirm=field('cardoraPwRegisterConfirm').value;
+ if(!pwValid(password)||password!==confirm){feedback('cardoraPwRegisterStatus','Use 12–128 characters and enter matching passwords.');return}
+ const {data,error}=await client.auth.signUp({email,password,
+   options:{emailRedirectTo:root()}});
+ field('cardoraPwRegisterPassword').value='';
+ field('cardoraPwRegisterConfirm').value='';
+ if(error){feedback('cardoraPwRegisterStatus','Registration unavailable. Try an existing account or contact support.');return}
+ feedback('cardoraPwRegisterStatus',data?.session?
+   'Account created. You can now use your password.':
+   'If registration is accepted, check your email to confirm your account before signing in.');
+ if(data?.session){await window.ptxUpdateAuthUI(data.session);window.ptxCloseAuth()}
+});
+field('cardoraPwForgot')?.addEventListener('click',async()=>{
+ const email=field('cardoraPwLoginEmail').value.trim();
+ if(!email){feedback('cardoraPwLoginStatus','Enter your email above to request a reset link.');return}
+ const button=field('cardoraPwForgot');button.disabled=true;
+ try{const client=endpoint();if(!client)throw Error('Unavailable');
+   await client.auth.resetPasswordForEmail(email,{redirectTo:root()});
+   feedback('cardoraPwLoginStatus','If the account exists, a password-reset link will be emailed.');
+ }catch(_error){feedback('cardoraPwLoginStatus','Reset request unavailable. Please retry later.')}
+ finally{button.disabled=false}
+});
+const initRecovery=()=>{
+ const client=endpoint();
+ if(!client){setTimeout(initRecovery,150);return}
+ client.auth.onAuthStateChange((event)=>{
+   if(event==='PASSWORD_RECOVERY'){field('cardoraPwRecovery').hidden=false;}
+ });
+};
+initRecovery();
+submit('cardoraPwRecoveryForm','cardoraPwRecoveryStatus',async client=>{
+ const password=field('cardoraPwRecoveryPassword').value;
+ const confirm=field('cardoraPwRecoveryConfirm').value;
+ if(!pwValid(password)||password!==confirm){feedback('cardoraPwRecoveryStatus','Use 12–128 matching characters.');return}
+ const {error}=await client.auth.updateUser({password});
+ field('cardoraPwRecoveryPassword').value='';field('cardoraPwRecoveryConfirm').value='';
+ if(error){feedback('cardoraPwRecoveryStatus','Could not update password. Request a fresh recovery link.');return}
+ feedback('cardoraPwRecoveryStatus','Password updated. You can now sign in.');
+ field('cardoraPwRecovery').hidden=true;
+ await client.auth.signOut();
+});
+})();
+</script>`;
+exact('</body>',1);
+html=html.replace('</body>',resetForm+'\\n'+passwordAuthScript+'\\n</body>');
+
 // Block preview functionality until separate testing of privilege-sensitive flows.
 const oldReviewRpc=`rpc('admin_review_seller_application'`;
 if(!html.includes(oldReviewRpc) || !html.includes("rpc('admin_get_seller_application_queue'"))
