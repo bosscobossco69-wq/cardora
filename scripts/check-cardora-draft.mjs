@@ -78,7 +78,23 @@ for(const [definition,label] of [
  ['create table if not exists public.cardora_stripe_subscription_links','subscription links'],
  ['create table if not exists public.cardora_stripe_checkout_reservations','reservation table']
 ]) once(stripeSql,definition,label);
-for(const delimiter of ['$cardora_reservation
+// Named PostgreSQL string delimiters must appear in matching pairs.
+// Assemble tokens without literal dollar signs to avoid source transport bugs.
+const dollar=String.fromCharCode(36);
+for(const name of ['cardora_reservation','cardora_risk','cardora_event']){
+  const token=dollar+name+dollar;
+  assert.equal(stripeSql.split(token).length-1,2,'Unbalanced SQL delimiter '+name);
+}
+must(!stripeSql.includes('end; '+dollar+dollar+';'),
+  'SQL draft uses older unchecked function delimiters');
+must(stripeSql.includes('v_link.stripe_customer_id<>p_stripe_customer_id'),
+  'Event must reject wrong Stripe customer');
+must(stripeSql.includes('v_link.plan_code<>p_plan_code'),
+  'Event must reject different subscription plan');
+must(stripeSql.includes('p_period_end<=v_sub_period_end'),
+  'Renewal must not shorten a paid billing period');
+must(stripeSql.includes('current_review_mode=case when v_plan.review_mode'),
+  'New paid subscription must derive review mode from plan');
 for(const tier of approvedPlans) must(checkout.includes(tier) && webhook.includes(tier),'Tier missing: '+tier);
 
 const testdir=mkdtempSync(join(tmpdir(),'cardora-draft-check-'));
