@@ -53,6 +53,10 @@ jobs:
           grep -q 'marketing_consent:"not_configured"' supabase/functions/cardora-admin-overview/index.ts
           grep -q 'email_masked:maskEmail(u.email)' supabase/functions/cardora-admin-overview/index.ts
           grep -q 'if(u.email_masked)' scripts/build-cardora-admin-preview.mjs
+          grep -q 'if(a.email_masked)' scripts/build-cardora-admin-preview.mjs
+          grep -q 'maskApplication(a)' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'email_masked:maskEmail(a.email||null)' supabase/functions/cardora-admin-overview/index.ts
+          if grep -q 'if(a.email)create' scripts/build-cardora-admin-preview.mjs; then echo "Unmasked application email leaked in preview"; exit 1; fi
           if grep -q 'email:u.email||null' supabase/functions/cardora-admin-overview/index.ts; then echo "Unmasked customer email returned"; exit 1; fi
           grep -q 'admin.role!=="admin"||admin.status!=="active"' supabase/functions/cardora-admin-overview/index.ts
           grep -q 'authClient.auth.getUser()' supabase/functions/cardora-admin-overview/index.ts
