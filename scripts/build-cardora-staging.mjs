@@ -310,12 +310,42 @@ const oldListingSubmissionButton='<button class="ptx-btn" onclick="ptxSubmitList
 exact(oldListingSubmissionButton,1);
 html=html.replace(oldListingSubmissionButton,
   '<button class="ptx-btn" type="button" onclick="cardoraShowSubmissionUnavailable()">Submit for Review (not live)</button>'+
-  '<p class="ptx-muted">Listing submission is unavailable in this test environment. Your details will not be submitted or saved.</p>');
+  '<p class="ptx-muted">Listing submission is unavailable in this test environment. Your details will not be submitted or saved.</p>'+
+  '<button class="ptx-btn alt" id="cardoraSellerEligibilityButton" type="button" onclick="cardoraCheckSellerEligibility()">Check seller eligibility (read-only)</button>'+
+  '<p id="cardoraSellerEligibilityResult" class="ptx-muted" role="status" aria-live="polite"></p>');
 const listingUnavailableScript=`<script>
 window.cardoraShowSubmissionUnavailable=function(){
  const reason='Seller listing submissions are not connected to the new Cardora review queue yet. Nothing has been submitted. Please keep a copy of your information and try again after launch.';
  if(typeof window.ptxToast==='function')window.ptxToast(reason);
  else window.alert(reason);
+};
+window.cardoraCheckSellerEligibility=async function(){
+ const status=document.getElementById('cardoraSellerEligibilityResult');
+ const button=document.getElementById('cardoraSellerEligibilityButton');
+ if(!status||!button)return;
+ button.disabled=true;
+ status.textContent='Checking your seller status (read-only)…';
+ try {
+   const client=window.ptxSupabase;
+   if(!client){status.textContent='Authentication unavailable. Nothing was submitted.';return}
+   const {data:sessionData,error:sessionError}=await client.auth.getUser();
+   if(sessionError||!sessionData?.user){status.textContent='Sign in to check your seller status. Nothing was submitted.';return}
+   // Only select the caller's profile, subject to users_select_own RLS.
+   const {data:profile,error:userError}=await client.from('users')
+     .select('id,status').eq('auth_user_id',sessionData.user.id).maybeSingle();
+   if(userError||!profile){status.textContent='Your Cardora profile is unavailable. Nothing was submitted.';return}
+   if(profile.status!=='active'){status.textContent='Your account is not active. Listing submission remains unavailable.';return}
+   const {data:sellers,error:sellerError}=await client.from('seller_profiles')
+     .select('id,status').eq('user_id',profile.id).limit(5);
+   if(sellerError){status.textContent='Seller status could not be checked. Nothing was submitted.';return}
+   if(!sellers?.some(s=>s.status==='approved')){
+     status.textContent='No approved seller profile is linked to this account. Apply for seller approval first. Nothing was submitted.';
+     return;
+   }
+   status.textContent='Your seller profile is approved. Listing submission is still paused until photos, moderation and the server-side review flow are verified. Nothing was submitted.';
+ }catch(_error){
+   status.textContent='Eligibility check unavailable. Nothing was submitted.';
+ }finally{button.disabled=false}
 };
 </script>`;
 exact('</body>',1);
