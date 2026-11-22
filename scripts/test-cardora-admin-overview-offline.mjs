@@ -11,6 +11,7 @@ let source=readFileSync(path,"utf8")
   .replace("const respond=(value:unknown,status=200)=>","const respond=(value,status=200)=>")
   .replace("const classify=(r:{name?:string|null;email?:string|null})=>","const classify=(r)=>")
   .replace("const count=async(table:string,filter?:{field:string,value:string})=>","const count=async(table,filter)=>")
+  .replace("const maskEmail=(value:string|null)=>","const maskEmail=(value)=>")
   .replace(/let legacyHistory:\{[\s\S]*?\}=\{/,"let legacyHistory={");
 assert.ok(!source.includes("import { createClient }"));
 assert.ok(!source.includes("value:unknown"));
