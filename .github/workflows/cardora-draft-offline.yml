@@ -42,6 +42,10 @@ jobs:
           grep -q 'cardoraPwLoginForm' dist-staging/index.html
           grep -q 'cardoraPwRegisterForm' dist-staging/index.html
           grep -q 'cardoraPwRecoveryForm' dist-staging/index.html
+          grep -q 'Submit for Review (not live)' dist-staging/index.html
+          grep -q 'cardoraShowSubmissionUnavailable' dist-staging/index.html
+          grep -q 'Your details will not be submitted or saved' dist-staging/index.html
+          if grep -q 'onclick="ptxSubmitListing()"' dist-staging/index.html; then echo "Unsafe seller submit button still active"; exit 1; fi
           grep -q 'signInWithPassword' dist-staging/index.html
           grep -q 'signUp({email,password' dist-staging/index.html
           grep -q 'resetPasswordForEmail' dist-staging/index.html
