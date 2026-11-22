@@ -15,6 +15,7 @@ const queue=read('supabase/migrations/DRAFT_cardora_admin_seller_queue.sql');
 const admin=read('supabase/migrations/DRAFT_cardora_auth_is_admin_compat.sql');
 const checkout=read('supabase/functions/cardora-stripe-checkout/index.ts');
 const webhook=read('supabase/functions/cardora-stripe-webhook/index.ts');
+const portal=read('supabase/functions/cardora-stripe-portal/index.ts');
 const stripeSql=read('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql');
 const approvedPlans=['basic','pro','business'];
 
@@ -29,6 +30,15 @@ must(checkout.includes('CARDORA_AUTH_MIGRATION_VERIFIED'),'Checkout Auth safety 
 must(checkout.includes('!secret.startsWith("sk_test_")'),'Checkout must stay Sandbox-only');
 must(webhook.includes('!key.startsWith("sk_test_")'),'Webhook must stay Sandbox-only');
 must(webhook.includes('constructEventAsync'),'Webhook signature validation absent');
+must(portal.includes('CARDORA_PORTAL_VERIFIED'),'Portal failsafe verification gate missing');
+must(portal.includes('CARDORA_AUTH_MIGRATION_VERIFIED'),'Portal migration gate missing');
+must(portal.includes('!secret.startsWith("sk_test_")'),'Portal must remain Sandbox-only');
+must(portal.includes('auth.auth.getUser()'),'Portal caller JWT verification missing');
+must(portal.includes('eq("auth_user_id",user.id)'),'Portal owner account lookup missing');
+must(portal.includes('eq("seller_profile_id",seller.id)'),'Portal billing-link lookup missing');
+must(portal.includes('actualCustomer!==customerId'),'Stripe Customer/Subscription relationship not verified');
+must(portal.includes('subscription.metadata?.seller_profile_id!==seller.id'),'Stripe seller ownership not checked');
+must(portal.includes('return_url:origin+"/"'),'Portal must use server-owned return URL');
 must(webhook.includes('stripe.invoices.listLineItems'),'Paid invoice period guard absent');
 must(webhook.includes('p_checkout_request_id:validReservationId?checkoutRequestId:null'),'Webhook reservation mapping absent');
 must(webhook.includes('p_event_created:event.created'),'Webhook event time missing');
