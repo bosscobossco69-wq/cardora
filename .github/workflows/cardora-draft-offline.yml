@@ -35,6 +35,19 @@ jobs:
           node --check scripts/build-cardora-admin-preview.mjs
           node --check scripts/check-cardora-draft.mjs
           node --check scripts/test-cardora-admin-overview-offline.mjs
+      - name: Build customer password-auth staging offline without real accounts
+        run: |
+          CARDORA_STAGING_BUILD=YES CARDORA_STAGING_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_STAGING_SUPABASE_ANON_KEY=sb_publishable_offline_test_only node scripts/build-cardora-staging.mjs
+          grep -q 'cardoraPwLoginForm' dist-staging/index.html
+          grep -q 'cardoraPwRegisterForm' dist-staging/index.html
+          grep -q 'cardoraPwRecoveryForm' dist-staging/index.html
+          grep -q 'signInWithPassword' dist-staging/index.html
+          grep -q 'signUp({email,password' dist-staging/index.html
+          grep -q 'resetPasswordForEmail' dist-staging/index.html
+          grep -q 'PASSWORD_RECOVERY' dist-staging/index.html
+          grep -q 'Promotional emails are not automatically enabled' dist-staging/index.html
+          if grep -q 'crqqockaetgacddxkqpb' dist-staging/index.html; then echo "Legacy Supabase in staging output"; exit 1; fi
+          if grep -q 'signInWithPassword' index.html; then echo "Production source modified"; exit 1; fi
       - name: Verify preview refuses production or wrong branch without network
         run: |
           if CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=production VERCEL_GIT_COMMIT_REF=draft/stripe-sandbox-subscriptions-20261121 CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs; then echo "Unsafe production build accepted"; exit 1; fi
