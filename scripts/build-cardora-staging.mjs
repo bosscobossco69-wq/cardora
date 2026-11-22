@@ -354,6 +354,49 @@ window.cardoraCheckSellerEligibility=async function(){
 exact('</body>',1);
 html=html.replace('</body>',listingUnavailableScript+'</body>');
 
+// Photos currently exist only as local browser object URLs. No Storage bucket
+// exists in the canonical project; NEVER imply a preview is an uploaded listing.
+// This staging-only safeguard validates files before the legacy preview runs.
+const oldFrontInput='accept="image/*" id="ptxFrontInput"';
+const oldBackInput='accept="image/*" id="ptxBackInput"';
+exact(oldFrontInput,1);exact(oldBackInput,1);
+html=html.replace(oldFrontInput,'accept="image/jpeg,image/png,image/webp" id="ptxFrontInput"');
+html=html.replace(oldBackInput,'accept="image/jpeg,image/png,image/webp" id="ptxBackInput"');
+const photoNoteAnchor='<div class="ptx-uploadgrid">';
+exact(photoNoteAnchor,1);
+html=html.replace(photoNoteAnchor,
+  '<p class="ptx-muted" role="note"><b>Local preview only:</b> photos stay in this browser and are NOT uploaded, stored, verified or submitted. PNG, JPEG or WebP, max 10 MB per image. No sale will be published.</p>'+
+  '<p id="cardoraPhotoValidationStatus" role="status" aria-live="polite" class="ptx-muted"></p>'+photoNoteAnchor);
+const photoPreviewGuard=`<script>
+(function(){
+'use strict';
+const oldPhoto=window.ptxPhoto;
+if(typeof oldPhoto!=='function')return;
+const allowed=new Set(['image/jpeg','image/png','image/webp']);
+const maxSize=10*1024*1024;
+const status=()=>document.getElementById('cardoraPhotoValidationStatus');
+window.ptxPhoto=function(input,target){
+ const el=document.getElementById(target);
+ const file=input?.files?.[0];
+ if(!el||!file)return;
+ if(!allowed.has(file.type)||file.size<1||file.size>maxSize){
+   // The existing clear handler releases any previously generated object URL.
+   window.ptxPhotoClear?.(input.id,target);
+   const line=status();
+   if(line)line.textContent='Photo rejected. Use a non-empty PNG, JPEG or WebP under 10 MB. Nothing has been uploaded.';
+   return;
+ }
+ oldPhoto(input,target);
+ const front=document.getElementById('ptxFrontInput')?.files?.[0];
+ const back=document.getElementById('ptxBackInput')?.files?.[0];
+ const line=status();
+ if(line)line.textContent=(front&&back?'Both local photos selected.':'Select both sides of the card.')+' Photos are NOT uploaded or submitted.';
+};
+})();
+</script>`;
+exact('</body>',1);
+html=html.replace('</body>',photoPreviewGuard+'</body>');
+
 // Block preview functionality until separate testing of privilege-sensitive flows.
 const oldReviewRpc=`rpc('admin_review_seller_application'`;
 if(!html.includes(oldReviewRpc) || !html.includes("rpc('admin_get_seller_application_queue'"))
