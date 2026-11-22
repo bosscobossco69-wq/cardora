@@ -29,6 +29,27 @@ html = html.replace("const PTX_SUPABASE_URL='"+oldUrl+"';", "const PTX_SUPABASE_
 html = html.replace(/const PTX_SUPABASE_KEY='[^']*';/, () => "const PTX_SUPABASE_KEY='"+anonKey+"';");
 html = html.replace("storageKey:'cardora-supabase-auth-v1'","storageKey:'cardora-supabase-auth-v2-staging'");
 html = html.replace("connect-src 'self' "+oldUrl,"connect-src 'self' "+projectUrl);
+// Staging-only admin compatibility adapter. Keep production index.html unchanged.
+// The public table has own-row RLS and cannot serve the admin review queue.
+// Never broaden table RLS: use an admin-role checked SECURITY DEFINER RPC.
+const oldQueue = `const r=await window.ptxSupabase.from('seller_applications')
+     .select('id,created_at,name,email,whatsapp,city,role,shop_links,card_count,categories,monthly_volume,message,status')
+     .order('created_at',{ascending:false}).limit(100);`;
+const newQueue = `const r=await window.ptxSupabase.rpc('admin_get_seller_application_queue',{p_limit:100});`;
+exact(oldQueue,1);
+html=html.replace(oldQueue,newQueue);
+const oldReview = `const r=await window.ptxSupabase.from('seller_applications').update({status:status}).eq('id',id).select('id');
+   if(r.error)throw r.error;
+   if(!r.data||!r.data.length)throw new Error('no row updated');`;
+const newReview = `const r=await window.ptxSupabase.rpc('admin_review_seller_application',{p_application_id:id,p_status:status,p_note:null});
+   if(r.error)throw r.error;
+   if(r.data!==true)throw new Error('review not confirmed');`;
+exact(oldReview,1);
+html=html.replace(oldReview,newReview);
+// Block preview functionality until separate testing of privilege-sensitive flows.
+const oldReviewRpc=`rpc('admin_review_seller_application'`;
+if(!html.includes(oldReviewRpc) || !html.includes("rpc('admin_get_seller_application_queue'"))
+  fail('Admin RPC staging adapter missing');
 // Extra guard: must not silently leave a backend pointed at legacy database.
 if(html.includes(oldProject)) fail('Legacy project reference remains in staging build; inspect source manually');
 if(!html.includes("connect-src 'self' "+projectUrl)) fail('Staging CSP not applied');
