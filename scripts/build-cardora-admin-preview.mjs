@@ -53,7 +53,7 @@ a{color:#e9c775}small{color:#b6b3ce}
 </section>
 <section id="overview" hidden><div class="row"><button id="refreshButton" type="button">刷新只读统计</button><button class="secondary" id="logoutButton" type="button">退出</button></div>
 <p id="resultStatus" role="status" aria-live="polite">正在检查管理员权限……</p>
-<div class="cards" id="cards"></div><section id="applications"></section><section id="archive"></section></section>
+<div class="cards" id="cards"></div><section id="customers"><h2>Customers · 客户管理（只读）</h2><p>尚未获得经管理员授权的客户名单，等待后端接口验证。</p></section><section id="applications"></section><section id="archive"></section></section>
 <p style="margin-top:36px"><small>数据来源：新 Cardora Supabase。旧记录只显示为历史档案，不与新库人数直接相加。未配置接口时显示不可用，绝不展示虚构统计。</small></p>
 </main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -80,7 +80,7 @@ a{color:#e9c775}small{color:#b6b3ce}
    }
  };
  async function load(){
-   $('cards').replaceChildren();$('applications').replaceChildren();$('archive').replaceChildren();
+   $('cards').replaceChildren();$('customers').replaceChildren();$('applications').replaceChildren();$('archive').replaceChildren();
    text($('resultStatus'),'验证管理员权限中……');
    const {data:{session},error}=await client.auth.getSession();
    if(error||!session?.access_token){showAuth(false);text($('loginState'),'请使用新 Cardora 项目的管理员账号登录。');return}
@@ -102,6 +102,24 @@ a{color:#e9c775}small{color:#b6b3ce}
      '卖家申请':c.seller_applications,'代理申请':c.agent_applications,
      '商品记录':c.listings,'订单记录':c.orders,'订阅记录':c.subscription_records
    })) metric(label,value??'—');
+   const customersRoot=$('customers');
+   create('h2','Customers · 客户管理（只读）',customersRoot);
+   const roster=result.customers;
+   if(!roster||!Array.isArray(roster.records)){
+     create('p','客户名单接口尚未通过审核；不会显示虚构资料。',customersRoot);
+   }else{
+     create('p','新库用户资料总数：'+roster.total_profiles+'；本页最多显示 '+roster.limit+' 条（实际显示 '+roster.displayed_count+' 条）。不是已经去重的真实客户人数。',customersRoot);
+     create('p','邮件回访：尚未启用；营销同意：未配置。',customersRoot);
+     if(!roster.records.length)create('p','暂无可显示客户资料。',customersRoot);
+     for(const u of roster.records){
+       const item=create('article','',customersRoot);
+       create('strong',(u.member_id||'无会员编号')+' · '+(u.role||'用户'),item);
+       create('p','注册：'+(u.created_at||'未知')+' · 状态：'+(u.status||'未知'),item);
+       if(u.email)create('p',u.email,item);
+       if(u.suspected_test)create('small','疑似测试账号，需人工复核',item);
+       create('small','回访：未启用 · 订阅同意：未配置',item);
+     }
+   }
    renderApps('applications','新 Cardora 申请（只读）',result.applications);
    const old=result.legacy_history;
    if(old?.available){
