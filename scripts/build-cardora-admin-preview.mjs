@@ -98,8 +98,10 @@ a{color:#e9c775}small{color:#b6b3ce}
    })) metric(label,value??'—');
    renderApps('applications','新 Cardora 申请（只读）',result.applications);
    const old=result.legacy_history;
-   if(old?.available){create('p','旧项目历史申请 '+old.record_count+' 条，独立归档，不计入新库统计',$('archive'));
+   if(old?.available){
      renderApps('archive','旧项目历史申请（只读）',old.applications);
+     const summary=create('p','旧项目历史申请共 '+old.record_count+' 条，独立归档，不计入新库统计。',$('archive'));
+     $('archive').insertBefore(summary,$('archive').firstChild.nextSibling);
    }else create('p','旧项目历史档案尚未连接（非 0 条）。',$('archive'));
    text($('resultStatus'),'管理员读取完成 · '+(result.updated_at||''));
  }
