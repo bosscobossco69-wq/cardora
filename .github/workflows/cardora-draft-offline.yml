@@ -44,6 +44,11 @@ jobs:
           grep -q 'shouldCreateUser:false' dist-preview/index.html
           grep -q "verifyOtp({email,token,type:'email'})" dist-preview/index.html
           grep -q 'cardora-admin-overview' dist-preview/index.html
+          grep -q 'Customers · 客户管理' dist-preview/index.html
+          grep -q '营销同意：未配置' dist-preview/index.html
+          grep -q '回访：未启用' dist-preview/index.html
+          grep -q 'customers' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'marketing_consent:"not_configured"' supabase/functions/cardora-admin-overview/index.ts
           if grep -Eq 'signUp\(|\.insert\(|\.update\(|\.delete\(|cardora-stripe-checkout' dist-preview/index.html; then echo "Dangerous API in read-only preview"; exit 1; fi
       - name: Verify draft builder and fail-closed guards (no network from test)
         run: node scripts/check-cardora-draft.mjs
