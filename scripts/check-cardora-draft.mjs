@@ -18,9 +18,17 @@ const webhook=read('supabase/functions/cardora-stripe-webhook/index.ts');
 const portal=read('supabase/functions/cardora-stripe-portal/index.ts');
 const overview=read('supabase/functions/cardora-admin-overview/index.ts');
 const stripeSql=read('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql');
+const privacyPolicy=read('privacy.html');
+const sellerTerms=read('terms.html');
 const approvedPlans=['basic','pro','business'];
 
 const must=(condition,message)=>assert.ok(condition,message);
+must(privacyPolicy.includes('DRAFT') && privacyPolicy.includes('nkj30733838@gmail.com'),
+  'Privacy draft must be clearly marked and include current support contact');
+must(sellerTerms.includes('DRAFT') && sellerTerms.includes('automatically'),
+  'Recurring terms draft must disclose renewal and remain unpublished until reviewed');
+must(sellerTerms.includes('MYR 29/month') && sellerTerms.includes('MYR 79/month')
+  && sellerTerms.includes('MYR 199/month'),'Seller subscription monthly prices missing');
 must(html.includes("storageKey:'cardora-supabase-auth-v1'"),'Legacy auth key drift');
 must(html.includes("rpc('current_user_row_id')") && html.includes('user_id:profileId'),'Form owner binding missing');
 must(queue.includes("u.role='admin' and u.status='active'"),'Admin queue authority missing');
