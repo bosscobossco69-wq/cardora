@@ -79,3 +79,10 @@ Read-only `SELECT count(*)` was used; no production data was edited, and no pers
 - `admin_review_seller_application()` already exists as `SECURITY DEFINER`, callable by authenticated users and not anon; the function's body checks `public.users.role='admin'`. This means there is a draftable manual approval path, but the complete admin list/review UI still requires compatibility checks.
 - **Proposed change only:** see `supabase/migrations/DRAFT_cardora_manual_seller_approval_cutover.sql`. It contains commented instructions for a reviewed disable/re-enable operation; nothing executes automatically.
 - **Do not disable on production without isolated tests and explicit approval.** Check existing seller and agent applications and interactions with paid checkout eligibility; any already approved sellers remain unchanged by the proposed trigger toggle.
+
+## 22 November 2026 — admin seller queue remediation (draft code ready)
+- Added `DRAFT_cardora_admin_seller_queue.sql`: narrow `admin_get_seller_application_queue(p_limit)` read-only RPC capped at 100 records, caller must have an active matching `public.users` admin role. No broad RLS policy or anon grant.
+- Existing `admin_review_seller_application(p_application_id,p_status,p_note)` remains the authoritative approval/rejection workflow; unlike direct table UPDATE it may create properly related seller/agent records.
+- Updated `scripts/build-cardora-staging.mjs` to rewrite only the staging-generated HTML application list and status action to these admin RPCs. The committed production `index.html` stays unchanged.
+- Verified both exact old code snippets each occur once in draft `index.html`; the builder fails if its target changes.
+- **Still required:** verify admin list RPC column signatures, permissions, and front-end behavior with authorized users in disposable staging; make sure applicant status transition/auto-approval trigger is reviewed; QA admin queue loading, approve/reject/contact, submission and data visibility. No staging/production SQL applied, no preview published, no admin write executed.
