@@ -12,6 +12,7 @@ let source=readFileSync(path,"utf8")
   .replace("const classify=(r:{name?:string|null;email?:string|null})=>","const classify=(r)=>")
   .replace("const count=async(table:string,filter?:{field:string,value:string})=>","const count=async(table,filter)=>")
   .replace("const maskEmail=(value:string|null)=>","const maskEmail=(value)=>")
+  .replace("const maskApplication=(a:{email?:string|null})=>","const maskApplication=(a)=>")
   .replace(/let legacyHistory:\{[\s\S]*?\}=\{/,"let legacyHistory={");
 assert.ok(!source.includes("import { createClient }"));
 assert.ok(!source.includes("value:unknown"));
@@ -45,6 +46,8 @@ function harness({role="admin",status="active",verified="user-1",
          {data:null,error:{message:"denied"}}:
          table==="users"?
           {data:[{id:"u1",member_id:"C001",email:"jane@example.com",role:"buyer",status:"active",created_at:"2026-11-01"}],error:null}:
+         table==="seller_applications"?
+          {data:[{id:"a1",name:"Seller Test",email:"seller@example.com",role:"seller",status:"pending",created_at:"2026-11-01"}],error:null}:
           {data:[],error:null}
       )},
       maybeSingle(){return Promise.resolve(roleError?
@@ -128,6 +131,10 @@ await check("active admin obtains only masked email",{},{},200,({body},h)=>{
  assert.equal(body.customers.marketing_available,false);
  assert.equal(body.customers.followup_available,false);
  assert.equal(JSON.stringify(body).includes("jane@example.com"),false);
+ assert.equal(body.applications.length,1);
+ assert.equal(body.applications[0].email_masked,"s***@example.com");
+ assert.equal(body.applications[0].email,undefined);
+ assert.equal(JSON.stringify(body).includes("seller@example.com"),false);
  assert.equal(body.legacy_history.available,false);
  assert.ok(h.getReads()>1);
 });
