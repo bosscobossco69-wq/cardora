@@ -45,6 +45,10 @@ jobs:
           grep -q 'signInWithPassword' dist-staging/index.html
           grep -q 'signUp({email,password' dist-staging/index.html
           grep -q 'resetPasswordForEmail' dist-staging/index.html
+          grep -q 'if(error)throw error;' dist-staging/index.html
+          grep -q 'recoveryChecks<40' dist-staging/index.html
+          grep -q "a.email_masked||''" dist-staging/index.html
+          if grep -q "line('p',a.email||''" dist-staging/index.html; then echo "Raw applicant email displayed"; exit 1; fi
           grep -q 'PASSWORD_RECOVERY' dist-staging/index.html
           grep -q 'Promotional emails are not automatically enabled' dist-staging/index.html
           if grep -q 'crqqockaetgacddxkqpb' dist-staging/index.html; then echo "Legacy Supabase in staging output"; exit 1; fi
