@@ -102,6 +102,64 @@ window.cardoraOpenSandboxMembership = async function(){
 </script>`;
 exact('</body>',1);
 html=html.replace('</body>',portalScript+'\n</body>');
+// Read-only admin overview in the isolated staging build, never index.html.
+const oldAdminHook=`    const apps=document.createElement('div');apps.id='ptxIpAdminApplications';host.appendChild(apps);
+    if(window.ptxLoadAdminDeposits)window.ptxLoadAdminDeposits();
+    if(window.ptxLoadSubmissionQueue)window.ptxLoadSubmissionQueue();
+    if(window.ptxLoadAdminApplications)window.ptxLoadAdminApplications();`;
+const newAdminHook=`    const overview=document.createElement('div');overview.id='cardoraAdminOverview';host.appendChild(overview);
+    if(window.cardoraLoadAdminOverview)window.cardoraLoadAdminOverview();`;
+exact(oldAdminHook,1);
+html=html.replace(oldAdminHook,newAdminHook);
+const adminOverviewScript=`<script>
+window.cardoraLoadAdminOverview=async function(){
+ const root=document.getElementById('cardoraAdminOverview');
+ if(!root)return;
+ root.replaceChildren();
+ const line=(tag,value,parent=root)=>{const el=document.createElement(tag);el.textContent=String(value);parent.appendChild(el);return el};
+ line('h2','Cardora Admin Overview — preview');
+ line('p','New Cardora database only. Legacy registrations and applications are NOT included.');
+ const state=line('p','Checking admin authorization…');
+ try {
+   const client=window.ptxSupabase;
+   const session=(await client?.auth.getSession())?.data?.session;
+   if(!session?.access_token){state.textContent='Sign in with a Cardora administrator account.';return}
+   const response=await client.functions.invoke('cardora-admin-overview',{
+     method:'POST',body:{},headers:{Authorization:'Bearer '+session.access_token}
+   });
+   if(response.error||!response.data?.counts){
+     state.textContent='Administrator overview is not available until secure testing and deployment.';
+     return;
+   }
+   state.textContent='Updated: '+new Date(response.data.updated_at).toLocaleString();
+   const c=response.data.counts;
+   const cards=[
+     ['Registered profiles',c.registered_profiles],['Seller profiles',c.sellers],
+     ['Approved agent profiles',c.agents],['Seller/agent applications',c.applications],
+     ['Pending applications',c.pending],['Approved applications',c.approved],
+     ['Seller applications',c.seller_applications],['Agent applications',c.agent_applications],
+     ['Listings',c.listings],['Orders',c.orders],['Subscription records',c.subscription_records]
+   ];
+   const grid=document.createElement('div');grid.className='ptx-ip-grid';root.appendChild(grid);
+   for(const [label,n] of cards){
+     const cell=document.createElement('div');cell.className='ptx-ip-card';grid.appendChild(cell);
+     line('div',label,cell);line('strong',n,cell);
+   }
+   line('h3','Recent applications (up to 50)');
+   for(const a of (response.data.applications||[])){
+     const div=document.createElement('div');div.className='ptx-ip-card';root.appendChild(div);
+     line('strong',(a.name||'Applicant')+' · '+(a.role||'unknown'),div);
+     line('p',(a.status||'unknown')+' · '+(a.created_at||''),div);
+     line('p',a.email||'',div);
+   }
+   const refresh=document.createElement('button');refresh.type='button';refresh.className='ptx-btn';
+   refresh.textContent='Refresh overview';refresh.onclick=window.cardoraLoadAdminOverview;
+   root.appendChild(refresh);
+ } catch(e){state.textContent='Admin overview unavailable. No data was changed.'}
+};
+</script>`;
+exact('</body>',1);
+html=html.replace('</body>',adminOverviewScript+'\n</body>');
 // Block preview functionality until separate testing of privilege-sensitive flows.
 const oldReviewRpc=`rpc('admin_review_seller_application'`;
 if(!html.includes(oldReviewRpc) || !html.includes("rpc('admin_get_seller_application_queue'"))
