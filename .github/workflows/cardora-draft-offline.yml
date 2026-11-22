@@ -4,6 +4,8 @@ on:
     paths:
       - 'index.html'
       - 'seller-start.html'
+      - 'pokemon-card-numbers-explained.html'
+      - 'how-to-spot-a-fake-pokemon-card.html'
       - 'scripts/build-cardora-staging.mjs'
       - 'scripts/build-cardora-admin-preview.mjs'
       - 'vercel.json'
@@ -30,6 +32,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify published article drafts have no broken Insights script or old brand
+        run: |
+          for f in pokemon-card-numbers-explained.html how-to-spot-a-fake-pokemon-card.html; do
+            if grep -Fq '<script defer src="/_vercel/insights/script.js"></script>' "$f"; then echo "Broken insights script still referenced in $f"; exit 1; fi
+            if grep -iq 'Trixovel' "$f"; then echo "Legacy site brand in $f"; exit 1; fi
+            grep -q 'https://cardora-rose.vercel.app/' "$f"
+          done
       - name: Verify seller acquisition landing remains transparent and not live
         run: |
           grep -q 'Draft / Early access' seller-start.html
