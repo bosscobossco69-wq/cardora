@@ -45,6 +45,11 @@ jobs:
           grep -q 'Submit for Review (not live)' dist-staging/index.html
           grep -q 'cardoraShowSubmissionUnavailable' dist-staging/index.html
           grep -q 'cardoraCheckSellerEligibility' dist-staging/index.html
+          grep -q 'admin_get_seller_application_queue' dist-staging/index.html
+          grep -q "u.role='admin' and u.status='active'" supabase/migrations/DRAFT_cardora_admin_seller_queue.sql
+          grep -q 'limit least(greatest(coalesce(p_limit,100),1),100)' supabase/migrations/DRAFT_cardora_admin_seller_queue.sql
+          grep -q 'grant execute on function public.admin_get_seller_application_queue(integer)' supabase/migrations/DRAFT_cardora_admin_seller_queue.sql
+          grep -q 'to authenticated;' supabase/migrations/DRAFT_cardora_admin_seller_queue.sql
           grep -q "select('id,status').eq('user_id',profile.id)" dist-staging/index.html
           grep -q "client.auth.getUser()" dist-staging/index.html
           grep -q 'Listing submission is still paused' dist-staging/index.html || grep -q 'Listing submission is still paused' scripts/build-cardora-staging.mjs
@@ -114,5 +119,5 @@ jobs:
       - name: Parse draft SQL without connecting to a database
         run: |
           python -m pip install --disable-pip-version-check pglast
-          python -c "from pglast import parse_sql; from pathlib import Path; parse_sql(Path('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql').read_text()); parse_sql(Path('supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql').read_text()); print('PASS: both PostgreSQL draft SQL files parsed; database not accessed')"
+          python -c "from pglast import parse_sql; from pathlib import Path; parse_sql(Path('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql').read_text()); parse_sql(Path('supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql').read_text()); parse_sql(Path('supabase/migrations/DRAFT_cardora_admin_seller_queue.sql').read_text()); print('PASS: three PostgreSQL draft SQL files parsed; database not accessed')"
 
