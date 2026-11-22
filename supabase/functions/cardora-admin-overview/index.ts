@@ -90,9 +90,17 @@ Deno.serve(async(request)=>{
      .select("id,member_id,email,role,status,created_at")
      .order("created_at",{ascending:false}).limit(50);
    if(rosterResult.error)throw new Error("customer roster unavailable");
+   // Minimize PII returned to browsers even after the active-admin check.
+   // Keep real addresses in the protected database; follow-up mailers must be server-only.
+   const maskEmail=(value:string|null)=>{
+     if(!value||!value.includes("@"))return null;
+     const [local,domain]=value.split("@");
+     if(!local||!domain)return null;
+     return local.slice(0,1)+"***@"+domain;
+   };
    const customerRoster=(rosterResult.data||[]).map(u=>({
      member_id:u.member_id||null,
-     email:u.email||null,
+     email_masked:maskEmail(u.email),
      role:u.role||"user",
      status:u.status||"unknown",
      created_at:u.created_at||null,
