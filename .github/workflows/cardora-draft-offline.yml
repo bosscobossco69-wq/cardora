@@ -4,6 +4,8 @@ on:
     paths:
       - 'index.html'
       - 'scripts/build-cardora-staging.mjs'
+      - 'scripts/build-cardora-admin-preview.mjs'
+      - 'vercel.json'
       - 'scripts/check-cardora-draft.mjs'
       - 'supabase/functions/cardora-stripe-checkout/index.ts'
       - 'supabase/functions/cardora-stripe-portal/index.ts'
@@ -29,7 +31,17 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check scripts/build-cardora-staging.mjs
+          node --check scripts/build-cardora-admin-preview.mjs
           node --check scripts/check-cardora-draft.mjs
+      - name: Verify preview refuses production or wrong branch without network
+        run: |
+          if CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=production VERCEL_GIT_COMMIT_REF=draft/stripe-sandbox-subscriptions-20261121 CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs; then echo "Unsafe production build accepted"; exit 1; fi
+          if CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=preview VERCEL_GIT_COMMIT_REF=main CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs; then echo "Unsafe main branch build accepted"; exit 1; fi
+          CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=preview VERCEL_GIT_COMMIT_REF=draft/stripe-sandbox-subscriptions-20261121 CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs
+          grep -q 'Cardora · 统一管理后台' dist-preview/index.html
+          grep -q 'signInWithPassword' dist-preview/index.html
+          grep -q 'cardora-admin-overview' dist-preview/index.html
+          if grep -Eq 'signUp\(|\.insert\(|\.update\(|\.delete\(|cardora-stripe-checkout' dist-preview/index.html; then echo "Dangerous API in read-only preview"; exit 1; fi
       - name: Verify draft builder and fail-closed guards (no network from test)
         run: node scripts/check-cardora-draft.mjs
       - uses: actions/setup-python@v5
