@@ -23,6 +23,7 @@ on:
       - 'supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql'
       - 'supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql'
       - 'supabase/drafts/CARDORA_DRAFT_private_listing_evidence_bucket.sql'
+      - 'supabase/functions/cardora-evidence-upload/index.ts'
       - '.github/workflows/cardora-draft-offline.yml'
   workflow_dispatch:
 permissions:
@@ -157,6 +158,31 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Check uploader fail-closed security (static offline)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('supabase/functions/cardora-evidence-upload/index.ts').read_text()
+          for required in (
+            'CARDORA_EVIDENCE_UPLOAD_VERIFIED',
+            'CARDORA_AUTH_MIGRATION_VERIFIED',
+            'CARDORA_EVIDENCE_MODERATION_VERIFIED',
+            'auth.getUser()',
+            'user.is_anonymous',
+            'APPROVED_SELLER_REQUIRED',
+            'LISTING_NOT_OWNED_OR_PENDING',
+            'file.size>MAX_BYTES',
+            'file.type!==detected.contentType',
+            'upsert:false',
+            'cardora-listing-evidence',
+            'access-control-allow-origin'
+          ):
+            assert required in s, required
+          assert 'getPublicUrl(' not in s
+          assert 'createSignedUrl(' not in s
+          assert 'request?.seller_id' not in s
+          print('PASS: uploader retains verification and private asset guards')
+          PY
       - name: Validate private seller evidence Storage policies (offline)
         run: |
           python - <<'PY'
