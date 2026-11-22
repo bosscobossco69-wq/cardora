@@ -43,11 +43,16 @@ begin
     where u.auth_user_id=auth.uid() and u.role='admin' and u.status='active'
   ) then raise exception 'ADMIN_REQUIRED'; end if;
 
-  if p_status not in ('active','rejected','suspended') then
-    raise exception 'INVALID_STATUS';
+  -- This RPC handles the review queue only. Suspension of already-active
+  -- listings needs a separate audited moderation action.
+  if p_status not in ('active','rejected') then
+    raise exception 'INVALID_REVIEW_DECISION';
   end if;
 
-  update public.listings set status=p_status where id=p_listing_id;
+  -- An approved/rejected listing cannot be silently re-reviewed or changed
+  -- through a stale admin browser tab. Only pending items can transition.
+  update public.listings set status=p_status
+  where id=p_listing_id and status='pending_review';
   get diagnostics v_updated = row_count;
   if v_updated = 0 then return false; end if;
 
@@ -98,6 +103,12 @@ begin
 
   if not found then
     raise exception 'APPLICATION_NOT_FOUND';
+  end if;
+
+  -- Never silently reapprove/reject an already-finalized application.
+  -- This also prevents duplicate side effects from stale admin requests.
+  if v_app.status not in ('pending','contacted') then
+    raise exception 'APPLICATION_ALREADY_DECIDED';
   end if;
 
   if p_status = 'approved' and v_app.user_id is null then
