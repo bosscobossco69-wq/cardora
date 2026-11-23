@@ -90,12 +90,49 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN denied:=true;
   END;
   IF NOT denied THEN RAISE EXCEPTION 'Wrong owner accepted'; END IF;
+  -- Old out-of-order failed invoices must not downgrade current paid membership.
+  PERFORM public.cardora_apply_verified_stripe_event(
+    'evt_stalefailure1','past_due','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','basic',
+    'cus_test001','sub_test001',NULL,NULL,rid,1795478300);
+  IF NOT EXISTS(SELECT 1 FROM public.seller_subscriptions
+    WHERE seller_profile_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+      AND status='active' AND is_current)
+    THEN RAISE EXCEPTION 'Stale failure downgraded paid membership'; END IF;
+  -- A verified renewal for an extended paid period advances the entitlement exactly once.
+  PERFORM public.cardora_apply_verified_stripe_event(
+    'evt_renewal001','paid','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','basic',
+    'cus_test001','sub_test001','2026-12-24T00:00:00Z','2027-01-24T00:00:00Z',
+    rid,1795478450);
+  IF NOT EXISTS(SELECT 1 FROM public.seller_subscriptions
+    WHERE seller_profile_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+      AND status='active' AND is_current
+      AND current_period_ends_at='2027-01-24T00:00:00Z'::timestamptz)
+    THEN RAISE EXCEPTION 'Verified renewal failed to extend entitlement'; END IF;
+  -- One seller cannot swap the Stripe customer ID of an existing subscription.
+  denied:=false;
+  BEGIN
+    PERFORM public.cardora_apply_verified_stripe_event(
+      'evt_wrongcustomer1','paid','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','basic',
+      'cus_wrong002','sub_test001','2027-01-24T00:00:00Z','2027-02-24T00:00:00Z',
+      rid,1795478460);
+  EXCEPTION WHEN OTHERS THEN denied:=true;
+  END;
+  IF NOT denied THEN RAISE EXCEPTION 'Wrong Stripe customer accepted'; END IF;
   PERFORM public.cardora_apply_verified_stripe_event(
     'evt_testcancel1','canceled','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','basic',
     'cus_test001','sub_test001',NULL,NULL,rid,1795478500);
   IF EXISTS(SELECT 1 FROM public.seller_subscriptions
     WHERE seller_profile_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' AND is_current)
     THEN RAISE EXCEPTION 'Cancel failed to revoke active subscription'; END IF;
-  RAISE NOTICE 'PASS: reservation dedup, seller eligibility, paid entitlement, duplicate event, wrong owner, cancel';
+  -- An older late webhook after cancellation must not reactivate access.
+  PERFORM public.cardora_apply_verified_stripe_event(
+    'evt_stalepaidaftercancel1','paid','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','basic',
+    'cus_test001','sub_test001','2026-12-24T00:00:00Z','2027-01-24T00:00:00Z',
+    rid,1795478420);
+  IF EXISTS(SELECT 1 FROM public.seller_subscriptions
+    WHERE seller_profile_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' AND is_current)
+    THEN RAISE EXCEPTION 'Late stale paid event reactivated canceled membership'; END IF;
+
+  RAISE NOTICE 'PASS: reservation dedup, eligibility, paid entitlement, duplicate event, wrong owner/customer, stale failure, renewal, cancel, late paid replay';
 END
 $test$;
