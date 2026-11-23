@@ -121,6 +121,12 @@ jobs:
           if CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=preview VERCEL_GIT_COMMIT_REF=main CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs; then echo "Unsafe main branch build accepted"; exit 1; fi
           CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=preview VERCEL_GIT_COMMIT_REF=draft/stripe-sandbox-subscriptions-20261121 CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs
           test -s dist-preview/join.html
+          test -s dist-preview/privacy.html
+          test -s dist-preview/terms.html
+          grep -q 'DRAFT' dist-preview/privacy.html
+          grep -q 'DRAFT' dist-preview/terms.html
+          grep -q 'noindex' dist-preview/privacy.html
+          grep -q 'noindex' dist-preview/terms.html
           grep -q 'Create account · Free' dist-preview/join.html
           grep -q 'shouldCreateUser:false' scripts/build-cardora-admin-preview.mjs
           grep -q "auth.signUp({email,password" dist-preview/join.html
