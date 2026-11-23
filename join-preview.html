@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Join Cardora early access as a collector, seller or referral partner. Free registration. No payments or guaranteed rewards.">
+<title>Join Cardora — Early Access</title>
+<style>
+:root{font:16px/1.5 system-ui,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:#100e1b;color:#f9f6ff}
+header,main,footer{max-width:760px;margin:auto;padding:22px}
+header{display:flex;justify-content:space-between;gap:12px}.brand{color:#ffd174;font-weight:850;text-decoration:none;font-size:23px}
+section{border:1px solid #413451;background:#1d172b;padding:22px;margin:20px 0;border-radius:18px}
+h1{font-size:clamp(32px,7vw,52px);letter-spacing:-1.5px;line-height:1.13}
+p,small{color:#d3c9e2}
+.notice{background:#312315;border:1px solid #ab8745;border-radius:12px;padding:15px;color:#ffde9e}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0}
+.roles label{display:block;text-align:center;border:1px solid #55426b;border-radius:11px;padding:13px;cursor:pointer}
+.roles label:has(input:checked){border-color:#f5cf77;background:#413020}
+input,select,textarea,button{font:inherit}
+input:not([type=radio]),select,textarea{width:100%;padding:12px;border-radius:9px;border:1px solid #716081;background:#13101f;color:#fff}
+form{display:grid;gap:14px}form label{display:grid;gap:5px}
+button{padding:13px 17px;border:0;border-radius:10px;background:#ffd174;color:#17121a;font-weight:800;cursor:pointer}
+button:disabled{opacity:.5}
+button.secondary{background:#423553;color:#fff}
+[hidden]{display:none!important}
+a{color:#ffd174}
+@media(max-width:560px){.roles{grid-template-columns:1fr}.roles label{text-align:left}}
+</style></head>
+<body>
+<header><a class="brand" href="/">CARDORA</a><span>COLLECTORS · SELLERS · PARTNERS</span></header>
+<main>
+<h1>Join the next collectible-card community.</h1>
+<p>Cardora welcomes Pokémon, One Piece, Yu-Gi-Oh!, Magic, sports-card collectors and prospective sellers. Create a free account now. Real item listings and purchases will open only after safety testing.</p>
+<p class="notice"><strong>Pre-launch preview:</strong> This is not a live store. No purchases, seller subscription checkout, referral points, cash commissions or promised earnings are available. Early access does not guarantee seller approval. Do not pay anyone to unlock a Cardora account.</p>
+<section>
+<h2>1. Choose your interest</h2>
+<div class="roles" id="roles">
+<label><input type="radio" name="interest" value="collector" checked> Collector / Buyer</label>
+<label><input type="radio" name="interest" value="seller"> Seller</label>
+<label><input type="radio" name="interest" value="agent"> Referral Partner</label>
+</div>
+<p id="roleHint" aria-live="polite">Collect cards and follow our launch. No products can be purchased yet.</p>
+</section>
+<section id="registration">
+<h2>2. Create your free account</h2>
+<form id="register">
+<label>Email address<input id="regEmail" type="email" autocomplete="email" maxlength="254" required></label>
+<label>Password (12–128 characters)<input id="regPass" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+<label>Confirm password<input id="regConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+<label><span><input id="acceptTerms" type="checkbox" required> I have reviewed the <a href="/terms.html" target="_blank" rel="noopener">draft terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">draft privacy notice</a>.</span></label>
+<button type="submit">Create account · Free</button>
+</form>
+<p id="registerStatus" role="status" aria-live="polite"></p>
+<h3>Already registered?</h3>
+<form id="login">
+<label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
+<label>Password<input id="loginPass" type="password" autocomplete="current-password" required></label>
+<button class="secondary" type="submit">Sign in</button>
+</form>
+<p id="loginStatus" role="status" aria-live="polite"></p>
+</section>
+<section id="application" hidden>
+<h2>3. Apply as a seller or referral partner</h2>
+<p>Applications require an authenticated, active Cardora profile. Review is manual. A partner does not need stock and receives no automatic commission.</p>
+<form id="apply">
+<label>Name / shop name<input id="appName" maxlength="120" required></label>
+<label>Country or city<input id="appCity" maxlength="100"></label>
+<label>Contact phone (optional)<input id="appPhone" maxlength="40"></label>
+<label>Card categories or promotional channels<input id="appCategories" maxlength="200" placeholder="Pokémon, One Piece / Facebook, TikTok, YouTube..." required></label>
+<label>Shop or social link (optional)<input id="appLinks" maxlength="250"></label>
+<label>About your business or promotion<input id="appMessage" maxlength="800"></label>
+<button type="submit">Submit application · Free</button>
+</form>
+<p id="appStatus" role="status" aria-live="polite"></p>
+</section>
+<section id="account" hidden>
+<h2>Your account</h2>
+<p id="accountStatus" role="status" aria-live="polite"></p>
+<button class="secondary" type="button" id="logout">Sign out</button>
+</section>
+<p><small>This pre-launch page is in a protected Preview, not a public production signup. We don't transfer old Pokémon Treasure passwords or permissions by email. Promotional messages need separate consent.</small></p>
+</main><footer>Cardora early access · No inventory required for registration · No paid referral scheme</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+'use strict';
+const url=__CARDORA_JOIN_URL_JSON__;
+const key=__CARDORA_JOIN_KEY_JSON__;
+const $=id=>document.getElementById(id);
+const client=window.supabase.createClient(url,key,{auth:{storageKey:'cardora-join-preview-v1',flowType:'pkce',persistSession:true,autoRefreshToken:true}});
+const role=()=>document.querySelector('input[name="interest"]:checked')?.value||'collector';
+const safeText=(id,v)=>{$(id).textContent=String(v)};
+const sessionUser=async()=>{const {data,error}=await client.auth.getUser();return !error&&data?.user&&!data.user.is_anonymous?data.user:null};
+async function refresh(){
+ const user=await sessionUser();
+ $('application').hidden=!user||role()==='collector';
+ $('account').hidden=!user;
+ if(user){safeText('accountStatus','Signed in to Cardora. Account email verified by session; seller and partner approvals remain separate.');
+  const {data:profile,error}=await client.from('users').select('id,status').eq('auth_user_id',user.id).maybeSingle();
+  if(error||!profile||profile.status!=='active'){
+   $('application').hidden=true;
+   safeText('accountStatus','Your account is signed in but its Cardora profile is not active or cannot be read. No application will be submitted.');
+  }
+ }else safeText('accountStatus','');
+}
+const hints={
+ collector:'Explore collectible cards and be notified about launch only if you separately opt in later.',
+ seller:'You can apply without inventory today; real listings require owned stock and separate review.',
+ agent:'Promote Cardora truthfully through your own Facebook, TikTok, Shopee or other channels. No commissions or points are active.'
+};
+document.getElementById('roles').addEventListener('change',()=>{safeText('roleHint',hints[role()]);refresh()});
+$('register').addEventListener('submit',async e=>{
+ e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+ try{
+ const email=$('regEmail').value.trim(),password=$('regPass').value;
+ if(password.length<12||password.length>128||password!==$('regConfirm').value)throw Error('Password requirements not met.');
+ if(!$('acceptTerms').checked)throw Error('Review the terms and privacy notice first.');
+ const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}});
+ $('regPass').value='';$('regConfirm').value='';
+ if(error)throw error;
+ safeText('registerStatus',data?.session?'Registered and signed in.':'If registration is accepted, check your email for the confirmation link. No account or seller approval is guaranteed.');
+ await refresh();
+ }catch(e){safeText('registerStatus','Registration not completed. Check your details or try again later.');}
+ finally{btn.disabled=false}
+});
+$('login').addEventListener('submit',async e=>{
+ e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+ try{const {data,error}=await client.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPass').value});
+ $('loginPass').value='';
+ if(error||!data?.session)throw Error('Invalid session');
+ safeText('loginStatus','Signed in.');await refresh();}
+ catch(e){safeText('loginStatus','Sign-in failed. Verify email confirmation and password.');}
+ finally{btn.disabled=false}
+});
+$('apply').addEventListener('submit',async e=>{
+ e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+ try{
+ const user=await sessionUser();if(!user)throw Error('Sign in first');
+ const {data:profile,error:profileError}=await client.from('users')
+ .select('id,status').eq('auth_user_id',user.id).maybeSingle();
+ if(profileError||!profile||profile.status!=='active')throw Error('Profile missing');
+ const kind=role();if(kind!=='seller'&&kind!=='agent')throw Error('Invalid role');
+ const {data:existing,error:existingError}=await client.from('seller_applications')
+ .select('id,status').eq('user_id',profile.id).limit(1);
+ if(existingError)throw Error('Cannot verify existing application');
+ if(existing?.length){safeText('appStatus','You already have an application. Its review is pending or completed; do not submit duplicates.');return}
+ const payload={user_id:profile.id,name:$('appName').value.trim().slice(0,120),
+ email:user.email,city:$('appCity').value.trim().slice(0,100),whatsapp:$('appPhone').value.trim().slice(0,40),
+ role:kind,categories:$('appCategories').value.trim().slice(0,200),
+ shop_links:$('appLinks').value.trim().slice(0,250),message:$('appMessage').value.trim().slice(0,800)};
+ if(!payload.name||!payload.categories)throw Error('Missing required details');
+ const {error}=await client.from('seller_applications').insert(payload);
+ if(error)throw error;
+ safeText('appStatus','Application submitted for review. No approval, commissions or listing access are guaranteed.');$('apply').reset();
+ }catch(e){safeText('appStatus','Application not submitted. Please check your account eligibility, existing applications and connection.');}
+ finally{btn.disabled=false}
+});
+$('logout').addEventListener('click',async()=>{await client.auth.signOut();await refresh()});
+refresh();
+})();
+</script></body></html>
