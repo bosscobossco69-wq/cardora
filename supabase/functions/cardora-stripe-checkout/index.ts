@@ -6,6 +6,11 @@ import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
 const configuredOrigin = Deno.env.get("CARDORA_SITE_ORIGIN") || "";
+const productionHosts = new Set([
+  "cardora-rose.vercel.app",
+  "cardora-pokemon-treasure.vercel.app",
+  "cardora-git-main-pokemon-treasure.vercel.app"
+]);
 // Sandbox checkout MUST use an explicitly configured isolated preview/staging origin.
 // A production URL, wildcard, query, path, or HTTP origin fails closed.
 const getStagingOrigin = (): string | null => {
@@ -13,7 +18,7 @@ const getStagingOrigin = (): string | null => {
     const url = new URL(configuredOrigin);
     if (url.protocol !== "https:" || !url.hostname || url.username || url.password ||
         url.pathname !== "/" || url.search || url.hash || url.port ||
-        url.origin === "https://cardora-rose.vercel.app" ||
+        productionHosts.has(url.hostname) ||
         !(/\.vercel\.app$/.test(url.hostname) || /\.pages\.dev$/.test(url.hostname))) return null;
     return url.origin;
   } catch { return null; }
@@ -21,7 +26,7 @@ const getStagingOrigin = (): string | null => {
 const origin = getStagingOrigin();
 const json = (x: unknown, status = 200) => new Response(JSON.stringify(x), {
   status, headers: { "content-type": "application/json", "cache-control": "no-store",
-    "access-control-allow-origin": origin, "vary": "Origin",
+    "access-control-allow-origin": origin || "", "vary": "Origin",
     "access-control-allow-headers": "authorization, apikey, content-type",
     "access-control-allow-methods": "POST, OPTIONS" }
 });
