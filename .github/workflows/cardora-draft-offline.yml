@@ -4,6 +4,7 @@ on:
     paths:
       - 'index.html'
       - 'seller-start.html'
+      - 'join-preview.html'
       - 'pokemon-card-numbers-explained.html'
       - 'listing-guide.html'
       - 'sar-sir-ar-difference.html'
@@ -119,6 +120,17 @@ jobs:
           if CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=production VERCEL_GIT_COMMIT_REF=draft/stripe-sandbox-subscriptions-20261121 CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs; then echo "Unsafe production build accepted"; exit 1; fi
           if CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=preview VERCEL_GIT_COMMIT_REF=main CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs; then echo "Unsafe main branch build accepted"; exit 1; fi
           CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=preview VERCEL_GIT_COMMIT_REF=draft/stripe-sandbox-subscriptions-20261121 CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs
+          test -s dist-preview/join.html
+          grep -q 'Create account · Free' dist-preview/join.html
+          grep -q 'shouldCreateUser:false' scripts/build-cardora-admin-preview.mjs
+          grep -q "auth.signUp({email,password" dist-preview/join.html
+          grep -q "eq('auth_user_id',user.id)" dist-preview/join.html
+          grep -q "seller_applications').insert(payload)" dist-preview/join.html
+          grep -q "No purchases, seller subscription checkout" dist-preview/join.html
+          grep -q "noindex,nofollow" dist-preview/join.html
+          if grep -q '__CARDORA_JOIN_' dist-preview/join.html; then echo "Public registration config was not injected"; exit 1; fi
+          if grep -q 'crqqockaetgacddxkqpb' dist-preview/join.html; then echo "Old Auth project leaked into registration"; exit 1; fi
+          node -e "const fs=require('fs'),vm=require('vm');const s=fs.readFileSync('dist-preview/join.html','utf8');const scripts=[...s.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(x=>x[1]);for(const x of scripts)new vm.Script(x);console.log('PASS: join page scripts parse');"
           grep -q 'Cardora · 统一管理后台' dist-preview/index.html
           grep -q '不要反复尝试旧项目密码' dist-preview/index.html
           grep -q '本页不会创建账号或设置密码' dist-preview/index.html
