@@ -14,7 +14,7 @@ const getStagingOrigin = (): string | null => {
     if (url.protocol !== "https:" || !url.hostname || url.username || url.password ||
         url.pathname !== "/" || url.search || url.hash || url.port ||
         url.origin === "https://cardora-rose.vercel.app" ||
-        !(/\\.vercel\\.app$/.test(url.hostname) || /\\.pages\\.dev$/.test(url.hostname))) return null;
+        !(/\.vercel\.app$/.test(url.hostname) || /\.pages\.dev$/.test(url.hostname))) return null;
     return url.origin;
   } catch { return null; }
 };
