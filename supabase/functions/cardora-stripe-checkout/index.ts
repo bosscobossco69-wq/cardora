@@ -5,7 +5,20 @@
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
-const origin = Deno.env.get("CARDORA_SITE_ORIGIN") || "https://cardora-rose.vercel.app";
+const configuredOrigin = Deno.env.get("CARDORA_SITE_ORIGIN") || "";
+// Sandbox checkout MUST use an explicitly configured isolated preview/staging origin.
+// A production URL, wildcard, query, path, or HTTP origin fails closed.
+const getStagingOrigin = (): string | null => {
+  try {
+    const url = new URL(configuredOrigin);
+    if (url.protocol !== "https:" || !url.hostname || url.username || url.password ||
+        url.pathname !== "/" || url.search || url.hash || url.port ||
+        url.origin === "https://cardora-rose.vercel.app" ||
+        !(/\\.vercel\\.app$/.test(url.hostname) || /\\.pages\\.dev$/.test(url.hostname))) return null;
+    return url.origin;
+  } catch { return null; }
+};
+const origin = getStagingOrigin();
 const json = (x: unknown, status = 200) => new Response(JSON.stringify(x), {
   status, headers: { "content-type": "application/json", "cache-control": "no-store",
     "access-control-allow-origin": origin, "vary": "Origin",
@@ -13,6 +26,7 @@ const json = (x: unknown, status = 200) => new Response(JSON.stringify(x), {
     "access-control-allow-methods": "POST, OPTIONS" }
 });
 Deno.serve(async (req) => {
+  if (!origin) return new Response(JSON.stringify({error:"STAGING_ORIGIN_NOT_CONFIGURED"}), {status:503,headers:{"content-type":"application/json","cache-control":"no-store"}});
   if (req.headers.get("origin") && req.headers.get("origin") !== origin) return json({error:"INVALID_ORIGIN"},403);
   if (req.method === "OPTIONS") return json({ok:true});
   if (req.method !== "POST") return json({error:"METHOD_NOT_ALLOWED"},405);
