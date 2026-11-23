@@ -6,15 +6,33 @@
 import Stripe from "npm:stripe@17.7.0";
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
-const origin = Deno.env.get("CARDORA_SITE_ORIGIN") || "https://cardora-rose.vercel.app";
+const configuredOrigin = Deno.env.get("CARDORA_SITE_ORIGIN") || "";
+const productionHosts = new Set([
+  "cardora-rose.vercel.app",
+  "cardora-pokemon-treasure.vercel.app",
+  "cardora-git-main-pokemon-treasure.vercel.app"
+]);
+// Sandbox portal must not redirect sellers to an unverified or production origin.
+const getStagingOrigin = (): string | null => {
+  try {
+    const url = new URL(configuredOrigin);
+    if (url.protocol !== "https:" || !url.hostname || url.username || url.password ||
+        url.pathname !== "/" || url.search || url.hash || url.port ||
+        productionHosts.has(url.hostname) ||
+        !(/\.vercel\.app$/.test(url.hostname) || /\.pages\.dev$/.test(url.hostname))) return null;
+    return url.origin;
+  } catch { return null; }
+};
+const origin = getStagingOrigin();
 const respond = (body:unknown,status=200) => new Response(JSON.stringify(body),{
   status,headers:{"content-type":"application/json","cache-control":"no-store",
-    "access-control-allow-origin":origin,"vary":"Origin",
+    "access-control-allow-origin":origin || "","vary":"Origin",
     "access-control-allow-headers":"authorization, apikey, content-type",
     "access-control-allow-methods":"POST, OPTIONS"}
 });
 
 Deno.serve(async(req)=>{
+  if(!origin)return respond({error:"STAGING_ORIGIN_NOT_CONFIGURED"},503);
   if(req.headers.get("origin") && req.headers.get("origin")!==origin)
     return respond({error:"INVALID_ORIGIN"},403);
   if(req.method==="OPTIONS") return respond({ok:true});
