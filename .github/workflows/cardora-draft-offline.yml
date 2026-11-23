@@ -16,6 +16,7 @@ on:
       - 'scripts/check-cardora-draft.mjs'
       - 'scripts/test-cardora-admin-overview-offline.mjs'
       - 'scripts/cardora-stripe-sql-smoke.sql'
+      - 'scripts/test-cardora-stripe-edge-contract.mjs'
       - 'supabase/functions/cardora-stripe-checkout/index.ts'
       - 'supabase/functions/cardora-stripe-portal/index.ts'
       - 'supabase/functions/cardora-admin-overview/index.ts'
@@ -233,6 +234,10 @@ jobs:
           assert "storage.objects for delete" not in s.lower()
           print('PASS: Evidence bucket draft is private and owner-read-only')
           PY
+      - name: Exercise actual Checkout and signed Webhook Edge handlers with synthetic adapters
+        run: |
+          npm install --no-save --no-package-lock stripe@17.7.0
+          node scripts/test-cardora-stripe-edge-contract.mjs
       - name: Exercise Stripe subscription SQL on disposable PostgreSQL 17
         run: |
           set -euo pipefail
