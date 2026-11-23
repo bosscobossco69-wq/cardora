@@ -219,5 +219,11 @@ const join=joinTemplate
   .replace('__CARDORA_JOIN_URL_JSON__',JSON.stringify(url))
   .replace('__CARDORA_JOIN_KEY_JSON__',JSON.stringify(key));
 writeFileSync('dist-preview/join.html',join,'utf8');
+for(const legalPage of ['terms.html','privacy.html']){
+  const source=readFileSync(legalPage,'utf8');
+  if(!source.includes('noindex') || !source.includes('DRAFT'))
+    fail('Legal preview must retain draft noindex label');
+  writeFileSync('dist-preview/'+legalPage,source,'utf8');
+}
 
 console.log('PASS: read-only Cardora preview built for correct branch; no active database write or payments.');
