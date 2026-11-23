@@ -52,7 +52,7 @@ a{color:#e9c775}small{color:#b6b3ce}
 <p class="muted">Google OAuth 尚未联调。此页面不开放新用户注册，也不会把旧项目身份自动迁移到新项目。</p>
 </section>
 <section id="overview" hidden><div class="row"><button id="refreshButton" type="button">刷新只读统计</button><button class="secondary" id="logoutButton" type="button">退出</button></div>
-<p id="resultStatus" role="status" aria-live="polite">正在检查管理员权限……</p>
+<p id="profileStatus" role="status" aria-live="polite">尚未验证 Cardora 用户资料关联。</p>\n<p id="resultStatus" role="status" aria-live="polite">正在检查管理员权限……</p>
 <div class="cards" id="cards"></div><section id="customers"><h2>Customers · 客户管理（只读）</h2><p>尚未获得经管理员授权的客户名单，等待后端接口验证。</p></section><section id="applications"></section><section id="archive"></section></section>
 <p style="margin-top:36px"><small>数据来源：新 Cardora Supabase。旧记录只显示为历史档案，不与新库人数直接相加。未配置接口时显示不可用，绝不展示虚构统计。</small></p>
 </main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
@@ -86,8 +86,30 @@ a{color:#e9c775}small{color:#b6b3ce}
    if(error||!session?.access_token){showAuth(false);text($('loginState'),'请使用新 Cardora 项目的管理员账号登录。');return}
    const verified=await client.auth.getUser();
    if(verified.error||!verified.data?.user){showAuth(false);text($('loginState'),'登录会话已失效。');return}
-   showAuth(true);text($('loginState'),'已验证会话，等待只读管理员接口确认权限。');
-   // Explicitly no database .from() writes or privileged keys in this browser.
+   showAuth(true);text($('loginState'),'已验证新 Cardora Auth 会话。');
+   // Read ONLY this signed-in identity's profile, protected by users own-row RLS.
+   // This browser-side check grants NO privileges. The Edge endpoint must
+   // independently verify admin + active status for every request.
+   text($('profileStatus'),'正在核对新 Cardora 资料关联……');
+   const profileResult=await client.from('users')
+     .select('id,status,role').eq('auth_user_id',verified.data.user.id).maybeSingle();
+   if(profileResult.error){
+     text($('profileStatus'),'账号已登录，但无法读取自身 Cardora 资料；检查新项目 users 的 RLS/授权设置。');
+     text($('resultStatus'),'管理员接口尚未调用；无法验证账号资料关联。');
+     return;
+   }
+   if(!profileResult.data){
+     text($('profileStatus'),'账号已登录，但新 Cardora 数据库中没有对应资料。不能通过邮箱自动继承旧管理员权限。');
+     text($('resultStatus'),'管理员接口尚未调用。');
+     return;
+   }
+   if(profileResult.data.status!=='active'||profileResult.data.role!=='admin'){
+     text($('profileStatus'),'新 Cardora 资料已找到，但账号并非有效管理员。此页面不授予管理员权限。');
+     text($('resultStatus'),'仅有效管理员可以读取统计信息。');
+     return;
+   }
+   text($('profileStatus'),'新 Cardora 登录与有效管理员资料已关联；正在请求后端独立授权。');
+   // Explicitly no database writes or privileged keys in this browser.
    const {data:result,error:invokeError}=await client.functions.invoke('cardora-admin-overview',{
      method:'POST',body:{},headers:{Authorization:'Bearer '+session.access_token}
    });
