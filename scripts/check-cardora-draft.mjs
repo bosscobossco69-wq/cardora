@@ -65,6 +65,30 @@ for(const [originValue,expected] of [
 must(checkout.includes('"access-control-allow-origin": origin || ""'),
   'Checkout CORS origin must not be nullable');
 
+const portalOriginStart=portal.indexOf('const configuredOrigin =');
+const portalOriginEnd=portal.indexOf('const respond =',portalOriginStart);
+must(portalOriginStart>=0 && portalOriginEnd>portalOriginStart,'Portal origin parser missing');
+const portalOriginSource=portal.slice(portalOriginStart,portalOriginEnd)
+  .replace('const getStagingOrigin = (): string | null => {','const getStagingOrigin = () => {');
+const testPortalOrigin=(value)=>runInNewContext(portalOriginSource+'; origin;',{
+  Deno:{env:{get:(name)=>name==='CARDORA_SITE_ORIGIN'?value:null}},URL
+});
+for(const [originValue,expected] of [
+  ['',null],
+  ['https://cardora-rose.vercel.app',null],
+  ['https://cardora-pokemon-treasure.vercel.app',null],
+  ['https://cardora-git-main-pokemon-treasure.vercel.app',null],
+  ['https://cardora-preview-123.vercel.app','https://cardora-preview-123.vercel.app'],
+  ['https://cardora-preview.pages.dev','https://cardora-preview.pages.dev'],
+  ['http://cardora-preview-123.vercel.app',null],
+  ['https://attacker.example.com',null],
+  ['https://cardora-preview-123.vercel.app/path',null],
+  ['https://cardora-preview-123.vercel.app/?token=1',null],
+  ['https://username:password@cardora-preview-123.vercel.app',null]
+]) assert.equal(testPortalOrigin(originValue),expected,'Invalid portal origin: '+originValue);
+must(portal.includes('STAGING_ORIGIN_NOT_CONFIGURED'),'Portal staging origin safeguard missing');
+
+
 must(checkout.includes('CARDORA_AUTH_MIGRATION_VERIFIED'),'Checkout Auth safety gate absent');
 must(checkout.includes('!secret.startsWith("sk_test_")'),'Checkout must stay Sandbox-only');
 must(webhook.includes('!key.startsWith("sk_test_")'),'Webhook must stay Sandbox-only');
