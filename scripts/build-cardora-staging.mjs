@@ -60,12 +60,58 @@ const accountAnchor = '<button class="ptx-btn" onclick="ptxLogout()" style="widt
 exact(accountAnchor,1);
 html=html.replace(accountAnchor, `<div class="ptx-card" style="margin-top:12px">
   <b>Seller membership (Sandbox Preview)</b>
-  <p class="ptx-muted" style="margin-top:6px">Manage a linked TEST subscription only. Live payments are not enabled.</p>
+  <p class="ptx-muted" style="margin-top:6px">TEST only: Basic RM29, Pro RM79, Business RM199 per month. Requires isolated sandbox, verified seller and server-side billing gates. No Live payments.</p>
+  <div role="group" aria-label="Sandbox seller subscription plans" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+    <button type="button" class="ptx-btn" data-cardora-sandbox-tier="basic" onclick="cardoraStartSandboxCheckout('basic')">Test Basic RM29</button>
+    <button type="button" class="ptx-btn" data-cardora-sandbox-tier="pro" onclick="cardoraStartSandboxCheckout('pro')">Test Pro RM79</button>
+    <button type="button" class="ptx-btn" data-cardora-sandbox-tier="business" onclick="cardoraStartSandboxCheckout('business')">Test Business RM199</button>
+  </div>
+  <div id="cardoraSandboxCheckoutStatus" class="ptx-muted" role="status" aria-live="polite" style="margin-top:8px"></div>
   <button class="ptx-btn" id="cardoraManageSandboxMembership" type="button" onclick="cardoraOpenSandboxMembership()" style="width:100%;margin-top:8px">Manage test membership</button>
   <div id="cardoraManageSandboxStatus" class="ptx-muted" role="status" aria-live="polite" style="margin-top:8px"></div>
 </div>
 `+accountAnchor);
 const portalScript = `<script>
+window.cardoraStartSandboxCheckout = async function(tier){
+  const allowed=['basic','pro','business'];
+  const status=document.getElementById('cardoraSandboxCheckoutStatus');
+  const buttons=[...document.querySelectorAll('[data-cardora-sandbox-tier]')];
+  if(!status || !allowed.includes(tier)) return;
+  buttons.forEach(button=>button.disabled=true);
+  status.textContent='Checking Cardora sandbox seller eligibility…';
+  try{
+    const client=window.ptxSupabase;
+    if(!client || client.supabaseUrl!=='https://fdkfquvzbswxocyrhduk.supabase.co')
+      throw new Error('BLOCKED: Cardora Sandbox must use the approved project.');
+    const {data:identity,error:identityError}=await client.auth.getUser();
+    if(identityError || !identity?.user || identity.user.is_anonymous)
+      throw new Error('Sign in to your new Cardora test account first.');
+    const {data:sessionData,error:sessionError}=await client.auth.getSession();
+    const session=sessionData?.session;
+    if(sessionError || !session?.access_token || session.user?.id!==identity.user.id)
+      throw new Error('Your Cardora session is invalid. Please sign in again.');
+    const result=await client.functions.invoke('cardora-stripe-checkout',{
+      method:'POST',body:{tier},headers:{Authorization:'Bearer '+session.access_token}
+    });
+    if(result.error){
+      const code=String(result.data?.error || result.error?.context?.status || 'CHECKOUT_UNAVAILABLE');
+      if(code.includes('AUTH_MIGRATION_NOT_VERIFIED') || code.includes('SUBSCRIPTION_RESERVATION_NOT_VERIFIED'))
+        throw new Error('Sandbox billing is still blocked pending identity and database tests.');
+      throw new Error('Sandbox Checkout unavailable ('+code+'). No payment was started.');
+    }
+    const url=String(result.data?.checkout_url || '');
+    const destination=new URL(url);
+    if(destination.protocol!=='https:' || destination.hostname!=='checkout.stripe.com' ||
+       result.data?.environment!=='sandbox')
+      throw new Error('Invalid Stripe test Checkout destination.');
+    status.textContent='Opening Stripe Sandbox Checkout…';
+    window.location.assign(destination.href);
+  }catch(error){
+    status.textContent=error instanceof Error?error.message:'Checkout unavailable.';
+  }finally{
+    buttons.forEach(button=>button.disabled=false);
+  }
+};
 window.cardoraOpenSandboxMembership = async function(){
   const button=document.getElementById('cardoraManageSandboxMembership');
   const status=document.getElementById('cardoraManageSandboxStatus');
