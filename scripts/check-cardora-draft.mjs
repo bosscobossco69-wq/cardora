@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
+import { runInNewContext } from 'node:vm';
 
 const repo=resolve('.');
 const read=(path)=>readFileSync(resolve(path),'utf8');
@@ -36,6 +37,34 @@ must(queue.includes("u.role='admin' and u.status='active'"),'Admin queue authori
 must(queue.includes("limit least(greatest(coalesce(p_limit,100),1),100)"),'Admin queue limit missing');
 must(admin.includes("u.role = 'admin'") && admin.includes("u.status = 'active'"),'Admin check missing');
 must(checkout.includes('CARDORA_CHECKOUT_RESERVATION_VERIFIED'),'Checkout safety gate absent');
+
+// Offline-check the actual checkout origin parser (not a duplicated approximation).
+// This executes only a pure config function with a stubbed Deno.env, no network.
+const originStart=checkout.indexOf('const configuredOrigin =');
+const originEnd=checkout.indexOf('const json =',originStart);
+must(originStart>=0 && originEnd>originStart,'Sandbox origin parser missing');
+const originSource=checkout.slice(originStart,originEnd)
+  .replace('const getStagingOrigin = (): string | null => {','const getStagingOrigin = () => {');
+const testOrigin=(value)=>runInNewContext(originSource+'; origin;',{
+  Deno:{env:{get:(name)=>name==='CARDORA_SITE_ORIGIN'?value:null}},
+  URL
+});
+for(const [originValue,expected] of [
+  ['',null],
+  ['https://cardora-rose.vercel.app',null],
+  ['https://cardora-pokemon-treasure.vercel.app',null],
+  ['https://cardora-git-main-pokemon-treasure.vercel.app',null],
+  ['https://cardora-preview-123.vercel.app','https://cardora-preview-123.vercel.app'],
+  ['https://cardora-preview.pages.dev','https://cardora-preview.pages.dev'],
+  ['http://cardora-preview-123.vercel.app',null],
+  ['https://attacker.example.com',null],
+  ['https://cardora-preview-123.vercel.app/path',null],
+  ['https://cardora-preview-123.vercel.app/?token=1',null],
+  ['https://username:password@cardora-preview-123.vercel.app',null]
+]) assert.equal(testOrigin(originValue),expected,'Invalid origin acceptance: '+originValue);
+must(checkout.includes('"access-control-allow-origin": origin || ""'),
+  'Checkout CORS origin must not be nullable');
+
 must(checkout.includes('CARDORA_AUTH_MIGRATION_VERIFIED'),'Checkout Auth safety gate absent');
 must(checkout.includes('!secret.startsWith("sk_test_")'),'Checkout must stay Sandbox-only');
 must(webhook.includes('!key.startsWith("sk_test_")'),'Webhook must stay Sandbox-only');
