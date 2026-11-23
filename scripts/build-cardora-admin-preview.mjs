@@ -45,6 +45,7 @@ a{color:#e9c775}small{color:#b6b3ce}
 <form id="verifyOtpForm" hidden><label>邮件中的验证码<input id="otpToken" inputmode="numeric" autocomplete="one-time-code" maxlength="12" required></label>
 <button id="verifyOtpButton" type="submit">验证并登录</button></form>
 <p class="muted">只接受新 Cardora 项目中已经存在的账号。邮件如提供登录链接，请使用发送验证码时的同一浏览器打开；需事先配置该 Preview 的允许跳转地址。若新项目尚未配置邮件模板或发信服务，验证码可能无法送达。</p>
+<p class="muted"><strong>现有管理员登录提示：</strong>新 Cardora 项目的只读审核发现，管理员账号尚无已设置的密码及成功登录记录。不要反复尝试旧项目密码。优先使用上方新项目的邮箱验证码或登录链接；若无法收到，请先检查 Supabase Auth 邮件发送与允许跳转配置。本页不会创建账号或设置密码。</p>
 <h2>备用：已有密码登录</h2>
 <form id="loginForm"><label>邮箱<input id="email" autocomplete="username" type="email" required></label>
 <label>密码<input id="password" autocomplete="current-password" type="password" required></label>
