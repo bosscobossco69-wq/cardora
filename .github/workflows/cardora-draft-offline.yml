@@ -120,6 +120,15 @@ jobs:
           if CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=preview VERCEL_GIT_COMMIT_REF=main CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs; then echo "Unsafe main branch build accepted"; exit 1; fi
           CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=preview VERCEL_GIT_COMMIT_REF=draft/stripe-sandbox-subscriptions-20261121 CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs
           grep -q 'Cardora · 统一管理后台' dist-preview/index.html
+          grep -q 'id="profileStatus"' dist-preview/index.html
+          grep -q "eq('auth_user_id',verified.data.user.id)" dist-preview/index.html
+          grep -q "select('id,status,role')" dist-preview/index.html
+          grep -q "profileResult.data.status!=='active'" dist-preview/index.html
+          grep -q "profileResult.data.role!=='admin'" dist-preview/index.html
+          grep -q '后端独立授权' dist-preview/index.html
+          grep -q '不能通过邮箱自动继承旧管理员权限' dist-preview/index.html
+          if grep -q 'cardoraCheckAuthAlignment' dist-preview/index.html; then echo "Admin preview must not pretend to contain the customer staging diagnostic"; exit 1; fi
+          grep -q 'cardoraCheckAuthAlignment' dist-staging/index.html
           grep -q 'signInWithPassword' dist-preview/index.html
           grep -q 'signInWithOtp' dist-preview/index.html
           grep -q 'shouldCreateUser:false' dist-preview/index.html
