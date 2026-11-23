@@ -187,6 +187,23 @@ try{
   must(output.includes('admin_get_seller_application_queue'),'Admin queue adapter absent');
   must(output.includes('admin_review_seller_application'),'Admin review adapter absent');
   must(output.includes('id="cardoraManageSandboxMembership"'),'Preview account membership button missing');
+
+  for(const [tier,amount] of [['basic','RM29'],['pro','RM79'],['business','RM199']]){
+    must(output.includes('data-cardora-sandbox-tier="'+tier+'"'),'Sandbox '+tier+' checkout button missing');
+    must(output.includes('Test '+tier[0].toUpperCase()+tier.slice(1)+' '+amount),
+      'Displayed sandbox '+tier+' price missing');
+  }
+  must(output.includes("client.functions.invoke('cardora-stripe-checkout'"),
+    'Sandbox checkout invoke missing from staging');
+  must(output.includes("destination.hostname!=='checkout.stripe.com'"),
+    'Sandbox checkout redirects must validate Stripe hostname');
+  must(output.includes("result.data?.environment!=='sandbox'"),
+    'Staging must reject non-sandbox Checkout responses');
+  must(output.includes("session.user?.id!==identity.user.id"),
+    'Staging Checkout must require an authenticated Cardora owner session');
+  must(!html.includes('data-cardora-sandbox-tier'),
+    'Sandbox checkout controls leaked into live index.html');
+
   must(output.includes("client.functions.invoke('cardora-admin-overview'"),'Staging admin overview missing');
   must(output.includes('Archived applications — OLD database'),'Old application archive tab absent');
   must(output.includes('Possible TEST data — verify manually'),'Test flag presentation absent');
