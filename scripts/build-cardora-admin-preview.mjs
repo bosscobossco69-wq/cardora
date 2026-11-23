@@ -2,7 +2,7 @@
 // Strictly preview-only read-only admin entrypoint, never an alternative production storefront.
 // Auth-only requests: existing-user Email OTP/password and signOut;
 // data read only through admin-verified cardora-admin-overview Edge Function. No application/order/payment mutation actions.
-import {mkdirSync,writeFileSync} from 'node:fs';
+import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 const fail=(m)=>{console.error('CARDORA PREVIEW BLOCKED:',m);process.exit(1)};
 const previewEnv=process.env.VERCEL_ENV||'';
 const previewBranch=process.env.VERCEL_GIT_COMMIT_REF||'';
@@ -208,4 +208,16 @@ a{color:#e9c775}small{color:#b6b3ce}
 </script></body></html>`;
 mkdirSync('dist-preview',{recursive:true});
 writeFileSync('dist-preview/index.html',html,'utf8');
+const joinTemplate=readFileSync('join-preview.html','utf8');
+if(joinTemplate.split('__CARDORA_JOIN_URL_JSON__').length!==2 ||
+   joinTemplate.split('__CARDORA_JOIN_KEY_JSON__').length!==2)
+  fail('registration preview config markers missing');
+if(!joinTemplate.includes('noindex,nofollow') ||
+   !joinTemplate.includes('No purchases, seller subscription checkout'))
+  fail('registration preview must advertise prelaunch status');
+const join=joinTemplate
+  .replace('__CARDORA_JOIN_URL_JSON__',JSON.stringify(url))
+  .replace('__CARDORA_JOIN_KEY_JSON__',JSON.stringify(key));
+writeFileSync('dist-preview/join.html',join,'utf8');
+
 console.log('PASS: read-only Cardora preview built for correct branch; no active database write or payments.');
