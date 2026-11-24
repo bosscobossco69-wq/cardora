@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
   if (!/^Bearer\s+\S+$/.test(bearer)) return json({error:"LOGIN_REQUIRED"},401);
   const client = createClient(url, anon, {global:{headers:{Authorization:bearer}}});
   const {data:{user},error:authError} = await client.auth.getUser();
-  if (authError || !user) return json({error:"INVALID_SESSION"},401);
+  if (authError || !user || user.is_anonymous) return json({error:"INVALID_SESSION"},401);
   let request: any;
   try {request=await req.json();} catch {return json({error:"INVALID_JSON"},400);}
   const tier = String(request?.tier || "").toLowerCase();
