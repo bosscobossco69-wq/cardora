@@ -56,8 +56,16 @@ async function run(opts={}){
       return {data:{status:opts.cancelled?'cancelled':'active',plan_code:fixture().plan_code,
         current_period_ends_at:fixture().period_end},error:null};
      }
-     if(table==='seller_profiles')return {data:{user_id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'},error:null};
-     if(table==='users')return {data:{auth_user_id:opts.missingAuth?null:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',status:'active'},error:null};
+     if(table==='seller_profiles'){
+      if(!filters.some(([column,id])=>column==='id'&&id===fixture().seller_profile_id))
+        return {data:null,error:null};
+      return {data:{user_id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'},error:null};
+     }
+     if(table==='users'){
+      if(!filters.some(([column,id])=>column==='id'&&id==='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'))
+        return {data:null,error:null};
+      return {data:{auth_user_id:opts.missingAuth?null:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',status:opts.inactiveAccount?'disabled':'active'},error:null};
+     }
      throw Error('Unexpected query '+table);
     }
    };return chain;
@@ -93,6 +101,7 @@ await test('competing worker already claimed invoice',{claimMiss:true},200,null,
 await test('wrong seller subscription link',{wrongLink:true},409,'MEMBERSHIP_NO_LONGER_VERIFIED',0);
 await test('canceled membership rejected',{cancelled:true},409,'MEMBERSHIP_NO_LONGER_VERIFIED',0);
 await test('missing Auth identifier rejected',{missingAuth:true},409,'CUSTOMER_IDENTITY_UNVERIFIED',0);
+await test('inactive Cardora account rejected',{inactiveAccount:true},409,'CUSTOMER_IDENTITY_UNVERIFIED',0);
 await test('unusable recipient email rejected',{invalidEmail:true},409,'CUSTOMER_EMAIL_UNVERIFIED',0);
 const good=await test('verified buyer gets one email',{ },200,null,1);
 assert.equal(good.body.processed,1);
@@ -103,6 +112,11 @@ assert.equal(good.requests[0].request.headers['Idempotency-Key'],'cardora-paid-i
 assert.deepEqual(good.queries.filter(q=>q.kind==='auth').map(q=>q.id),
  ['cccccccc-cccc-4ccc-8ccc-cccccccccccc']);
 assert.equal(good.requests[0].url,'https://api.resend.com/emails');
+const sellerLookup=good.queries.find(q=>q.table==='seller_profiles');
+const appUserLookup=good.queries.find(q=>q.table==='users');
+assert.ok(sellerLookup.filters.some(([key,value])=>key==='id'&&value===fixture().seller_profile_id));
+assert.ok(appUserLookup.filters.some(([key,value])=>key==='id'&&value==='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'));
+console.log('PASS seller -> business user -> Auth user ownership chain');
 cases++;console.log('PASS verified Auth email (never client-supplied) and idempotency');
 const fail=await test('Resend rejects API request',{resendFailure:true},502,'EMAIL_PROVIDER_NOT_CONFIRMED',1);
 assert.equal(fail.outbox.status,'sending'); // Stop automatic retry until manual reconciliation
