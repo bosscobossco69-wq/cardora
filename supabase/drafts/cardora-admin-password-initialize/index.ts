@@ -5,10 +5,12 @@ import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 const PROJECT="https://fdkfquvzbswxocyrhduk.supabase.co";
 const TARGET="2c1f0978-08ef-4120-a7d6-740a07edeec5";
 const EMAIL="bosscobossco69@gmail.com";
+const EXPIRES_AT=Date.parse("2026-11-25T02:00:00Z");
 const respond=(status:number,code:string)=>new Response(JSON.stringify({code}),{
  status,headers:{"content-type":"application/json","cache-control":"no-store"}
 });
 Deno.serve(async(req)=>{
+ if(Date.now()>=EXPIRES_AT)return respond(410,"INITIALIZATION_EXPIRED");
  if(req.method!=="POST")return respond(405,"METHOD_NOT_ALLOWED");
  const key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
  if(!key||Deno.env.get("SUPABASE_URL")!==PROJECT)return respond(503,"CONFIG_UNAVAILABLE");
