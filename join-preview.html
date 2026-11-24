@@ -132,33 +132,9 @@ $('login').addEventListener('submit',async e=>{
  catch(e){safeText('loginStatus','Sign-in failed. Verify email confirmation and password.');}
  finally{btn.disabled=false}
 });
-$('apply').addEventListener('submit',async e=>{
+$('apply').addEventListener('submit',e=>{
  e.preventDefault();
- safeText('appStatus','Applications are paused until server-side manual approval is verified. No submission was sent.');
- return;
- /* SECURITY GATE: intentionally disabled; DO NOT remove without a verified
-    backend manual-review implementation and separately approved release. */
- e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;
- try{
- const user=await sessionUser();if(!user)throw Error('Sign in first');
- const {data:profile,error:profileError}=await client.from('users')
- .select('id,status').eq('auth_user_id',user.id).maybeSingle();
- if(profileError||!profile||profile.status!=='active')throw Error('Profile missing');
- const kind=role();if(kind!=='seller'&&kind!=='agent')throw Error('Invalid role');
- const {data:existing,error:existingError}=await client.from('seller_applications')
- .select('id,status').eq('user_id',profile.id).limit(1);
- if(existingError)throw Error('Cannot verify existing application');
- if(existing?.length){safeText('appStatus','You already have an application. Its review is pending or completed; do not submit duplicates.');return}
- const payload={user_id:profile.id,name:$('appName').value.trim().slice(0,120),
- email:user.email,city:$('appCity').value.trim().slice(0,100),whatsapp:$('appPhone').value.trim().slice(0,40),
- role:kind,categories:$('appCategories').value.trim().slice(0,200),
- shop_links:$('appLinks').value.trim().slice(0,250),message:$('appMessage').value.trim().slice(0,800)};
- if(!payload.name||!payload.categories)throw Error('Missing required details');
- const {error}=await client.from('seller_applications').insert(payload);
- if(error)throw error;
- safeText('appStatus','Application submitted for review. No approval, commissions or listing access are guaranteed.');$('apply').reset();
- }catch(e){safeText('appStatus','Application not submitted. Please check your account eligibility, existing applications and connection.');}
- finally{btn.disabled=false}
+ safeText('appStatus','Seller and partner applications are paused pending secure manual-review release. No request was sent.');
 });
 $('logout').addEventListener('click',async()=>{await client.auth.signOut();await refresh()});
 refresh();
