@@ -31,17 +31,51 @@ button{background:#e9c782;min-height:44px}button.secondary{background:#241b33;bo
 
 a{color:#ffd174}
 @media(max-width:560px){.roles{grid-template-columns:1fr}.roles label{text-align:left}}
+
+/* Cardora premium account design — presentation only. */
+body{background:#100d19;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+header{padding:34px 20px 18px}.brand{font-size:26px;letter-spacing:.19em}
+main{max-width:430px;padding:8px 20px 30px}
+.auth-panel{background:#1b1527;border-color:#493a5b;border-radius:22px;padding:22px;box-shadow:none}
+.auth-panel h2{text-align:left;font-size:26px;line-height:1.2;margin:18px 0 8px;letter-spacing:-.5px}
+.auth-subtitle{font-size:13px;color:#beb5cc;margin:0 0 16px}
+.google-wrap #googleLogin{background:#f1f0f3;color:#202124;border:1px solid #f1f0f3;min-height:50px;border-radius:12px}
+.google-wrap #googleLogin:disabled{opacity:1;cursor:not-allowed;color:#34323a}
+.google-mark{color:#4285f4;font-weight:800;font-size:19px;margin-right:9px}
+.google-wrap p{color:#beb5cc;font-size:11px}
+button.secondary{background:#1b1527;border-color:#493a5b}
+.auth-panel button:not(.text-button){min-height:50px;border-radius:12px}
+#authTabs button{min-height:44px}
+.auth-panel input:not([type=checkbox]){min-height:50px;border-radius:12px;border-color:#493a5b;background:#100d19}
+.auth-panel input::placeholder{color:#a79cb8}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c782;outline-offset:3px}
+#loginStatus:empty,#registerStatus:empty,#otpStatus:empty{display:none}
+#forgotPassword{margin-top:12px}
+.switch-copy{text-align:left;margin:14px 0 0}
+.notice{font-size:12px}
+.desktop-story{display:none}
+@media(min-width:1000px){
+ body{background:#100d19}header{padding-bottom:24px}
+ main{max-width:1180px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(380px,1fr);gap:22px 32px;align-items:start;padding:16px 24px 32px}
+ .desktop-story{display:flex;grid-column:1;grid-row:1 / span 4;min-height:650px;flex-direction:column;justify-content:center;align-items:flex-start;padding:55px;border-radius:28px;background:#21172f}
+ .desktop-story strong{font-size:clamp(48px,5vw,68px);line-height:1.06;letter-spacing:-2px}
+ .desktop-story p{font-size:17px;color:#beb5cc}.desktop-story .eyebrow{font-size:12px;letter-spacing:.14em;color:#e9c782}
+ main> :not(.desktop-story){grid-column:2;margin-top:0;margin-bottom:0}
+ .auth-panel{width:100%}main h1{font-size:30px}
+}
+
 </style></head>
 <body>
-<header><a class="brand" href="/">CARDORA</a><span>COLLECTORS · SELLERS · PARTNERS</span></header>
+<header><a class="brand" href="/join.html">CARDORA</a><span>COLLECTORS · SELLERS · PARTNERS</span></header>
 <main>
+<aside class="desktop-story" aria-hidden="true"><p class="eyebrow">THE COLLECTOR’S MARKETPLACE</p><strong>Collect.<br>Buy.<br>Sell.<br>Connect.</strong><p>One account. A world of collectible cards.</p></aside>
 <h1>Welcome to Cardora</h1>
 <p class="tagline">Collect. Buy. Sell. Connect.</p>
 <p class="notice"><strong>Pre-launch preview:</strong> This is not a live store. No purchases, seller subscription checkout, referral points, cash commissions or promised earnings are available. Early access does not guarantee seller approval. Do not pay anyone to unlock a Cardora account.</p>
 <section id="registration" class="auth-panel">
 <div id="authTabs" role="group" aria-label="Account access"><button type="button" id="tabLogin" aria-pressed="true">Sign in</button><button type="button" id="tabRegister" aria-pressed="false">Create account</button></div>
-<h2 id="authTitle">Sign in to Cardora</h2>
-<div class="google-wrap"><button id="googleLogin" type="button" class="secondary" disabled aria-describedby="googleHint">Continue with Google</button>
+<h2 id="authTitle">Welcome back</h2><p class="auth-subtitle">Access your Cardora account.</p>
+<div class="google-wrap"><button id="googleLogin" type="button" class="secondary" disabled aria-describedby="googleHint"><span class="google-mark" aria-hidden="true">G</span>Continue with Google</button>
 <p id="googleHint"><small>Google sign-in is awaiting provider and redirect verification.</small></p>
 </div>
 <div id="loginPanel">
@@ -53,8 +87,8 @@ a{color:#ffd174}
 </div>
 <div class="or"><span>OR</span></div>
 <form id="login">
-<label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
-<label>Password<input id="loginPass" type="password" autocomplete="current-password" required></label>
+<label>Email<input id="loginEmail" placeholder="you@example.com" type="email" autocomplete="username" required></label>
+<label>Password<input id="loginPass" placeholder="Enter your password" type="password" autocomplete="current-password" required></label>
 <button type="submit">Sign In</button>
 </form>
 <p id="loginStatus" role="status" aria-live="polite"></p>
@@ -64,9 +98,9 @@ a{color:#ffd174}
 <p class="switch-copy">New to Cardora? <button type="button" id="toRegister" class="text-button">Create an account</button></p>
 </div>
 <div id="registerPanel" hidden><form id="register">
-<label>Email address<input id="regEmail" type="email" autocomplete="email" maxlength="254" required></label>
-<label>Password (12–128 characters)<input id="regPass" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
-<label>Confirm password<input id="regConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+<label>Email address<input id="regEmail" placeholder="you@example.com" type="email" autocomplete="email" maxlength="254" required></label>
+<label>Password (12–128 characters)<input id="regPass" placeholder="At least 12 characters" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+<label>Confirm password<input id="regConfirm" placeholder="Re-enter password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
 
 <button type="submit">Create account · Free</button>
 </form>
