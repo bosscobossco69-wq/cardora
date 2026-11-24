@@ -76,9 +76,10 @@ Deno.serve(async(req)=>{
     return reply({error:"EMAIL_PROVIDER_NOT_CONFIRMED",invoice_status:"sending_review_required"},502);
   }
   const body=await result.json().catch(()=>({}));
-  const {error:saveError}=await db.from("cardora_payment_email_outbox")
+  const {data:saved,error:saveError}=await db.from("cardora_payment_email_outbox")
     .update({status:"sent",resend_message_id:typeof body.id==="string"?body.id:null,updated_at:new Date().toISOString()})
-    .eq("stripe_invoice_id",pending.stripe_invoice_id).eq("status","sending");
-  if(saveError)return reply({error:"EMAIL_SENT_RECORD_FAILED",invoice_status:"sending_review_required"},500);
+    .eq("stripe_invoice_id",pending.stripe_invoice_id).eq("status","sending")
+    .select("stripe_invoice_id").maybeSingle();
+  if(saveError||!saved)return reply({error:"EMAIL_SENT_RECORD_FAILED",invoice_status:"sending_review_required"},500);
   return reply({ok:true,processed:1});
 });
