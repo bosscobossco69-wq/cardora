@@ -8,32 +8,74 @@
 :root{font:16px/1.5 system-ui,sans-serif;color-scheme:dark}
 *{box-sizing:border-box}body{margin:0;background:#100e1b;color:#f9f6ff}
 header,main,footer{max-width:760px;margin:auto;padding:22px}
-header{display:flex;justify-content:space-between;gap:12px}.brand{color:#ffd174;font-weight:850;text-decoration:none;font-size:23px}
+header{display:flex;justify-content:center;gap:12px;align-items:center;flex-direction:column}.brand{color:#e9c782;font-weight:850;text-decoration:none;font-size:27px;letter-spacing:.2em}header span{font-size:10px;letter-spacing:.12em;color:#bdb5c9}
 section{border:1px solid #413451;background:#1d172b;padding:22px;margin:20px 0;border-radius:18px}
-h1{font-size:clamp(32px,7vw,52px);letter-spacing:-1.5px;line-height:1.13}
+h1{font-size:clamp(29px,6vw,40px);letter-spacing:-1px;line-height:1.13;text-align:center;margin:4px 0 8px}.tagline{text-align:center;color:#bdb5c9;margin:0 0 22px}
 p,small{color:#d3c9e2}
 .notice{background:#312315;border:1px solid #ab8745;border-radius:12px;padding:15px;color:#ffde9e}
 .roles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0}
 .roles label{display:block;text-align:center;border:1px solid #55426b;border-radius:11px;padding:13px;cursor:pointer}
 .roles label:has(input:checked){border-color:#f5cf77;background:#413020}
 input,select,textarea,button{font:inherit}
-input:not([type=radio]),select,textarea{width:100%;padding:12px;border-radius:9px;border:1px solid #716081;background:#13101f;color:#fff}
+input:not([type=radio]):not([type=checkbox]),select,textarea{width:100%;padding:12px;border-radius:9px;border:1px solid #716081;background:#13101f;color:#fff}
 form{display:grid;gap:14px}form label{display:grid;gap:5px}
 button{padding:13px 17px;border:0;border-radius:10px;background:#ffd174;color:#17121a;font-weight:800;cursor:pointer}
 button:disabled{opacity:.5}
 button.secondary{background:#423553;color:#fff}
 [hidden]{display:none!important}
+body{background:radial-gradient(ellipse at top,#2a1d3d 0,#100d19 52%,#080711 100%);min-height:100vh}
+main{max-width:520px;padding:12px 18px 30px}.auth-panel{background:#1a1427;border-color:#51445f;padding:24px;box-shadow:0 18px 50px #0004}.auth-panel h2{text-align:center;font-size:22px;margin:20px 0}
+#authTabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;background:#100d19;padding:4px;border-radius:12px}#authTabs button{background:transparent;color:#bdb5c9;font-size:14px;padding:10px}#authTabs button[aria-pressed=true]{background:#3b2e4b;color:#e9c782}
+.google-wrap button,.wide{width:100%}.google-wrap button{background:#fff;color:#202124}.google-wrap p{font-size:12px;text-align:center;margin:6px 0 14px}.or{display:flex;align-items:center;gap:12px;color:#aaa1b8;font-size:12px;margin:18px 0}.or:before,.or:after{content:'';height:1px;background:#51445f;flex:1}
+button{background:#e9c782;min-height:44px}button.secondary{background:#241b33;border:1px solid #51445f}.text-button{background:transparent;color:#e9c782;padding:4px;min-height:0;font-size:14px;text-decoration:underline}.switch-copy{text-align:center;font-size:14px}.consent{display:block;font-size:12px;color:#bdb5c9;border-top:1px solid #51445f;padding-top:14px;margin-top:16px}.consent input{vertical-align:middle;margin-right:6px}.notice{font-size:12px}.auth-panel label{font-size:14px}.auth-panel input:not([type=checkbox]){min-height:46px}#emailPanel{padding:12px 0}#forgotPassword{display:block;margin:10px 0 0 auto}#forgotHint{font-size:12px}footer{text-align:center;font-size:12px;color:#aaa1b8}
+
 a{color:#ffd174}
 @media(max-width:560px){.roles{grid-template-columns:1fr}.roles label{text-align:left}}
 </style></head>
 <body>
 <header><a class="brand" href="/">CARDORA</a><span>COLLECTORS · SELLERS · PARTNERS</span></header>
 <main>
-<h1>Join the next collectible-card community.</h1>
-<p>Cardora welcomes Pokémon, One Piece, Yu-Gi-Oh!, Magic, sports-card collectors and prospective sellers. Create a free account now. Real item listings and purchases will open only after safety testing.</p>
+<h1>Welcome to Cardora</h1>
+<p class="tagline">Collect. Buy. Sell. Connect.</p>
 <p class="notice"><strong>Pre-launch preview:</strong> This is not a live store. No purchases, seller subscription checkout, referral points, cash commissions or promised earnings are available. Early access does not guarantee seller approval. Do not pay anyone to unlock a Cardora account.</p>
-<section>
-<h2>1. Choose your interest</h2>
+<section id="registration" class="auth-panel">
+<div id="authTabs" role="group" aria-label="Account access"><button type="button" id="tabLogin" aria-pressed="true">Sign in</button><button type="button" id="tabRegister" aria-pressed="false">Create account</button></div>
+<h2 id="authTitle">Sign in to Cardora</h2>
+<div class="google-wrap"><button id="googleLogin" type="button" class="secondary" disabled aria-describedby="googleHint">Continue with Google</button>
+<p id="googleHint"><small>Google sign-in is awaiting provider and redirect verification.</small></p>
+</div>
+<div id="loginPanel">
+<button type="button" id="emailToggle" class="secondary wide" aria-expanded="false">Continue with Email</button>
+<div id="emailPanel" hidden><form id="otpSend"><label>Email address<input id="otpEmail" type="email" autocomplete="email" maxlength="254" required></label><button type="submit">Send sign-in link</button></form>
+<form id="otpVerify" hidden><label>Six-digit code<input id="otpCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button type="submit">Verify & sign in</button></form>
+<p id="otpStatus" role="status" aria-live="polite"></p>
+<p><small>Existing accounts only. Open the email link in the same browser. If your email contains a code, use the verification field.</small></p>
+</div>
+<div class="or"><span>OR</span></div>
+<form id="login">
+<label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
+<label>Password<input id="loginPass" type="password" autocomplete="current-password" required></label>
+<button type="submit">Sign In</button>
+</form>
+<p id="loginStatus" role="status" aria-live="polite"></p>
+
+<button type="button" id="forgotPassword" class="text-button">Forgot password?</button>
+<p id="forgotHint" hidden><small>Password recovery is not yet verified in this Preview. Use Continue with Email to sign in with an existing account.</small></p>
+<p class="switch-copy">New to Cardora? <button type="button" id="toRegister" class="text-button">Create an account</button></p>
+</div>
+<div id="registerPanel" hidden><form id="register">
+<label>Email address<input id="regEmail" type="email" autocomplete="email" maxlength="254" required></label>
+<label>Password (12–128 characters)<input id="regPass" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+<label>Confirm password<input id="regConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+
+<button type="submit">Create account · Free</button>
+</form>
+<p id="registerStatus" role="status" aria-live="polite"></p>
+<p class="switch-copy">Already registered? <button type="button" id="toLogin" class="text-button">Sign in</button></p></div>
+<label class="consent"><input id="acceptTerms" type="checkbox"> I have reviewed the <a href="/terms.html" target="_blank" rel="noopener">draft terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">draft privacy notice</a>.</label>
+</section>
+<section id="interestPanel" hidden>
+<h2>Choose your interest</h2>
 <div class="roles" id="roles">
 <label><input type="radio" name="interest" value="collector" checked> Collector / Buyer</label>
 <label><input type="radio" name="interest" value="seller"> Seller</label>
@@ -41,33 +83,8 @@ a{color:#ffd174}
 </div>
 <p id="roleHint" aria-live="polite">Collect cards and follow our launch. No products can be purchased yet.</p>
 </section>
-<section id="registration">
-<h2>2. Create your free account</h2>
-<form id="register">
-<label>Email address<input id="regEmail" type="email" autocomplete="email" maxlength="254" required></label>
-<label>Password (12–128 characters)<input id="regPass" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
-<label>Confirm password<input id="regConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
-<label><span><input id="acceptTerms" type="checkbox" required> I have reviewed the <a href="/terms.html" target="_blank" rel="noopener">draft terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">draft privacy notice</a>.</span></label>
-<button type="submit">Create account · Free</button>
-</form>
-<p id="registerStatus" role="status" aria-live="polite"></p>
-<h3>Already registered?</h3>
-<button id="googleLogin" type="button" class="secondary" disabled aria-describedby="googleHint">Continue with Google</button>
-<p id="googleHint"><small>Google sign-in is awaiting provider and redirect verification.</small></p>
-<form id="otpSend"><label>Email address<input id="otpEmail" type="email" autocomplete="email" maxlength="254" required></label><button type="submit">Send sign-in code</button></form>
-<form id="otpVerify" hidden><label>Six-digit code<input id="otpCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button type="submit">Verify & sign in</button></form>
-<p id="otpStatus" role="status" aria-live="polite"></p>
-<p><small>Existing accounts only. If you receive a link instead of a code, email template verification is still required.</small></p>
-<h3>Use a password instead</h3>
-<form id="login">
-<label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
-<label>Password<input id="loginPass" type="password" autocomplete="current-password" required></label>
-<button class="secondary" type="submit">Sign in</button>
-</form>
-<p id="loginStatus" role="status" aria-live="polite"></p>
-</section>
 <section id="application" hidden>
-<h2>3. Seller and partner applications</h2>
+<h2>Seller and partner applications</h2>
 <p class="notice"><strong>Applications temporarily paused.</strong> Our seller-approval safeguards are being verified. You can register a free collector account, but applications cannot be submitted or approved on this Preview. No payment is required.</p>
 <form id="apply" hidden>
 <label>Name / shop name<input id="appName" maxlength="120" required></label>
@@ -99,6 +116,16 @@ const $=id=>document.getElementById(id);
 const client=window.supabase.createClient(url,key,{auth:{storageKey:'cardora-join-preview-v1',flowType:'pkce',persistSession:true,autoRefreshToken:true}});
 const role=()=>document.querySelector('input[name="interest"]:checked')?.value||'collector';
 const safeText=(id,v)=>{$(id).textContent=String(v)};
+function authMode(register){
+ $('loginPanel').hidden=register;$('registerPanel').hidden=!register;
+ $('tabLogin').setAttribute('aria-pressed',String(!register));$('tabRegister').setAttribute('aria-pressed',String(register));
+ safeText('authTitle',register?'Create your free account':'Sign in to Cardora');
+ $('loginPass').value='';$('regPass').value='';$('regConfirm').value='';
+}
+$('tabLogin').onclick=$('toLogin').onclick=()=>authMode(false);
+$('tabRegister').onclick=$('toRegister').onclick=()=>authMode(true);
+$('emailToggle').onclick=()=>{const panel=$('emailPanel');panel.hidden=!panel.hidden;$('emailToggle').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)$('otpEmail').focus();};
+$('forgotPassword').onclick=()=>{$('forgotHint').hidden=!$('forgotHint').hidden;};
 const sessionUser=async()=>{const {data,error}=await client.auth.getUser();return !error&&data?.user&&!data.user.is_anonymous?data.user:null};
 const googleButton=$('googleLogin');
 googleButton.disabled=!googlePreviewVerified;
@@ -124,6 +151,7 @@ async function refresh(){
  const user=await sessionUser();
  if(generation!==refreshGeneration)return;
  $('registration').hidden=!!user;
+ $('interestPanel').hidden=true;
  $('application').hidden=!user||role()==='collector';
  $('account').hidden=!user;
  if(user){$('application').hidden=true;safeText('accountStatus','Signed in to Cardora Auth. Checking linked member profile…');
@@ -133,6 +161,7 @@ async function refresh(){
    $('application').hidden=true;
    safeText('accountStatus','Your account is signed in but its Cardora profile is not active or cannot be read. No application will be submitted.');
   }else{
+   $('interestPanel').hidden=false;
    $('application').hidden=role()==='collector';
    safeText('accountStatus','Your linked Cardora member profile is active. Seller and partner approvals remain separate.');
   }
@@ -180,7 +209,7 @@ $('otpSend').addEventListener('submit',async e=>{
   if(error)throw error;
   if($('otpEmail').value.trim().toLowerCase()!==email)return;
   otpTarget=email;$('otpVerify').hidden=false;
-  safeText('otpStatus','If the account exists, check your inbox for a code or link.');
+  safeText('otpStatus','If the account exists, check your inbox for a sign-in link or code.');
  }catch(_){safeText('otpStatus','Unable to request a code. Check email settings or try later.');}
  finally{otpBusy=false;btn.disabled=false;}
 });
@@ -207,7 +236,7 @@ $('apply').addEventListener('submit',e=>{
 });
 $('logout').addEventListener('click',async()=>{const {error}=await client.auth.signOut();if(error){safeText('accountStatus','Unable to sign out. Please retry.');return;}resetOtp();safeText('otpStatus','');await refresh()});
 client.auth.onAuthStateChange((event)=>{
- if(event==='SIGNED_OUT'){refreshGeneration++;$('application').hidden=true;$('account').hidden=true;$('registration').hidden=false;safeText('accountStatus','');resetOtp();}
+ if(event==='SIGNED_OUT'){refreshGeneration++;$('interestPanel').hidden=true;$('application').hidden=true;$('account').hidden=true;$('registration').hidden=false;safeText('accountStatus','');resetOtp();}
  // Run Supabase calls outside the auth callback to avoid re-entrant auth locks.
  setTimeout(()=>refresh().catch(()=>{safeText('accountStatus','Account verification unavailable.');$('application').hidden=true;}),0);
 });
