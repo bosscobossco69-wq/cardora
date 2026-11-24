@@ -22,6 +22,8 @@ Deno.serve(async(req)=>{
     const raw=await req.text();
     event=await stripe.webhooks.constructEventAsync(raw,signature,whsec,undefined,Stripe.createSubtleCryptoProvider());
   } catch {return response({error:"INVALID_SIGNATURE"},400);}
+  // Sandbox-only fulfillment. Never accept an out-of-environment signed event.
+  if(event.livemode!==false) return response({error:"LIVE_EVENT_REJECTED"},422);
   // Charge refunds and disputes need review before altering membership:
   // a partial refund or open dispute is not identical to a canceled subscription.
   const reviewEvents=["charge.refunded","charge.dispute.created","charge.dispute.closed"];
