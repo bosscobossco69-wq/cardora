@@ -184,7 +184,13 @@ jobs:
           grep -q "status===404" dist-preview/index.html
           grep -q "ADMIN_OVERVIEW_NOT_VERIFIED" dist-preview/index.html
           grep -q "Access denied. Admin permission is required." dist-preview/index.html
-          grep -q "Admin API is not deployed (404)" dist-preview/index.html
+          grep -q "Admin API returned 404" dist-preview/index.html
+          grep -q "the cause is not confirmed" dist-preview/index.html
+          grep -Fq "verified.data.user.id!==session.user?.id" dist-preview/index.html
+          grep -Fq "if(!current())return;" dist-preview/index.html
+          grep -Fq "event==='SIGNED_OUT'" dist-preview/index.html
+          grep -Fq "invalidateOverview();" dist-preview/index.html
+          node -e "const fs=require('node:fs'),vm=require('node:vm');const html=fs.readFileSync('dist-preview/index.html','utf8');for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);console.log('PASS: admin browser scripts parse');"
           grep -q 'Marketing consent is not configured' dist-preview/index.html
           grep -q 'Outreach disabled' dist-preview/index.html
           grep -q 'customers' supabase/functions/cardora-admin-overview/index.ts
