@@ -23,6 +23,7 @@ on:
       - 'supabase/functions/cardora-admin-overview/index.ts'
       - 'supabase/functions/cardora-stripe-webhook/index.ts'
       - 'supabase/functions/cardora-email-smoke/index.ts'
+      - 'supabase/functions/cardora-payment-email-worker/index.ts'
       - 'supabase/migrations/DRAFT_cardora_admin_seller_queue.sql'
       - 'supabase/migrations/DRAFT_cardora_auth_is_admin_compat.sql'
       - 'supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql'
@@ -236,6 +237,17 @@ jobs:
           assert "storage.objects for update" not in s.lower()
           assert "storage.objects for delete" not in s.lower()
           print('PASS: Evidence bucket draft is private and owner-read-only')
+          PY
+      - name: Verify payment email worker does not trust public recipient input
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('supabase/functions/cardora-payment-email-worker/index.ts').read_text()
+          for x in ('CARDORA_PAYMENT_EMAIL_WORKER_VERIFIED','CARDORA_AUTH_MIGRATION_VERIFIED','CARDORA_PAYMENT_EMAIL_QUEUE_VERIFIED','CARDORA_EMAIL_WORKER_TOKEN','cardora_payment_email_outbox','getUserById','Idempotency-Key','status:"sent"','MEMBERSHIP_NO_LONGER_VERIFIED'):
+            assert x in s, x
+          assert 'req.json(' not in s
+          assert 'x-cardora-worker-token' in s
+          print('PASS: payment email worker uses verified seller identity, queued invoice and gated Resend')
           PY
       - name: Execute Cardora Resend smoke handler against offline mock API
         run: node scripts/test-cardora-email-smoke-offline.mjs
