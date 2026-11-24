@@ -144,7 +144,9 @@ jobs:
           grep -q 'shouldCreateUser:false' scripts/build-cardora-admin-preview.mjs
           grep -q "auth.signUp({email,password" dist-preview/join.html
           grep -q "eq('auth_user_id',user.id)" dist-preview/join.html
-          grep -q "seller_applications').insert(payload)" dist-preview/join.html
+          grep -Fq 'Applications temporarily paused.' dist-preview/join.html
+          grep -Fq 'Seller and partner applications are paused pending secure manual-review release.' dist-preview/join.html
+          if grep -Fq "seller_applications').insert(payload)" dist-preview/join.html; then echo "Unsafe seller application write enabled in Preview"; exit 1; fi
           grep -q "No purchases, seller subscription checkout" dist-preview/join.html
           grep -q "noindex,nofollow" dist-preview/join.html
           if grep -q '__CARDORA_JOIN_' dist-preview/join.html; then echo "Public registration config was not injected"; exit 1; fi
