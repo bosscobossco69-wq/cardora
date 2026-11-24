@@ -65,6 +65,17 @@ must(queue.includes("limit least(greatest(coalesce(p_limit,100),1),100)"),'Admin
 must(admin.includes("u.role = 'admin'") && admin.includes("u.status = 'active'"),'Admin check missing');
 must(checkout.includes('CARDORA_CHECKOUT_RESERVATION_VERIFIED'),'Checkout safety gate absent');
 
+must(checkout.includes('service.from("seller_subscriptions")') &&
+     checkout.includes('.eq("seller_profile_id",seller.id)') &&
+     checkout.includes('.eq("is_current",true).limit(2)') &&
+     checkout.includes('MEMBERSHIP_STATE_UNAVAILABLE') &&
+     checkout.includes('EXISTING_CARDORA_MEMBERSHIP_REQUIRES_RECONCILIATION'),
+  'Checkout must refuse any existing current Cardora membership before taking another Stripe payment');
+must(checkout.indexOf('service.from("seller_subscriptions")') <
+     checkout.indexOf('stripe.checkout.sessions.create('),
+  'Legacy membership reconciliation check must precede Stripe Checkout creation');
+
+
 // Cross-project identity isolation: the legacy page must never be treated as
 // entitlement proof in Cardora billing. The staging build must explicitly
 // replace the old project and require a Cardora Auth owner identity.
