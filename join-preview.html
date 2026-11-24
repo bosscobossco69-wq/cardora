@@ -52,6 +52,13 @@ a{color:#ffd174}
 </form>
 <p id="registerStatus" role="status" aria-live="polite"></p>
 <h3>Already registered?</h3>
+<button type="button" class="secondary" disabled aria-describedby="googleHint">Continue with Google</button>
+<p id="googleHint"><small>Google sign-in is awaiting provider and redirect verification.</small></p>
+<form id="otpSend"><label>Email address<input id="otpEmail" type="email" autocomplete="email" maxlength="254" required></label><button type="submit">Send sign-in code</button></form>
+<form id="otpVerify" hidden><label>Six-digit code<input id="otpCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button type="submit">Verify & sign in</button></form>
+<p id="otpStatus" role="status" aria-live="polite"></p>
+<p><small>Existing accounts only. If you receive a link instead of a code, email template verification is still required.</small></p>
+<h3>Use a password instead</h3>
 <form id="login">
 <label>Email<input id="loginEmail" type="email" autocomplete="username" required></label>
 <label>Password<input id="loginPass" type="password" autocomplete="current-password" required></label>
@@ -93,9 +100,10 @@ const safeText=(id,v)=>{$(id).textContent=String(v)};
 const sessionUser=async()=>{const {data,error}=await client.auth.getUser();return !error&&data?.user&&!data.user.is_anonymous?data.user:null};
 async function refresh(){
  const user=await sessionUser();
+ $('registration').hidden=!!user;
  $('application').hidden=!user||role()==='collector';
  $('account').hidden=!user;
- if(user){safeText('accountStatus','Signed in to Cardora. Account email verified by session; seller and partner approvals remain separate.');
+ if(user){safeText('accountStatus','Signed in to Cardora. Seller and partner approvals remain separate.');
   const {data:profile,error}=await client.from('users').select('id,status').eq('auth_user_id',user.id).maybeSingle();
   if(error||!profile||profile.status!=='active'){
    $('application').hidden=true;
@@ -132,11 +140,45 @@ $('login').addEventListener('submit',async e=>{
  catch(e){safeText('loginStatus','Sign-in failed. Verify email confirmation and password.');}
  finally{btn.disabled=false}
 });
+let otpTarget='',otpBusy=false;
+function resetOtp(){otpTarget='';$('otpCode').value='';$('otpVerify').hidden=true;}
+$('otpEmail').addEventListener('input',resetOtp);
+$('otpSend').addEventListener('submit',async e=>{
+ e.preventDefault();if(otpBusy)return;otpBusy=true;
+ const btn=e.currentTarget.querySelector('button');btn.disabled=true;resetOtp();
+ try{
+  const email=$('otpEmail').value.trim().toLowerCase();
+  if(await sessionUser())throw Error('Sign out first');
+  const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});
+  if(error)throw error;
+  if($('otpEmail').value.trim().toLowerCase()!==email)return;
+  otpTarget=email;$('otpVerify').hidden=false;
+  safeText('otpStatus','If the account exists, check your inbox for a code or link.');
+ }catch(_){safeText('otpStatus','Unable to request a code. Check email settings or try later.');}
+ finally{otpBusy=false;btn.disabled=false;}
+});
+$('otpVerify').addEventListener('submit',async e=>{
+ e.preventDefault();if(otpBusy)return;otpBusy=true;
+ const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+ try{
+  const email=otpTarget,token=$('otpCode').value.trim();
+  if(!email||email!==$('otpEmail').value.trim().toLowerCase()||!/^\d{6}$/.test(token))throw Error('Invalid code');
+  if(await sessionUser())throw Error('Sign out first');
+  const {error}=await client.auth.verifyOtp({email,token,type:'email'});
+  if(error)throw error;
+  const user=await sessionUser();
+  if(!user||user.email?.toLowerCase()!==email||otpTarget!==email){
+   await client.auth.signOut();throw Error('Identity mismatch');
+  }
+  resetOtp();safeText('otpStatus','Signed in.');await refresh();
+ }catch(_){safeText('otpStatus','Verification failed. Check the code and try again.');}
+ finally{otpBusy=false;btn.disabled=false;}
+});
 $('apply').addEventListener('submit',e=>{
  e.preventDefault();
  safeText('appStatus','Seller and partner applications are paused pending secure manual-review release. No request was sent.');
 });
-$('logout').addEventListener('click',async()=>{await client.auth.signOut();await refresh()});
+$('logout').addEventListener('click',async()=>{const {error}=await client.auth.signOut();if(error){safeText('accountStatus','Unable to sign out. Please retry.');return;}resetOtp();safeText('otpStatus','');await refresh()});
 refresh();
 })();
 </script></body></html>
