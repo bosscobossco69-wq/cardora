@@ -14,6 +14,7 @@ on:
       - 'scripts/build-cardora-admin-preview.mjs'
       - 'vercel.json'
       - 'scripts/check-cardora-draft.mjs'
+      - 'scripts/test-cardora-member-offline.mjs'
       - 'scripts/test-cardora-admin-overview-offline.mjs'
       - 'scripts/cardora-stripe-sql-smoke.sql'
       - 'scripts/test-cardora-stripe-edge-contract.mjs'
@@ -215,6 +216,8 @@ jobs:
           grep -q 'CARDORA_AUTH_MIGRATION_VERIFIED' supabase/functions/cardora-admin-overview/index.ts
           if grep -Eq '\.insert\(|\.update\(|\.delete\(|\.upsert\(' supabase/functions/cardora-admin-overview/index.ts; then echo "Mutation detected in read-only overview"; exit 1; fi
           if grep -Eq 'signUp\(|\.insert\(|\.update\(|\.delete\(|cardora-stripe-checkout' dist-preview/index.html; then echo "Dangerous API in read-only preview"; exit 1; fi
+      - name: Run member identity regression tests (no network)
+        run: node scripts/test-cardora-member-offline.mjs
       - name: Run isolated administrator endpoint contract tests (no network)
         run: node scripts/test-cardora-admin-overview-offline.mjs
       - name: Verify draft builder and fail-closed guards (no network from test)
