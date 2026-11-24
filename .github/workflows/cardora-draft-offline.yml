@@ -18,6 +18,7 @@ on:
       - 'scripts/cardora-stripe-sql-smoke.sql'
       - 'scripts/test-cardora-stripe-edge-contract.mjs'
       - 'scripts/test-cardora-email-smoke-offline.mjs'
+      - 'scripts/test-cardora-payment-email-worker-offline.mjs'
       - 'supabase/functions/cardora-stripe-checkout/index.ts'
       - 'supabase/functions/cardora-stripe-portal/index.ts'
       - 'supabase/functions/cardora-admin-overview/index.ts'
@@ -241,6 +242,8 @@ jobs:
           assert "storage.objects for delete" not in s.lower()
           print('PASS: Evidence bucket draft is private and owner-read-only')
           PY
+      - name: Execute payment confirmation email worker with synthetic Auth and Resend
+        run: node scripts/test-cardora-payment-email-worker-offline.mjs
       - name: Verify payment email worker does not trust public recipient input
         run: |
           python - <<'PY'
