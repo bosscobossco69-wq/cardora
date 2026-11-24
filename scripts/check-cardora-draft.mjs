@@ -76,8 +76,14 @@ must(build.includes('https://fdkfquvzbswxocyrhduk.supabase.co') &&
 must(build.includes("window.cardoraCheckAuthAlignment=async function()") &&
      build.includes("client.auth.getUser()") &&
      build.includes(".eq('auth_user_id',identity.user.id).maybeSingle()") &&
-     build.includes(".eq('user_id',profile.id).limit(1)"),
+     build.includes(".eq('user_id',profile.id).limit(2)"),
   'Read-only Cardora user → seller profile alignment diagnostic missing');
+must(build.includes("sessionData.user.is_anonymous") &&
+     build.includes("Multiple seller profiles found. Manual review required.") &&
+     build.includes("More than one visible seller profile is linked.") &&
+     build.includes("s.verification_status==='verified'"),
+  'Staging diagnostics must not approve anonymous, duplicate or unverified seller accounts');
+
 must(checkout.includes('client.auth.getUser()') &&
      checkout.includes('.eq("auth_user_id",user.id).maybeSingle()') &&
      checkout.includes('.eq("user_id",appUser.id).maybeSingle()') &&
