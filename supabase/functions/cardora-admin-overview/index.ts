@@ -34,7 +34,7 @@ Deno.serve(async(request)=>{
    // Authorization is independently checked by Supabase getUser and active admin role.
    if(origin && safeOrigins.has(origin)){
      headers.set("access-control-allow-origin",origin);
-     headers.set("access-control-allow-headers","authorization, apikey, content-type");
+     headers.set("access-control-allow-headers","authorization, apikey, content-type, x-client-info");
      headers.set("access-control-allow-methods","POST, OPTIONS");
    }
    return new Response(JSON.stringify(value),{status,headers});
