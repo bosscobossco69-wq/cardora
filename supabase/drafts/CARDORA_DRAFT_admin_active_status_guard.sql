@@ -45,7 +45,7 @@ begin
 
   -- This RPC handles the review queue only. Suspension of already-active
   -- listings needs a separate audited moderation action.
-  if p_status not in ('active','rejected') then
+  if p_status is null or p_status not in ('active','rejected') then
     raise exception 'INVALID_REVIEW_DECISION';
   end if;
 
@@ -92,7 +92,7 @@ begin
     raise exception 'ADMIN_REQUIRED';
   end if;
 
-  if p_status not in ('approved','rejected','contacted') then
+  if p_status is null or p_status not in ('approved','rejected','contacted') then
     raise exception 'INVALID_STATUS';
   end if;
 
@@ -119,6 +119,13 @@ begin
     raise exception 'INVALID_APPLICATION_ROLE';
   end if;
 
+  -- Approval cannot reactivate an inactive or unlinked member.
+  if p_status = 'approved' then
+    perform 1 from public.users u where u.id=v_app.user_id
+      and u.status='active' and u.auth_user_id is not null for update;
+    if not found then raise exception 'ACTIVE_LINKED_MEMBER_REQUIRED'; end if;
+  end if;
+
   update public.seller_applications
   set status = p_status,
       message = case
@@ -134,7 +141,9 @@ begin
       set status = 'approved',
           display_name = coalesce(excluded.display_name, public.seller_profiles.display_name),
           updated_at = now()
+      where public.seller_profiles.status='approved'
     returning id into v_seller;
+    if v_seller is null then raise exception 'SELLER_REACTIVATION_REQUIRES_REVIEW'; end if;
 
     insert into public.seller_subscriptions(seller_profile_id,plan_code,status,started_at,is_current)
     values(v_seller,'free','active',now(),true)
@@ -149,10 +158,13 @@ begin
     for update;
 
     if found then
-      if v_agent.application_id <> v_app.id or v_agent.user_id <> v_app.user_id then
+      if v_agent.application_id is distinct from v_app.id or v_agent.user_id is distinct from v_app.user_id then
         raise exception 'AGENT_PROFILE_CONFLICT';
       end if;
 
+      if v_agent.status is distinct from 'active' then
+        raise exception 'AGENT_REACTIVATION_REQUIRES_REVIEW';
+      end if;
       update public.agent_profiles
       set status = 'active',
           display_name = coalesce(v_app.name, display_name),
@@ -175,6 +187,7 @@ begin
             display_name = coalesce(excluded.display_name, public.agent_profiles.display_name),
             updated_at = now()
         where public.agent_profiles.application_id = excluded.application_id
+          and public.agent_profiles.status = 'active'
       returning id into v_agent_id;
 
       if v_agent_id is null then
