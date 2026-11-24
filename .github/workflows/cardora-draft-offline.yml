@@ -17,6 +17,7 @@ on:
       - 'scripts/test-cardora-admin-overview-offline.mjs'
       - 'scripts/cardora-stripe-sql-smoke.sql'
       - 'scripts/test-cardora-stripe-edge-contract.mjs'
+      - 'scripts/test-cardora-email-smoke-offline.mjs'
       - 'supabase/functions/cardora-stripe-checkout/index.ts'
       - 'supabase/functions/cardora-stripe-portal/index.ts'
       - 'supabase/functions/cardora-admin-overview/index.ts'
@@ -235,6 +236,8 @@ jobs:
           assert "storage.objects for delete" not in s.lower()
           print('PASS: Evidence bucket draft is private and owner-read-only')
           PY
+      - name: Execute Cardora Resend smoke handler against offline mock API
+        run: node scripts/test-cardora-email-smoke-offline.mjs
       - name: Enforce Cardora email test stays disabled and recipient-locked
         run: |
           python - <<'PY'
