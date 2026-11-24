@@ -26,6 +26,7 @@ on:
       - 'supabase/migrations/DRAFT_cardora_admin_seller_queue.sql'
       - 'supabase/migrations/DRAFT_cardora_auth_is_admin_compat.sql'
       - 'supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql'
+      - 'supabase/migrations/DRAFT_cardora_payment_email_outbox.sql'
       - 'supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql'
       - 'supabase/drafts/CARDORA_DRAFT_private_listing_evidence_bucket.sql'
       - 'supabase/functions/cardora-evidence-upload/index.ts'
@@ -269,11 +270,12 @@ jobs:
           docker exec cardora-stripe-test-db mkdir -p /work/scripts /work/supabase/migrations
           docker cp scripts/cardora-stripe-sql-smoke.sql cardora-stripe-test-db:/work/scripts/cardora-stripe-sql-smoke.sql
           docker cp supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql cardora-stripe-test-db:/work/supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql
+          docker cp supabase/migrations/DRAFT_cardora_payment_email_outbox.sql cardora-stripe-test-db:/work/supabase/migrations/DRAFT_cardora_payment_email_outbox.sql
           docker exec -w /work cardora-stripe-test-db \
             psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
               -f scripts/cardora-stripe-sql-smoke.sql
       - name: Parse draft SQL without connecting to a database
         run: |
           python -m pip install --disable-pip-version-check pglast
-          python -c "from pglast import parse_sql; from pathlib import Path; parse_sql(Path('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql').read_text()); parse_sql(Path('supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql').read_text()); parse_sql(Path('supabase/migrations/DRAFT_cardora_admin_seller_queue.sql').read_text()); parse_sql(Path('supabase/drafts/CARDORA_DRAFT_private_listing_evidence_bucket.sql').read_text()); print('PASS: three PostgreSQL draft SQL files parsed; database not accessed')"
+          python -c "from pglast import parse_sql; from pathlib import Path; parse_sql(Path('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql').read_text()); parse_sql(Path('supabase/migrations/DRAFT_cardora_payment_email_outbox.sql').read_text()); parse_sql(Path('supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql').read_text()); parse_sql(Path('supabase/migrations/DRAFT_cardora_admin_seller_queue.sql').read_text()); parse_sql(Path('supabase/drafts/CARDORA_DRAFT_private_listing_evidence_bucket.sql').read_text()); print('PASS: three PostgreSQL draft SQL files parsed; database not accessed')"
 
