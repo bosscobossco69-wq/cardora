@@ -47,7 +47,7 @@ function setup(path,options={}){
  }
  const lookups=[];
  const createClient=(url)=>({
-  auth:{getUser:async()=>({data:{user:options.sessionInvalid?null:{id:owner,email:'synthetic@example.invalid'}},error:null})},
+  auth:{getUser:async()=>({data:{user:options.sessionInvalid?null:{id:owner,email:'synthetic@example.invalid',is_anonymous:!!options.anonymousUser}},error:null})},
   from(table){
    const predicates=[];
    const chain={select(){return chain},eq(column,value){predicates.push([column,value]);return chain},
@@ -138,6 +138,7 @@ for(const [label,opts,status] of [
  ['missing account',{userMissing:true},403],
  ['missing linked seller',{sellerMissing:true},403],
  ['invalid session',{sessionInvalid:true},401],
+ ['anonymous session',{anonymousUser:true},401],
  ['production origin',{env:{CARDORA_SITE_ORIGIN:'https://cardora-rose.vercel.app'}},503]]){
  const x=await checkout('basic',opts);assert.equal(x.status,status,label+' '+JSON.stringify(x.body));
  assert.equal(x.calls.length,0);passes.push(label);
@@ -145,7 +146,7 @@ for(const [label,opts,status] of [
 const webhookFile='supabase/functions/cardora-stripe-webhook/index.ts';
 async function webhook(type,object,opts={}){
  const test=setup(webhookFile,opts);
- const payload=JSON.stringify({id:'evt_synthetic1',type,livemode:false,created:1795478400,data:{object}});
+ const payload=JSON.stringify({id:'evt_synthetic1',type,livemode:!!opts.liveEvent,created:1795478400,data:{object}});
  const signature=verifier.webhooks.generateTestHeaderString({payload,secret:whsec});
  const res=await test.handler(new Request(origin+'/webhook',{method:'POST',body:payload,
   headers:{'stripe-signature':opts.badSignature?'t=1,v1=bad':signature}}));
@@ -166,6 +167,10 @@ async function webhook(type,object,opts={}){
  assert.equal(x.rpcCalls[0].payload.p_seller_profile_id,seller);
  assert.equal(x.rpcCalls[0].payload.p_checkout_request_id,reservation);
  passes.push('Signed invoice.paid produces verified membership RPC');
+ const live=await webhook('invoice.paid',invoice,{liveEvent:true});
+ assert.equal(live.status,422);assert.equal(live.body.error,'LIVE_EVENT_REJECTED');
+ assert.equal(live.rpcCalls.length,0);
+ passes.push('Live event rejected by sandbox Webhook before any database write');
  const bad=await webhook('invoice.paid',invoice,{badSignature:true});
  assert.equal(bad.status,400);assert.equal(bad.rpcCalls.length,0);
  const queued=await webhook('invoice.paid',invoice,{
