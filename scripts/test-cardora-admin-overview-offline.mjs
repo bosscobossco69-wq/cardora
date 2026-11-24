@@ -22,7 +22,7 @@ assert.ok(!source.includes("let legacyHistory:"));
 const origin="https://cardora-test.example";
 function harness({role="admin",status="active",verified="user-1",
   gate=true,projectCorrect=true,roleError=false,rosterError=false,
-  canRead=true}={}){
+  canRead=true,anonymous=false}={}){
   let handler;
   let reads=0;
   let authCalls=0;
@@ -47,7 +47,7 @@ function harness({role="admin",status="active",verified="user-1",
         rosterError&&table==="users"?
          {data:null,error:{message:"denied"}}:
          table==="users"?
-          {data:[{id:"u1",member_id:"C001",email:"jane@example.com",role:"buyer",status:"active",created_at:"2026-11-01"}],error:null}:
+          {data:[{id:"u1",member_id:"C001",email:"jane@example.invalid",role:"buyer",status:"active",created_at:"2026-11-01"}],error:null}:
          table==="seller_applications"?
           {data:[{id:"a1",name:"Seller Test",email:"seller@example.com",role:"seller",status:"pending",created_at:"2026-11-01"}],error:null}:
           {data:[],error:null}
@@ -65,7 +65,7 @@ function harness({role="admin",status="active",verified="user-1",
   };
   const createClient=(_url,key)=>key==="anon-offline-fake"?
     {auth:{getUser:async()=>{authCalls++;return verified?
-      {data:{user:{id:verified}},error:null}:
+      {data:{user:{id:verified,is_anonymous:anonymous}},error:null}:
       {data:{user:null},error:{message:"bad token"}}}}}:
     {from:query};
   const context={
@@ -122,6 +122,7 @@ await check("no token rejected",{}, {token:null},401,(_response,h)=>{
 await check("invalid token rejected",{verified:null},{},401,(_response,h)=>{
  assert.equal(h.getReads(),0);
 });
+await check("anonymous identity denied before role lookup",{anonymous:true},{},401,(_response,h)=>{assert.equal(h.getReads(),0);});
 await check("ordinary customer denied",{role:"user"},{},403,(_response,h)=>{
  assert.equal(h.getReads(),1); // only protected role lookup
 });
@@ -133,11 +134,12 @@ await check("read failure returns 503 without data",{canRead:false},{},503,({bod
 });
 await check("active admin obtains only masked email",{},{},200,({body},h)=>{
  assert.equal(body.customers.records.length,1);
- assert.equal(body.customers.records[0].email_masked,"j***@example.com");
+ assert.equal(body.customers.records[0].email_masked,"j***@example.invalid");
  assert.equal(body.customers.records[0].email,undefined);
+ assert.equal(body.customers.records[0].suspected_test,true);
  assert.equal(body.customers.marketing_available,false);
  assert.equal(body.customers.followup_available,false);
- assert.equal(JSON.stringify(body).includes("jane@example.com"),false);
+ assert.equal(JSON.stringify(body).includes("jane@example.invalid"),false);
  assert.equal(body.applications.length,1);
  assert.equal(body.applications[0].email_masked,"s***@example.com");
  assert.equal(body.applications[0].email,undefined);
