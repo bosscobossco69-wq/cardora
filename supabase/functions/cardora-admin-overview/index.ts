@@ -43,9 +43,14 @@ Deno.serve(async(request)=>{
    return respond({error:"INVALID_ORIGIN"},403);
  if(request.method==="OPTIONS")return respond({ok:true});
  if(request.method!=="POST")return respond({error:"METHOD_NOT_ALLOWED"},405);
- // Independent QA gate. Must remain off until auth, admin and CORS tests pass.
- if(Deno.env.get("CARDORA_ADMIN_OVERVIEW_VERIFIED")!=="true"||
-    Deno.env.get("CARDORA_AUTH_MIGRATION_VERIFIED")!=="true")
+ // Separate, explicit preview release approval. Does not certify the global
+ // migration or enable checkout, application writes, or production access.
+ const previewReadOnly=Deno.env.get("CARDORA_ADMIN_PREVIEW_READONLY_VERIFIED")==="true"&&
+   !allowProductionOrigin&&!!origin&&previewOrigins.includes(origin)&&isExactHttpsOrigin(origin)&&
+   origin!==productionOrigin&&origin!=="https://cardora-rose.vercel.app";
+ const fullRelease=Deno.env.get("CARDORA_ADMIN_OVERVIEW_VERIFIED")==="true"&&
+   Deno.env.get("CARDORA_AUTH_MIGRATION_VERIFIED")==="true";
+ if(!previewReadOnly&&!fullRelease)
    return respond({error:"ADMIN_OVERVIEW_NOT_VERIFIED"},503);
  const projectUrl=Deno.env.get("SUPABASE_URL")||"";
  if(projectUrl!=="https://fdkfquvzbswxocyrhduk.supabase.co")
@@ -75,7 +80,7 @@ Deno.serve(async(request)=>{
  // Legacy is history ONLY. Credentials stay server-side and read-only queries
  // never update old applications, users, wallets or permissions.
  const legacyUrl="https://crqqockaetgacddxkqpb.supabase.co";
- const legacyKey=Deno.env.get("CARDORA_LEGACY_READ_SERVICE_KEY")||"";
+ const legacyKey=fullRelease?(Deno.env.get("CARDORA_LEGACY_READ_SERVICE_KEY")||""):"";
  const legacy=legacyKey?createClient(legacyUrl,legacyKey,{
    auth:{persistSession:false,autoRefreshToken:false}
  }):null;
