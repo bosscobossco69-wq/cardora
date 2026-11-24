@@ -67,6 +67,15 @@ begin
   ) then
     raise exception 'Seller not eligible';
   end if;
+  -- Defense in depth: a pre-existing Cardora/ToyyibPay current membership
+  -- must be reconciled before reserving Stripe Checkout. This check also
+  -- protects server callers that bypass the browser eligibility check.
+  if exists (
+    select 1 from public.seller_subscriptions s
+      where s.seller_profile_id=p_seller_profile_id and s.is_current=true
+  ) then
+    raise exception 'Existing membership requires reconciliation';
+  end if;
   -- A row never automatically expires: this deliberately requires manual
   -- verification after Stripe timeouts to avoid accidental duplicate charges.
   insert into public.cardora_stripe_checkout_reservations(seller_profile_id,tier_code)
@@ -144,6 +153,15 @@ begin
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_seller_profile_id::text));
   select * into v_link from public.cardora_stripe_subscription_links
     where seller_profile_id=p_seller_profile_id for update;
+  -- A verified invoice must NEVER adopt or overwrite a pre-existing
+  -- non-Stripe membership. A payment from a stale/orphaned Checkout needs
+  -- manual reconciliation/refund rather than silent entitlement transfer.
+  if p_kind='paid' and v_link.seller_profile_id is null and exists (
+    select 1 from public.seller_subscriptions s
+      where s.seller_profile_id=p_seller_profile_id and s.is_current=true
+  ) then
+    raise exception 'Existing non-Stripe membership requires reconciliation';
+  end if;
   if v_link.seller_profile_id is not null and (
     v_link.stripe_subscription_id<>p_stripe_subscription_id or
     v_link.stripe_customer_id<>p_stripe_customer_id or
