@@ -70,6 +70,16 @@ Deno.serve(async (req) => {
   if (sellerError || !seller) return json({error:"SELLER_PROFILE_REQUIRED"},403);
   if (seller.status !== "approved" || seller.verification_status !== "verified")
     return json({error:"SELLER_NOT_APPROVED"},403);
+  // The legacy Cardora/ToyyibPay membership table is a second source of
+  // existing paid entitlements. Never create a new Stripe subscription while any
+  // CURRENT membership row exists: a cutover requires reconciliation first.
+  // This is service-side, not a browser-side "has subscription" claim.
+  const {data:currentMemberships,error:membershipError} = await service.from("seller_subscriptions")
+    .select("id,status,is_current").eq("seller_profile_id",seller.id)
+    .eq("is_current",true).limit(2);
+  if (membershipError) return json({error:"MEMBERSHIP_STATE_UNAVAILABLE"},503);
+  if ((currentMemberships || []).length > 0)
+    return json({error:"EXISTING_CARDORA_MEMBERSHIP_REQUIRES_RECONCILIATION"},409);
   // A billing link already present indicates an existing subscription: block a second Checkout.
   // Race-free prevention and managed upgrades still require a separate server reservation/lock.
   const {data:existing,error:existingError} = await service.from("cardora_stripe_subscription_links")
