@@ -133,6 +133,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c7
 </section>
 <section id="account" hidden>
 <h2>Your account</h2>
+<div id="memberDetails" hidden><p>Member ID: <strong id="memberNumber"></strong></p><p>Signed in as: <span id="memberEmail"></span></p><p>Membership status: <strong>Active</strong></p></div>
 <p id="accountStatus" role="status" aria-live="polite"></p>
 <button class="secondary" type="button" id="logout">Sign out</button>
 </section>
@@ -180,21 +181,29 @@ googleButton.addEventListener('click',async()=>{
  finally{googleButton.disabled=!googlePreviewVerified;}
 });
 let refreshGeneration=0;
+function clearMember(){ $('memberDetails').hidden=true;safeText('memberNumber','');safeText('memberEmail',''); }
+function clearAccountView(){clearMember();$('interestPanel').hidden=true;$('application').hidden=true;}
+function verificationUnavailable(){refreshGeneration++;clearAccountView();safeText('accountStatus','Account verification unavailable. Please retry or sign out.');}
 async function refresh(){
  const generation=++refreshGeneration;
+ clearAccountView();
  const user=await sessionUser();
  if(generation!==refreshGeneration)return;
  $('registration').hidden=!!user;
  $('interestPanel').hidden=true;
- $('application').hidden=!user||role()==='collector';
+ $('application').hidden=true;
  $('account').hidden=!user;
  if(user){$('application').hidden=true;safeText('accountStatus','Signed in to Cardora Auth. Checking linked member profile…');
-  const {data:profile,error}=await client.from('users').select('id,status').eq('auth_user_id',user.id).maybeSingle();
+  const {data:profile,error}=await client.from('users').select('id,status,member_id').eq('auth_user_id',user.id).maybeSingle();
   if(generation!==refreshGeneration)return;
+  const confirmed=await sessionUser();
+  if(generation!==refreshGeneration)return;
+  if(!confirmed||confirmed.id!==user.id){verificationUnavailable();return;}
   if(error||!profile||profile.status!=='active'){
    $('application').hidden=true;
    safeText('accountStatus','Your account is signed in but its Cardora profile is not active or cannot be read. No application will be submitted.');
   }else{
+   safeText('memberNumber',profile.member_id||'Unavailable');safeText('memberEmail',confirmed.email||'Unavailable');$('memberDetails').hidden=false;
    $('interestPanel').hidden=false;
    $('application').hidden=role()==='collector';
    safeText('accountStatus','Your linked Cardora member profile is active. Seller and partner approvals remain separate.');
@@ -206,7 +215,7 @@ const hints={
  seller:'You can apply without inventory today; real listings require owned stock and separate review.',
  agent:'Promote Cardora truthfully through your own Facebook, TikTok, Shopee or other channels. No commissions or points are active.'
 };
-document.getElementById('roles').addEventListener('change',()=>{safeText('roleHint',hints[role()]);refresh()});
+document.getElementById('roles').addEventListener('change',()=>{safeText('roleHint',hints[role()]);refresh().catch(verificationUnavailable)});
 $('register').addEventListener('submit',async e=>{
  e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;
  try{
@@ -270,10 +279,11 @@ $('apply').addEventListener('submit',e=>{
 });
 $('logout').addEventListener('click',async()=>{const {error}=await client.auth.signOut();if(error){safeText('accountStatus','Unable to sign out. Please retry.');return;}resetOtp();safeText('otpStatus','');await refresh()});
 client.auth.onAuthStateChange((event)=>{
- if(event==='SIGNED_OUT'){refreshGeneration++;$('interestPanel').hidden=true;$('application').hidden=true;$('account').hidden=true;$('registration').hidden=false;safeText('accountStatus','');resetOtp();}
+ if(event==='SIGNED_OUT'){refreshGeneration++;clearAccountView();$('account').hidden=true;$('registration').hidden=false;safeText('accountStatus','');resetOtp();}
  // Run Supabase calls outside the auth callback to avoid re-entrant auth locks.
- setTimeout(()=>refresh().catch(()=>{safeText('accountStatus','Account verification unavailable.');$('application').hidden=true;}),0);
+ if(event==='SIGNED_IN'||event==='USER_UPDATED'){refreshGeneration++;clearAccountView();}
+ setTimeout(()=>refresh().catch(verificationUnavailable),0);
 });
-refresh().catch(()=>{safeText('accountStatus','Account verification unavailable.');$('application').hidden=true;});
+refresh().catch(verificationUnavailable);
 })();
 </script></body></html>
