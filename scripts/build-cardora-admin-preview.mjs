@@ -97,13 +97,24 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
     if(a.suspected_test)create('small','Possible test record · Review required',entry);
    }
  };
- async function load(){
+ let loadGeneration=0, displayedUserId=null;
+ function clearOverview(){
    $('cards').replaceChildren();$('customers').replaceChildren();$('applications').replaceChildren();$('archive').replaceChildren();
+   text($('activeAccount'),'');text($('profileStatus'),'Account link not yet verified.');
+ }
+ function invalidateOverview(){loadGeneration++;displayedUserId=null;clearOverview();}
+ async function load(){
+   const generation=++loadGeneration;
+   const current=()=>generation===loadGeneration;
+   displayedUserId=null;clearOverview();
    text($('resultStatus'),'Verifying admin access…');
    const {data:{session},error}=await client.auth.getSession();
+   if(!current())return;
    if(error||!session?.access_token){showAuth(false);text($('loginState'),'Sign in with an existing Cardora admin account.');return}
-   const verified=await client.auth.getUser();
-   if(verified.error||!verified.data?.user){showAuth(false);text($('loginState'),'Your session has expired.');return}
+   const verified=await client.auth.getUser(session.access_token);
+   if(!current())return;
+   if(verified.error||!verified.data?.user||verified.data.user.is_anonymous||verified.data.user.id!==session.user?.id){showAuth(false);text($('loginState'),'Your session has expired.');return}
+   displayedUserId=verified.data.user.id;
    showAuth(true);text($('loginState'),'Cardora session verified.');
    text($('activeAccount'),'Signed in as '+verified.data.user.email+' · Switch accounts with Sign out.');
    // Read ONLY this signed-in identity's profile, protected by users own-row RLS.
@@ -112,6 +123,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
    text($('profileStatus'),'Checking your Cardora account link…');
    const profileResult=await client.from('users')
      .select('id,status,role').eq('auth_user_id',verified.data.user.id).maybeSingle();
+   if(!current())return;
    if(profileResult.error){
      text($('profileStatus'),'Your Cardora profile is unavailable. Check account permissions.');
      text($('resultStatus'),'Admin data was not requested: account validation failed.');
@@ -132,6 +144,12 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
    const {data:result,error:invokeError}=await client.functions.invoke('cardora-admin-overview',{
      method:'POST',body:{},headers:{Authorization:'Bearer '+session.access_token}
    });
+   if(!current())return;
+   const latest=await client.auth.getSession();
+   if(!current())return;
+   if(latest.error||latest.data?.session?.user?.id!==displayedUserId){
+     invalidateOverview();showAuth(false);text($('loginState'),'Session changed. Please sign in again.');return;
+   }
    if(invokeError||!result?.counts){
      // Only classify known response statuses/error codes; never echo raw error text,
      // response bodies, bearer tokens, private emails, or server-side credentials.
@@ -145,7 +163,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
      }else if(code==='ADMIN_OVERVIEW_NOT_VERIFIED'){
        text($('resultStatus'),'Admin API has not passed release verification.');
      }else if(status===404){
-       text($('resultStatus'),'Admin API is not deployed (404). Signing in does not grant access.');
+       text($('resultStatus'),'Admin API returned 404. Check the request URL, target deployment and function routing; the cause is not confirmed.');
      }else{
        text($('resultStatus'),'Admin data is unavailable. No artificial counts are shown.');
      }
@@ -224,7 +242,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
       throw new Error('EMAIL_IDENTITY_MISMATCH');
     }
     $('otpToken').value='';
-    await load();
+    await safeLoad();
   }catch(err){text($('loginState'),'Verification failed. Check the code and try again.')}
   finally{button.disabled=false}
  });
@@ -237,19 +255,28 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
       if(!identity?.user || identity.user.email?.toLowerCase()!==email){
         await client.auth.signOut();throw new Error('EMAIL_IDENTITY_MISMATCH');
       }
-      $('password').value='';await load();
+      $('password').value='';await safeLoad();
   }catch(err){text($('loginState'),'Sign-in failed. Use an existing Cardora account with password access enabled.')}
   finally{$('loginButton').disabled=false}
  });
- $('refreshButton').addEventListener('click',load);
+ function safeLoad(){const pending=load();const generation=loadGeneration;return pending.catch(()=>{if(generation!==loadGeneration)return;invalidateOverview();showAuth(false);text($('loginState'),'Unable to verify the current session. Please sign in again.');});}
+ $('refreshButton').addEventListener('click',safeLoad);
+ client.auth.onAuthStateChange((event,session)=>{
+  if(event==='SIGNED_OUT'||(displayedUserId&&session?.user?.id!==displayedUserId)){
+   invalidateOverview();showAuth(false);text($('resultStatus'),'Admin data cleared.');
+   text($('loginState'),'Session changed. Please sign in again.');
+  }
+ });
  $('logoutButton').addEventListener('click',async()=>{
+  invalidateOverview();
+  text($('resultStatus'),'Admin data cleared.');
   const {error}=await client.auth.signOut();
   if(error){text($('loginState'),'Unable to sign out. Please retry.');return}
   $('cards').replaceChildren();$('customers').replaceChildren();$('applications').replaceChildren();$('archive').replaceChildren();
   $('otpToken').value='';$('verifyOtpForm').hidden=true;
   text($('activeAccount'),'');showAuth(false);text($('loginState'),'Signed out. You can now enter a different email.');
  });
- load().catch(()=>{showAuth(false);text($('loginState'),'Unable to initialize sign-in.')});
+ safeLoad();
 })();
 </script></body></html>`;
 mkdirSync('dist-preview',{recursive:true});
