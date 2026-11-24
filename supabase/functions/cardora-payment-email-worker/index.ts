@@ -48,8 +48,10 @@ Deno.serve(async(req)=>{
      new Date(membership.current_period_ends_at).getTime()<new Date(pending.period_end).getTime())
     return reply({error:"MEMBERSHIP_NO_LONGER_VERIFIED",invoice_status:"sending_review_required"},409);
   const {data:seller,error:sellerError}=await db.from("seller_profiles")
-    .select("user_id").eq("id",pending.seller_profile_id).maybeSingle();
-  if(sellerError||!seller?.user_id)return reply({error:"SELLER_IDENTITY_UNAVAILABLE"},409);
+    .select("user_id,status,verification_status").eq("id",pending.seller_profile_id).maybeSingle();
+  if(sellerError||!seller?.user_id||seller.status!=="approved"||
+     seller.verification_status!=="verified")
+    return reply({error:"SELLER_IDENTITY_UNAVAILABLE"},409);
   const {data:appUser,error:userError}=await db.from("users")
     .select("auth_user_id,status").eq("id",seller.user_id).maybeSingle();
   if(userError||appUser?.status!=="active"||!appUser.auth_user_id)
@@ -76,8 +78,12 @@ Deno.serve(async(req)=>{
     return reply({error:"EMAIL_PROVIDER_NOT_CONFIRMED",invoice_status:"sending_review_required"},502);
   }
   const body=await result.json().catch(()=>({}));
+  // Do not claim an email was sent without a provider-issued message identifier.
+  // Keep the record in 'sending' for manual reconciliation, never blind retries.
+  if(typeof body.id!=="string"||!/^[-a-zA-Z0-9_]{8,128}$/.test(body.id))
+    return reply({error:"EMAIL_PROVIDER_ID_UNVERIFIED",invoice_status:"sending_review_required"},502);
   const {data:saved,error:saveError}=await db.from("cardora_payment_email_outbox")
-    .update({status:"sent",resend_message_id:typeof body.id==="string"?body.id:null,updated_at:new Date().toISOString()})
+    .update({status:"sent",resend_message_id:body.id,updated_at:new Date().toISOString()})
     .eq("stripe_invoice_id",pending.stripe_invoice_id).eq("status","sending")
     .select("stripe_invoice_id").maybeSingle();
   if(saveError||!saved)return reply({error:"EMAIL_SENT_RECORD_FAILED",invoice_status:"sending_review_required"},500);
