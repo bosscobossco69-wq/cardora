@@ -52,7 +52,7 @@ a{color:#ffd174}
 </form>
 <p id="registerStatus" role="status" aria-live="polite"></p>
 <h3>Already registered?</h3>
-<button type="button" class="secondary" disabled aria-describedby="googleHint">Continue with Google</button>
+<button id="googleLogin" type="button" class="secondary" disabled aria-describedby="googleHint">Continue with Google</button>
 <p id="googleHint"><small>Google sign-in is awaiting provider and redirect verification.</small></p>
 <form id="otpSend"><label>Email address<input id="otpEmail" type="email" autocomplete="email" maxlength="254" required></label><button type="submit">Send sign-in code</button></form>
 <form id="otpVerify" hidden><label>Six-digit code<input id="otpCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button type="submit">Verify & sign in</button></form>
@@ -93,21 +93,48 @@ a{color:#ffd174}
 'use strict';
 const url=__CARDORA_JOIN_URL_JSON__;
 const key=__CARDORA_JOIN_KEY_JSON__;
+// Disabled until a separately authorized protected-preview provider test.
+const googlePreviewVerified=false;
 const $=id=>document.getElementById(id);
 const client=window.supabase.createClient(url,key,{auth:{storageKey:'cardora-join-preview-v1',flowType:'pkce',persistSession:true,autoRefreshToken:true}});
 const role=()=>document.querySelector('input[name="interest"]:checked')?.value||'collector';
 const safeText=(id,v)=>{$(id).textContent=String(v)};
 const sessionUser=async()=>{const {data,error}=await client.auth.getUser();return !error&&data?.user&&!data.user.is_anonymous?data.user:null};
+const googleButton=$('googleLogin');
+googleButton.disabled=!googlePreviewVerified;
+googleButton.addEventListener('click',async()=>{
+ if(!googlePreviewVerified||googleButton.disabled)return;
+ if(!$('acceptTerms').checked){safeText('googleHint','Review the draft terms and privacy notice first.');return;}
+ googleButton.disabled=true;
+ try{
+  if(await sessionUser())throw Error('Sign out before switching accounts');
+  const redirectTo=location.origin+'/join.html';
+  if(location.protocol!=='https:'||!location.hostname.endsWith('.vercel.app')||
+     location.hostname==='cardora-rose.vercel.app'||location.pathname!=='/join.html')
+   throw Error('Unapproved preview location');
+  const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo,queryParams:{prompt:'select_account'}}});
+  if(error)throw error;
+  safeText('googleHint','Opening Google sign-in…');
+ }catch(_){safeText('googleHint','Google sign-in unavailable. Verify provider and callback settings.');}
+ finally{googleButton.disabled=!googlePreviewVerified;}
+});
+let refreshGeneration=0;
 async function refresh(){
+ const generation=++refreshGeneration;
  const user=await sessionUser();
+ if(generation!==refreshGeneration)return;
  $('registration').hidden=!!user;
  $('application').hidden=!user||role()==='collector';
  $('account').hidden=!user;
- if(user){safeText('accountStatus','Signed in to Cardora. Seller and partner approvals remain separate.');
+ if(user){$('application').hidden=true;safeText('accountStatus','Signed in to Cardora Auth. Checking linked member profile…');
   const {data:profile,error}=await client.from('users').select('id,status').eq('auth_user_id',user.id).maybeSingle();
+  if(generation!==refreshGeneration)return;
   if(error||!profile||profile.status!=='active'){
    $('application').hidden=true;
    safeText('accountStatus','Your account is signed in but its Cardora profile is not active or cannot be read. No application will be submitted.');
+  }else{
+   $('application').hidden=role()==='collector';
+   safeText('accountStatus','Your linked Cardora member profile is active. Seller and partner approvals remain separate.');
   }
  }else safeText('accountStatus','');
 }
@@ -179,6 +206,11 @@ $('apply').addEventListener('submit',e=>{
  safeText('appStatus','Seller and partner applications are paused pending secure manual-review release. No request was sent.');
 });
 $('logout').addEventListener('click',async()=>{const {error}=await client.auth.signOut();if(error){safeText('accountStatus','Unable to sign out. Please retry.');return;}resetOtp();safeText('otpStatus','');await refresh()});
-refresh();
+client.auth.onAuthStateChange((event)=>{
+ if(event==='SIGNED_OUT'){refreshGeneration++;$('application').hidden=true;$('account').hidden=true;$('registration').hidden=false;safeText('accountStatus','');resetOtp();}
+ // Run Supabase calls outside the auth callback to avoid re-entrant auth locks.
+ setTimeout(()=>refresh().catch(()=>{safeText('accountStatus','Account verification unavailable.');$('application').hidden=true;}),0);
+});
+refresh().catch(()=>{safeText('accountStatus','Account verification unavailable.');$('application').hidden=true;});
 })();
 </script></body></html>
