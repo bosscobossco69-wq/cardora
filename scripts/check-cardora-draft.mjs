@@ -161,8 +161,9 @@ must(stripeSql.includes('v_link.stripe_customer_id<>p_stripe_customer_id'),
   'Event must reject wrong Stripe customer');
 must(stripeSql.includes('v_link.plan_code<>p_plan_code'),
   'Event must reject different subscription plan');
-must(stripeSql.includes('p_period_end<=v_sub_period_end'),
-  'Renewal must not shorten a paid billing period');
+must(stripeSql.includes('p_period_end<v_sub_period_end') &&
+     stripeSql.includes("p_period_end=v_sub_period_end and v_sub_status='active'"),
+  'Historical payments must not shorten periods; equal-period payments can restore past_due memberships');
 must(stripeSql.includes('current_review_mode=case when v_plan.review_mode'),
   'New paid subscription must derive review mode from plan');
 for(const tier of approvedPlans) must(checkout.includes(tier) && webhook.includes(tier),'Tier missing: '+tier);
