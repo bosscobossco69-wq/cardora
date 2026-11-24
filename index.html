@@ -219,18 +219,18 @@ html[data-ptx-auth="signed-in"] .premium-guest-auth{display:none!important}
    <h1>Collect with confidence. Trade with purpose.</h1>
    <p>A refined marketplace for trading-card collectors and emerging sellers. Discover cards, explore the community, and take the first step toward your own seller space.</p>
    <div class="cp-actions">
-    <button type="button" class="cp-btn cp-btn-primary premium-guest-auth" onclick="ptxOpenAuth('register')">Create free account</button>
+    <button type="button" class="cp-btn cp-btn-primary premium-guest-auth" onclick="ptxOpenAuth('register')">Create account with Google</button>
     <button type="button" class="cp-btn cp-btn-secondary premium-guest-auth" onclick="ptxOpenAuth('login')">Log in</button>
     <button type="button" class="cp-btn cp-btn-primary" onclick="ptxJump('ptxMarketplace')">Explore cards</button>
    </div>
-   <div class="cp-note">Browse without paying. Seller approval and paid memberships are separate steps.</div>
+   <div class="cp-note">Browsing is free. Google sign-in is currently available; email verification codes are not. Seller approval and paid memberships are separate steps.</div>
   </div>
   <aside class="cp-panel cp-feature">
    <p class="cp-eyebrow">THE SELLER PROGRAM</p>
    <h2>Your seller journey begins here.</h2>
    <p>Open an account, apply as a seller, then compare transparent monthly memberships.</p>
    <div class="cp-actions">
-    <a href="join-preview.html" class="cp-btn cp-btn-primary">Seller application preview</a>
+    <a href="join-preview.html" class="cp-btn cp-btn-primary">View seller interest form</a>
     <a href="#cardoraMembershipPreview" class="cp-btn cp-btn-secondary">Compare plans</a>
    </div>
    <div class="cp-note">Early-access application only. Approval and payment are not currently available.</div>
@@ -2575,11 +2575,11 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 <button class="ptx-auth-main" onclick="ptxVerifyOtp('login')" type="button">Verify &amp; Sign in</button>
 </div>
 </div>
-<div class="ptx-auth-note">New to Trixovel?</div>
+<div class="ptx-auth-note">New to Cardora?</div>
 <button class="ptx-auth-switch" onclick="ptxOpenAuth('register')" type="button">Create account</button>
 </div>
 <div class="ptx-auth-view" id="ptxAuthRegister">
-<div class="ptx-register-subtitle">Create your account with Google — no password needed.</div>
+<div class="ptx-register-subtitle">Create your Cardora account using Google. Email-code sign-up is not enabled yet.</div>
 <button class="ptx-google-btn" onclick="ptxGoogleAuth()" type="button"><span class="ptx-google-icon">G</span><span>Continue with Google</span></button>
 <div class="ptx-auth-note">Email codes are not available yet: this project cannot deliver verification mail. Sign up with Google instead.</div>
 <div class="ptx-auth-note" id="ptxRegisterMessage" style="min-height:20px"></div>
@@ -2593,7 +2593,7 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 <button class="ptx-auth-main" onclick="ptxVerifyOtp('register')" type="button">Verify &amp; Create account</button>
 </div>
 </div>
-<div class="ptx-auth-note">By continuing, you agree to the Terms of Service and Privacy Policy.</div>
+<div class="ptx-auth-note">Before continuing, please review the <a href="terms.html" target="_blank" rel="noopener noreferrer">Terms of Service (draft)</a> and <a href="privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy (draft)</a>. Registration does not activate a paid membership.</div>
 <div class="ptx-auth-note">Already have an account?</div>
 <button class="ptx-auth-switch" onclick="ptxOpenAuth('login')" type="button">Sign in</button>
 </div>
