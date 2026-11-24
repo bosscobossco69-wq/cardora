@@ -113,7 +113,7 @@ jobs:
           grep -Fq "More than one visible seller profile is linked." dist-staging/index.html
           grep -Fq "sessionData.user.is_anonymous" dist-staging/index.html
           grep -q "client.auth.getUser()" dist-staging/index.html
-          grep -q 'Listing submission is still paused' dist-staging/index.html || grep -q 'Listing submission is still paused' scripts/build-cardora-staging.mjs
+          grep -Fq 'server-side eligibility and listing submission remain paused' dist-staging/index.html
           if grep -q "rpc('create_seller_listing'" dist-staging/index.html; then echo "Unreviewed listing create enabled"; exit 1; fi
           grep -q 'Your details will not be submitted or saved' dist-staging/index.html
           if grep -q 'onclick="ptxSubmitListing()"' dist-staging/index.html; then echo "Unsafe seller submit button still active"; exit 1; fi
