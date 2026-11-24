@@ -169,6 +169,11 @@ jobs:
           grep -q 'signInWithPassword' dist-preview/index.html
           grep -q 'signInWithOtp' dist-preview/index.html
           grep -q 'shouldCreateUser:false' dist-preview/index.html
+          grep -Fq "Signed in as " dist-preview/index.html
+          grep -Fq "current.user.email?.toLowerCase()!==email" dist-preview/index.html
+          grep -Fq "afterLogout?.session" dist-preview/index.html
+          grep -Fq "identity.user.email?.toLowerCase()!==email.toLowerCase()" dist-preview/index.html
+          grep -Fq "id=\"activeAccount\"" dist-preview/index.html
           grep -q "verifyOtp({email,token,type:'email'})" dist-preview/index.html
           grep -q 'cardora-admin-overview' dist-preview/index.html
           grep -q 'Customers · Read-only' dist-preview/index.html
