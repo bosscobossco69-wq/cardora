@@ -37,6 +37,16 @@ async function run(opts={}){
     eq(col,value){filters.push([col,value]);return chain},
     order(){return chain},limit(){return chain},
     update(payload){operation='update';Object.assign(values,payload);return chain},
+    // Supabase PostgREST updates are thenable even without .select()/.maybeSingle().
+    // Model the final 'sent' update rather than silently skipping it.
+    then(resolve,reject){
+      if(operation!=='update')return Promise.resolve({data:null,error:null}).then(resolve,reject);
+      state.updates.push({filters,values:{...values}});
+      if(!state.outbox||filters.some(([k,v])=>state.outbox[k]!==v))
+        return Promise.resolve({data:null,error:null}).then(resolve,reject);
+      Object.assign(state.outbox,values);
+      return Promise.resolve({data:null,error:null}).then(resolve,reject);
+    },
     async maybeSingle(){
      state.queries.push({table,filters,operation});
      if(table==='cardora_payment_email_outbox'){
