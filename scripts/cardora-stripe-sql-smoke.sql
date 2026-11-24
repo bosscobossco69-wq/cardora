@@ -35,11 +35,18 @@ CREATE TABLE public.seller_subscriptions (
 );
 INSERT INTO public.seller_profiles VALUES
  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','approved','verified'),
- ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','pending','unverified');
+ ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','pending','unverified'),
+ ('cccccccc-cccc-4ccc-8ccc-cccccccccccc','approved','verified');
 INSERT INTO public.seller_subscription_plans VALUES
  ('basic','basic','MYR',true,'ai',0),
  ('pro','pro','MYR',true,'human',5),
  ('business','business','MYR',true,'human',20);
+-- Third synthetic seller represents a CURRENT pre-Stripe membership.
+INSERT INTO public.seller_subscriptions
+ (seller_profile_id,plan_code,status,is_current,started_at,current_period_starts_at,current_period_ends_at)
+ VALUES
+ ('cccccccc-cccc-4ccc-8ccc-cccccccccccc','basic','active',true,
+  '2026-11-01T00:00:00Z','2026-11-01T00:00:00Z','2026-12-01T00:00:00Z');
 COMMIT;
 \i supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql
 \i supabase/migrations/DRAFT_cardora_payment_email_outbox.sql
@@ -65,6 +72,36 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN denied:=true;
   END;
   IF NOT denied THEN RAISE EXCEPTION 'Concurrent tier change accepted'; END IF;
+  -- The original membership exists even though there is no Stripe link.
+  -- Neither reservation nor an orphaned, otherwise valid paid event may
+  -- silently replace that membership.
+  denied:=false;
+  BEGIN
+    PERFORM public.cardora_reserve_stripe_checkout('cccccccc-cccc-4ccc-8ccc-cccccccccccc','basic');
+  EXCEPTION WHEN OTHERS THEN denied:=true;
+  END;
+  IF NOT denied THEN RAISE EXCEPTION 'Unreconciled legacy membership accepted for Checkout'; END IF;
+  -- Simulate a stale reservation created by a prior code version.
+  INSERT INTO public.cardora_stripe_checkout_reservations
+    (seller_profile_id,tier_code) VALUES
+    ('cccccccc-cccc-4ccc-8ccc-cccccccccccc','basic');
+  denied:=false;
+  BEGIN
+    PERFORM public.cardora_apply_verified_stripe_event(
+      'evt_orphanedlegacy1','paid','cccccccc-cccc-4ccc-8ccc-cccccccccccc','basic',
+      'cus_orphanedlegacy1','sub_orphanedlegacy1','2026-11-24T00:00:00Z','2026-12-24T00:00:00Z',
+      (SELECT request_id FROM public.cardora_stripe_checkout_reservations
+        WHERE seller_profile_id='cccccccc-cccc-4ccc-8ccc-cccccccccccc'),1795478400);
+  EXCEPTION WHEN OTHERS THEN denied:=true;
+  END;
+  IF NOT denied THEN RAISE EXCEPTION 'Paid Stripe event overwrote unreconciled membership'; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.seller_subscriptions
+      WHERE seller_profile_id='cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+      AND status='active' AND is_current=true
+      AND current_period_ends_at='2026-12-01T00:00:00Z'::timestamptz
+  ) THEN RAISE EXCEPTION 'Legacy membership mutated'; END IF;
+
   SELECT public.cardora_apply_verified_stripe_event(
     'evt_testpaid001','paid','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','basic',
     'cus_test001','sub_test001','2026-11-24T00:00:00Z','2026-12-24T00:00:00Z',
