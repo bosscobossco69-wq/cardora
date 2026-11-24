@@ -1,4 +1,4 @@
-// Cardora management overview — DRAFT ONLY; NOT DEPLOYED.
+// Cardora management overview — expanded dashboard draft; deploy only after QA.
 // Administrator-only, read-only statistics from the NEW Cardora Supabase project.
 // The old pokemon-treasure-demo project is intentionally not silently combined.
 // Never put SUPABASE_SERVICE_ROLE_KEY into browser JavaScript.
@@ -87,7 +87,8 @@ Deno.serve(async(request)=>{
    if(filter)query=query.eq(filter.field,filter.value);
    const r=await query;
    if(r.error)throw new Error("count failed for "+table);
-   return r.count??0;
+   if(typeof r.count!=="number")throw new Error("count unavailable for "+table);
+   return r.count;
  };
  try {
    const [registered,sellers,agents,applications,pending,approved,
@@ -101,6 +102,33 @@ Deno.serve(async(request)=>{
      count("seller_applications",{field:"role",value:"agent"}),
      count("listings"),count("orders"),count("seller_subscriptions")
     ]);
+   // Malaysia business calendar, exact counts of created profile/application rows.
+   // Profiles are not Auth signups and include internal/test accounts.
+   const myToday=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+   const dayStart=new Date(myToday+"T00:00:00+08:00").getTime();
+   const dateRangeCount=async(table:string,start:number,end:number)=>{
+     const r=await adminClient.from(table).select("id",{head:true,count:"exact"})
+       .gte("created_at",new Date(start).toISOString()).lt("created_at",new Date(end).toISOString());
+     return r.error||typeof r.count!=="number"?null:r.count;
+   };
+   const [profilesToday,profilesYesterday,applicationsToday,applicationsYesterday]=await Promise.all([
+     dateRangeCount("users",dayStart,dayStart+86400000),
+     dateRangeCount("users",dayStart-86400000,dayStart),
+     dateRangeCount("seller_applications",dayStart,dayStart+86400000),
+     dateRangeCount("seller_applications",dayStart-86400000,dayStart)
+   ]);
+   // Explicit column allowlists; never include balances, addresses, phone numbers or payment credentials.
+   const recent=async(table:string,fields:string)=>{
+     const r=await adminClient.from(table).select(fields).order("created_at",{ascending:false}).limit(50);
+     return r.error?{available:false,records:[],limit:50}:{available:true,records:r.data||[],limit:50};
+   };
+   const [sellerRows,agentRows,listingRows,orderRows,subscriptionRows]=await Promise.all([
+     recent("seller_profiles","display_name,status,verification_status,trust_level,created_at"),
+     recent("agent_profiles","display_name,status,created_at"),
+     recent("listings","title,status,price,currency,inventory,created_at"),
+     recent("orders","order_id,status,total,currency,created_at"),
+     recent("seller_subscriptions","plan_code,status,is_current,created_at")
+   ]);
    const details=await adminClient.from("seller_applications")
      .select("id,created_at,name,email,role,status")
      .order("created_at",{ascending:false}).limit(50);
@@ -170,6 +198,9 @@ Deno.serve(async(request)=>{
        agent_applications:agentApplications,listings,orders,subscription_records:subscriptions},
      // Admin-only; do not log or cache personal application information.
      applications:canonical,legacy_history:legacyHistory,
+     activity:{timezone:"Asia/Kuala_Lumpur",date:myToday,profiles_today:profilesToday,profiles_yesterday:profilesYesterday,applications_today:applicationsToday,applications_yesterday:applicationsYesterday},
+     modules:{sellers:sellerRows,agents:agentRows,listings:listingRows,orders:orderRows,subscriptions:subscriptionRows},
+     integrations:{stripe_revenue:"not_connected",ai_review:"not_connected",outreach:"disabled_no_consent"},
      customers:{source:"cardora",total_profiles:registered,
        displayed_count:customerRoster.length,limit:50,
        records:customerRoster,marketing_available:false,
