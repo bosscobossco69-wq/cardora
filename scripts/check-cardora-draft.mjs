@@ -164,8 +164,14 @@ for(const functionName of ['admin_get_listing_review_queue','admin_review_listin
   must(statusGuardSql.includes('CREATE OR REPLACE FUNCTION public.'+functionName),
     'Active-admin patch missing '+functionName);
 }
-must(statusGuardSql.split("u.status='active'").length-1===3,
-  'Each privileged moderation function must reject inactive admins');
+for(const functionName of ['admin_get_listing_review_queue','admin_review_listing','admin_review_seller_application']){
+  const body=statusGuardSql.split('CREATE OR REPLACE FUNCTION public.'+functionName+'(')[1]?.split('$function$;')[0]||'';
+  must(/u\.auth_user_id\s*=\s*auth\.uid\(\)\s+and u\.role\s*=\s*'admin'\s+and u\.status='active'/.test(body),
+    'Active admin identity check missing in '+functionName);
+}
+for(const guard of ["ACTIVE_LINKED_MEMBER_REQUIRED","SELLER_REACTIVATION_REQUIRES_REVIEW","AGENT_REACTIVATION_REQUIRES_REVIEW","where public.seller_profiles.status='approved'","and public.agent_profiles.status = 'active'"]){
+  must(statusGuardSql.includes(guard),'Seller approval safeguard missing: '+guard);
+}
 must(statusGuardSql.includes('limit least(greatest(coalesce(p_limit,50),1),100)'),
   'Listing moderation queue should cap untrusted limit arguments');
 must(overview.includes('CARDORA_ADMIN_OVERVIEW_VERIFIED'),'Admin overview verification gate missing');
