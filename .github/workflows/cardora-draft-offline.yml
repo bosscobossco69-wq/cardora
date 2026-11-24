@@ -150,16 +150,20 @@ jobs:
           if grep -q '__CARDORA_JOIN_' dist-preview/join.html; then echo "Public registration config was not injected"; exit 1; fi
           if grep -q 'crqqockaetgacddxkqpb' dist-preview/join.html; then echo "Old Auth project leaked into registration"; exit 1; fi
           node -e "const fs=require('fs'),vm=require('vm');const s=fs.readFileSync('dist-preview/join.html','utf8');const scripts=[...s.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(x=>x[1]);for(const x of scripts)new vm.Script(x);console.log('PASS: join page scripts parse');"
-          grep -q 'Cardora · 统一管理后台' dist-preview/index.html
-          grep -q '不要反复尝试旧项目密码' dist-preview/index.html
-          grep -q '本页不会创建账号或设置密码' dist-preview/index.html
+          grep -q 'Admin dashboard' dist-preview/index.html
+          grep -q 'Sign in with email' dist-preview/index.html
+          grep -q 'Read-only preview.' dist-preview/index.html
           grep -q 'id="profileStatus"' dist-preview/index.html
+          grep -Fq '<html lang="en">' dist-preview/index.html
+          grep -Fq 'Sign in with email' dist-preview/index.html
+          grep -Fq 'Use a password instead' dist-preview/index.html
+          grep -Fq 'Read-only preview.' dist-preview/index.html
           grep -q "eq('auth_user_id',verified.data.user.id)" dist-preview/index.html
           grep -q "select('id,status,role')" dist-preview/index.html
           grep -q "profileResult.data.status!=='active'" dist-preview/index.html
           grep -q "profileResult.data.role!=='admin'" dist-preview/index.html
-          grep -q '后端独立授权' dist-preview/index.html
-          grep -q '不能通过邮箱自动继承旧管理员权限' dist-preview/index.html
+          grep -q 'Requesting server-side admin authorization' dist-preview/index.html
+          grep -q 'Legacy admin access is not transferred' dist-preview/index.html
           if grep -q 'cardoraCheckAuthAlignment' dist-preview/index.html; then echo "Admin preview must not pretend to contain the customer staging diagnostic"; exit 1; fi
           grep -q 'cardoraCheckAuthAlignment' dist-staging/index.html
           grep -q 'signInWithPassword' dist-preview/index.html
@@ -167,15 +171,15 @@ jobs:
           grep -q 'shouldCreateUser:false' dist-preview/index.html
           grep -q "verifyOtp({email,token,type:'email'})" dist-preview/index.html
           grep -q 'cardora-admin-overview' dist-preview/index.html
-          grep -q 'Customers · 客户管理' dist-preview/index.html
+          grep -q 'Customers · Read-only' dist-preview/index.html
           grep -q "status===401" dist-preview/index.html
           grep -q "status===403" dist-preview/index.html
           grep -q "status===404" dist-preview/index.html
           grep -q "ADMIN_OVERVIEW_NOT_VERIFIED" dist-preview/index.html
-          grep -q "没有管理员访问权限" dist-preview/index.html
-          grep -q "Customers 后端接口尚未部署" dist-preview/index.html
-          grep -q '营销同意：未配置' dist-preview/index.html
-          grep -q '回访：未启用' dist-preview/index.html
+          grep -q "Access denied. Admin permission is required." dist-preview/index.html
+          grep -q "Admin API is not deployed (404)" dist-preview/index.html
+          grep -q 'Marketing consent is not configured' dist-preview/index.html
+          grep -q 'Outreach disabled' dist-preview/index.html
           grep -q 'customers' supabase/functions/cardora-admin-overview/index.ts
           grep -q 'marketing_consent:"not_configured"' supabase/functions/cardora-admin-overview/index.ts
           grep -q 'email_masked:maskEmail(u.email)' supabase/functions/cardora-admin-overview/index.ts
