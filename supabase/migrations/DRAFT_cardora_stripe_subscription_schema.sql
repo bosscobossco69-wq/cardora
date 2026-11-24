@@ -126,6 +126,7 @@ declare
   v_link public.cardora_stripe_subscription_links%rowtype;
   v_sub uuid;
   v_sub_plan text;
+  v_sub_status text;
   v_sub_period_end timestamptz;
   v_plan public.seller_subscription_plans%rowtype;
 begin
@@ -185,14 +186,19 @@ begin
       p_event_created<v_link.last_event_created or
       (p_event_created=v_link.last_event_created and p_kind<>'canceled')
   ) then return true; end if;
-  select id,plan_code,current_period_ends_at
-    into v_sub,v_sub_plan,v_sub_period_end
+  select id,plan_code,status,current_period_ends_at
+    into v_sub,v_sub_plan,v_sub_status,v_sub_period_end
     from public.seller_subscriptions
     where seller_profile_id=p_seller_profile_id and is_current=true
     order by created_at desc limit 1 for update;
   if p_kind='paid' then
+    -- A paid invoice for the exact same period can restore a past_due
+    -- membership. Never treat a shorter historical period as recovery, and
+    -- never rewrite an already-active equal-period entitlement.
     if v_link.seller_profile_id is not null
-      and v_sub_period_end is not null and p_period_end<=v_sub_period_end then
+      and v_sub_period_end is not null
+      and (p_period_end<v_sub_period_end
+        or (p_period_end=v_sub_period_end and v_sub_status='active')) then
       return true;
     end if;
     update public.cardora_stripe_checkout_reservations set status='fulfilled'
