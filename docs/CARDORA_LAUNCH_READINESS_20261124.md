@@ -16,8 +16,17 @@
 - **WARN**: compromised-password protection not enabled. Determine plan eligibility and use safer password settings.
 - Reference: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable
 
+
+## Auth cutover decision — free plan and non-destructive workflow
+- Public Cardora preview/source currently signs into **legacy Supabase** `crqqockaetgacddxkqpb`; the **new** Cardora project `fdkfquvzbswxocyrhduk` owns `public.users`, seller records, and subscriptions. A valid session in the old project is **not** proof of new-project authorization.
+- The draft staging builder points at the **new** project with a different browser storage key; its own-account **Check account link** panel performs read-only new Auth → `users.auth_user_id` → `seller_profiles.user_id` lookups. This has not been tested using a real new-project login.
+- Existing legacy users cannot be linked by a matching email, guessed UUID, or unverified browser data. Preserve old login and order histories. An owner-approved migration would need a verified account-ownership procedure, conflict handling, a rollback plan, and confirmation of how existing active seller subscriptions are treated.
+- The Stripe Checkout handler already uses new-project `auth.getUser()` and service-side membership ownership checks and refuses unapproved/unverified sellers; it remains locked behind `CARDORA_AUTH_MIGRATION_VERIFIED` and `CARDORA_CHECKOUT_RESERVATION_VERIFIED`. Never flip either flag before evidence and owner approval.
+- **No-money next steps:** keep offline database and Edge-handler tests running, gather read-only new-project Auth/RLS health information, and complete owner-facing review of exact migration and webhook steps. **Live acceptance requires authorization** before modifying either existing project, deploying functions, creating webhooks, or sending real payment confirmations.
+- **Release blocker:** as of this review, Stripe Checkout, signed webhook, and email worker are *not* deployed to the Cardora project. A READY Vercel Preview and passing offline checks do not allow paid seller subscriptions.
+
 ## Required isolated acceptance gates
-1. Approve an **isolated** persistent test backend distinct from either active production Supabase project. No assumed free Supabase branching; paid upgrade is not authorized.
+1. Use **GitHub Actions disposable PostgreSQL 17** for no-cost schema, contract, idempotency and replay regression tests. This is not a persistent Supabase Auth/Edge/Stripe webhook environment. A persistent isolated Supabase backend would require separate availability/funding approval; **do not create or upgrade a project** as part of the current RM0 plan. A temporary synthetic account in the existing Cardora project must **not** be created unless the owner explicitly authorizes changes to that live project.
 2. Establish isolated Auth identity and seller approval; verify `auth.users.id -> public.users.auth_user_id -> seller_profiles.user_id` using a synthetic test seller, and verify ownership denials and appropriate SELECT policies.
 3. Apply and verify draft migrations **only** in that isolated database, including replay/cancel/renewal and mail outbox unique invoice checks.
 4. Deploy isolated Stripe test-key-only Checkout/webhook/worker with explicit verified domain and secret values, never printed in GitHub logs.
