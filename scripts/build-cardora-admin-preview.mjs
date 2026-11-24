@@ -69,7 +69,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
 <button id="loginButton" type="submit">Sign in</button></form></details>
 <p class="auth-help">Google sign-in and new registration are disabled. Legacy admin access does not transfer automatically.</p>
 </section>
-<section id="overview" hidden><div class="row"><button id="refreshButton" type="button">Refresh overview</button><button class="secondary" id="logoutButton" type="button">Sign out</button></div>
+<section id="overview" hidden><p id="activeAccount" role="status" aria-live="polite"></p><div class="row"><button id="refreshButton" type="button">Refresh overview</button><button class="secondary" id="logoutButton" type="button">Sign out</button></div>
 <p id="profileStatus" role="status" aria-live="polite">Account link not yet verified.</p>\n<p id="resultStatus" role="status" aria-live="polite">Checking admin access…</p>
 <div class="cards" id="cards"></div><section id="customers"><h2>Customers · Read-only</h2><p>Customer data is unavailable until the admin API is verified.</p></section><section id="applications"></section><section id="archive"></section></section>
 <footer>Cardora preview · New Supabase project only. Archived records remain separate. No estimated statistics.</footer>
@@ -105,6 +105,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
    const verified=await client.auth.getUser();
    if(verified.error||!verified.data?.user){showAuth(false);text($('loginState'),'Your session has expired.');return}
    showAuth(true);text($('loginState'),'Cardora session verified.');
+   text($('activeAccount'),'Signed in as '+verified.data.user.email+' · Switch accounts with Sign out.');
    // Read ONLY this signed-in identity's profile, protected by users own-row RLS.
    // This browser-side check grants NO privileges. The Edge endpoint must
    // independently verify admin + active status for every request.
@@ -189,7 +190,16 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
   const button=$('sendOtpButton');button.disabled=true;
   text($('loginState'),'Sending a Cardora sign-in code…');
   try{
-    const email=$('otpEmail').value.trim();
+    const email=$('otpEmail').value.trim().toLowerCase();
+    const {data:current,error:currentError}=await client.auth.getUser();
+    if(currentError && currentError.name!=='AuthSessionMissingError')throw currentError;
+    if(current?.user && current.user.email?.toLowerCase()!==email){
+      // Never request a code while another identity remains signed in.
+      const {error:outError}=await client.auth.signOut();
+      if(outError)throw outError;
+      const {data:afterLogout}=await client.auth.getSession();
+      if(afterLogout?.session)throw new Error('ACCOUNT_SWITCH_NOT_CONFIRMED');
+    }
     const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});
     if(error)throw error;
     $('verifyOtpForm').hidden=false;
@@ -204,8 +214,15 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
     const email=$('otpEmail').value.trim();
     const token=$('otpToken').value.trim();
     if(!/^[0-9]{6,12}$/.test(token))throw new Error('invalid code format');
-    const {error}=await client.auth.verifyOtp({email,token,type:'email'});
+    const {data:verifiedOtp,error}=await client.auth.verifyOtp({email,token,type:'email'});
     if(error)throw error;
+    // A successful OTP must identify the requested email, not a cached session.
+    const {data:identity,error:identityError}=await client.auth.getUser();
+    if(identityError || !identity?.user || identity.user.email?.toLowerCase()!==email.toLowerCase()){
+      await client.auth.signOut();
+      showAuth(false);
+      throw new Error('EMAIL_IDENTITY_MISMATCH');
+    }
     $('otpToken').value='';
     await load();
   }catch(err){text($('loginState'),'Verification failed. Check the code and try again.')}
@@ -213,13 +230,25 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
  });
  $('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();$('loginButton').disabled=true;text($('loginState'),'Verifying your account…');
-  try{const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
-      if(error)throw error;$('password').value='';await load();
+  try{const email=$('email').value.trim().toLowerCase();
+      const {error}=await client.auth.signInWithPassword({email,password:$('password').value});
+      if(error)throw error;
+      const {data:identity}=await client.auth.getUser();
+      if(!identity?.user || identity.user.email?.toLowerCase()!==email){
+        await client.auth.signOut();throw new Error('EMAIL_IDENTITY_MISMATCH');
+      }
+      $('password').value='';await load();
   }catch(err){text($('loginState'),'Sign-in failed. Use an existing Cardora account with password access enabled.')}
   finally{$('loginButton').disabled=false}
  });
  $('refreshButton').addEventListener('click',load);
- $('logoutButton').addEventListener('click',async()=>{await client.auth.signOut();showAuth(false);text($('loginState'),'Signed out.')});
+ $('logoutButton').addEventListener('click',async()=>{
+  const {error}=await client.auth.signOut();
+  if(error){text($('loginState'),'Unable to sign out. Please retry.');return}
+  $('cards').replaceChildren();$('customers').replaceChildren();$('applications').replaceChildren();$('archive').replaceChildren();
+  $('otpToken').value='';$('verifyOtpForm').hidden=true;
+  text($('activeAccount'),'');showAuth(false);text($('loginState'),'Signed out. You can now enter a different email.');
+ });
  load().catch(()=>{showAuth(false);text($('loginState'),'Unable to initialize sign-in.')});
 })();
 </script></body></html>`;
