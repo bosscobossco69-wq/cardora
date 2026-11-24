@@ -166,6 +166,22 @@ Deno.serve(async(req)=>{
       p_event_created:event.created
     });
     if(error){console.error("STRIPE_EVENT_APPLY_FAILED",error.code);return response({error:"EVENT_PERSIST_FAILED"},500);}
+    // Draft-only email integration: queue the *verified* paid invoice, never send
+    // mail directly from Stripe's retryable webhook. Queue RPC independently
+    // checks that this invoice extended an active membership and deduplicates
+    // by Stripe invoice ID. Fail closed on queue errors so Stripe may retry.
+    if(kind==="paid" && Deno.env.get("CARDORA_PAYMENT_EMAIL_QUEUE_VERIFIED")==="true"){
+      const invoiceId=(event.data.object as Stripe.Invoice).id;
+      const {error:queueError}=await db.rpc("cardora_queue_verified_payment_email",{
+        p_invoice_id:invoiceId,p_seller_profile_id:sellerId,
+        p_stripe_subscription_id:subscriptionId,p_plan_code:dbPlanCode[tier],
+        p_period_end:periodEnd
+      });
+      if(queueError){
+        console.error("CARDORA_PAYMENT_EMAIL_QUEUE_FAILED",queueError.code);
+        return response({error:"PAYMENT_EMAIL_QUEUE_FAILED"},500);
+      }
+    }
     return response({received:true});
   } catch(e) {
     console.error("STRIPE_EVENT_ERROR",e instanceof Error?e.message:"unknown");
