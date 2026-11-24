@@ -32,6 +32,24 @@ must(sellerTerms.includes('DRAFT') && sellerTerms.includes('automatically'),
 must(sellerTerms.includes('MYR 29/month') && sellerTerms.includes('MYR 79/month')
   && sellerTerms.includes('MYR 199/month'),'Seller subscription monthly prices missing');
 must(html.includes("storageKey:'cardora-supabase-auth-v1'"),'Legacy auth key drift');
+// The new landing is informational until the actual subscription backend is verified.
+must(html.includes('id="cardoraPremiumLanding"') &&
+     html.includes('id="cardoraMembershipPreview"'),
+  'Premium homepage or pricing section missing');
+must(html.includes("onclick=\"ptxOpenAuth('register')\"") &&
+     html.includes("onclick=\"ptxOpenAuth('login')\""),
+  'Prominent registration/login controls not wired to existing auth UI');
+must(html.includes('RM29') && html.includes('RM79') && html.includes('RM199'),
+  'Preview membership prices missing');
+must((html.match(/class="cp-locked" disabled aria-disabled="true"/g)||[]).length===3,
+  'Unverified checkout buttons must remain disabled in all three plan cards');
+must(html.includes('id="cardoraPremiumMobileNavigationOverride"') &&
+     html.includes('font-size:12px!important;width:auto!important') &&
+     html.includes('button#ptxHeaderAuthButton'),
+  'Mobile nav must override legacy zero-size labels for sign up, login and plans');
+must(!html.includes('data-cardora-sandbox-tier='),
+  'Live homepage must not expose sandbox purchase controls');
+
 must(html.includes("rpc('current_user_row_id')") && html.includes('user_id:profileId'),'Form owner binding missing');
 must(queue.includes("u.role='admin' and u.status='active'"),'Admin queue authority missing');
 must(queue.includes("limit least(greatest(coalesce(p_limit,100),1),100)"),'Admin queue limit missing');
