@@ -25,6 +25,27 @@
 - **No-money next steps:** keep offline database and Edge-handler tests running, gather read-only new-project Auth/RLS health information, and complete owner-facing review of exact migration and webhook steps. **Live acceptance requires authorization** before modifying either existing project, deploying functions, creating webhooks, or sending real payment confirmations.
 - **Release blocker:** as of this review, Stripe Checkout, signed webhook, and email worker are *not* deployed to the Cardora project. A READY Vercel Preview and passing offline checks do not allow paid seller subscriptions.
 
+## Owner-approved Option B: existing Cardora project, sandbox-only test preparation
+Permission received: test account and **Stripe Sandbox** test configuration are allowed. **No DB schema migration, Edge Function deployment, real-user mutation, Stripe Live change, production deployment or merger** without separate permission.
+
+### Live read-only prerequisites verified on 24 Nov 2026
+- Cardora Supabase `fdkfquvzbswxocyrhduk`: `ACTIVE_HEALTHY`, PostgreSQL 17, no development branches. There is no existing cost-free branch to use.
+- `public.users.auth_user_id` is **UNIQUE** and a foreign key to `auth.users(id)`; `public.seller_profiles.user_id` is **UNIQUE** and a foreign key to `public.users(id)`. This supports one Auth identity → one app user → one seller profile, but does NOT provision those rows automatically.
+- `users_select_own`: only authenticated clients matching `auth.uid() = users.auth_user_id` can SELECT. `seller_profiles_select_own`: only authenticated clients matching `seller_profiles.user_id = current_user_row_id()` can SELECT. No client INSERT/UPDATE policy was observed for these two tables.
+- `seller_subscriptions` has RLS with **no** direct client policies; server-side membership fulfillment is required. Missing Stripe tables/functions must not be assumed installed.
+- Stripe Cardora Sandbox account `acct_1UbuWvDNJlzqcLqZ`: actual three active MYR monthly prices verified (2900, 7900, 19900 minor units); classic Webhook endpoints: **zero**. Stripe Live was not changed.
+
+### Safe preparation sequence and stop conditions
+1. Obtain a **real test mailbox owned by the merchant** and an Auth registration method. A guessed `@example.invalid` mailbox cannot satisfy an email verification flow. Never put credentials or email tokens in GitHub commits.
+2. Register **one** new Cardora Auth test user via Supabase Auth, ideally using a browser sign-up with email verification (or Google OAuth only if callback allowlisting is verified). Because current integration does not have a connected Auth-admin user-creation capability, there is **no newly created test Auth user** yet.
+3. Before inserting a test `public.users` row, verify the newly created `auth.users.id` exists and has no `public.users.auth_user_id` match. Choose role `buyer` (or the least-privileged actual allowed role), status `active`, and a new unique `member_id`. New account linking must use exact verified Auth UID, **never email matching**. Create a related seller profile **only** for the approved test identity; never promote a pre-existing user to admin.
+4. Verify own-row SELECT succeeds and cross-user SELECT fails under RLS. No elevated role or test money/credits should be assigned. Record only anonymous result booleans; do not print tokens or personal data.
+5. **STOP: separate approval required** before any draft SQL migration or Supabase Edge Function deployment. The Stripe Sandbox Webhook cannot point to a nonexistent deployed function. Do not create a dead endpoint just to show configuration.
+6. Once the backend release is separately authorized and deployed, register a Sandbox-only signed webhook endpoint for `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted`, `checkout.session.completed`, and relevant risk events. Verify all destination secrets and test signed delivery before enabling checkout gates.
+7. Use a verified test seller with **no existing current subscription**. Verify invoice fulfillment, retries/dedup, customer portal, cancellation, and test email arrival. Never use Sandbox results as proof Live is ready.
+
+**This preparation round performed read-only catalogue/RLS inspection and draft documentation only; no real or test accounts, webhook endpoints, DB writes or deployments were created.**
+
 ## Required isolated acceptance gates
 1. Use **GitHub Actions disposable PostgreSQL 17** for no-cost schema, contract, idempotency and replay regression tests. This is not a persistent Supabase Auth/Edge/Stripe webhook environment. A persistent isolated Supabase backend would require separate availability/funding approval; **do not create or upgrade a project** as part of the current RM0 plan. A temporary synthetic account in the existing Cardora project must **not** be created unless the owner explicitly authorizes changes to that live project.
 2. Establish isolated Auth identity and seller approval; verify `auth.users.id -> public.users.auth_user_id -> seller_profiles.user_id` using a synthetic test seller, and verify ownership denials and appropriate SELECT policies.
