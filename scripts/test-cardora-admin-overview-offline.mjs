@@ -24,13 +24,14 @@ assert.ok(!source.includes("let legacyHistory:"));
 const origin="https://cardora-test.example";
 function harness({role="admin",status="active",verified="user-1",
   gate=true,projectCorrect=true,roleError=false,rosterError=false,
-  canRead=true,anonymous=false}={}){
+  canRead=true,anonymous=false,previewGate=false,productionAllowed=false}={}){
   let handler;
   let reads=0;
   let authCalls=0;
   const values={
     CARDORA_SITE_ORIGIN:"https://cardora-rose.vercel.app",
-    CARDORA_ALLOW_PRODUCTION_ORIGIN:"false",
+    CARDORA_ALLOW_PRODUCTION_ORIGIN:productionAllowed?"true":"false",
+    CARDORA_ADMIN_PREVIEW_READONLY_VERIFIED:previewGate?"true":"false",
     CARDORA_STAGING_SITE_ORIGIN:origin,
     CARDORA_ADMIN_OVERVIEW_VERIFIED:gate?"true":"false",
     CARDORA_AUTH_MIGRATION_VERIFIED:gate?"true":"false",
@@ -160,4 +161,10 @@ await check("active admin obtains only masked email",{},{},200,({body},h)=>{
  assert.ok(h.getReads()>1);
 });
 await check("customer roster query failure refuses result",{rosterError:true},{},503);
+await check("separate preview gate permits active admin without global migration",{gate:false,previewGate:true},{},200,({body})=>{assert.equal(body.legacy_history.available,false);});
+await check("separate preview gate refuses ordinary user",{gate:false,previewGate:true,role:"user"},{},403);
+await check("separate preview gate refuses missing origin",{gate:false,previewGate:true},{site:null},503);
+await check("separate preview gate refuses production",{gate:false,previewGate:true},{site:"https://cardora-rose.vercel.app"},403);
+await check("preview gate fails closed if production enabled",{gate:false,previewGate:true,productionAllowed:true},{},503);
+await check("separate preview gate refuses invalid session",{gate:false,previewGate:true,verified:null},{},401);
 console.log("PASS",checks,"isolated admin overview contract tests, no live requests");
