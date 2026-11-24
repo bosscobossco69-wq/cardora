@@ -43,6 +43,15 @@ must(html.includes('RM29') && html.includes('RM79') && html.includes('RM199'),
   'Preview membership prices missing');
 must((html.match(/class="cp-locked" disabled aria-disabled="true"/g)||[]).length===3,
   'Unverified checkout buttons must remain disabled in all three plan cards');
+must(html.includes('Create account with Google') &&
+     html.includes('Email-code sign-up is not enabled yet.') &&
+     html.includes('New to Cardora?'),
+  'Cardora guest registration must disclose currently supported Google-only auth');
+must(html.includes('href="terms.html" target="_blank" rel="noopener noreferrer"') &&
+     html.includes('href="privacy.html" target="_blank" rel="noopener noreferrer"'),
+  'Auth modal must link draft legal documents safely');
+must((html.match(/data-ca-email-auth="off"/g)||[]).length===2,
+  'Unverified email OTP UI must remain hidden in both sign-in and sign-up');
 must(html.includes('id="cardoraPremiumMobileNavigationOverride"') &&
      html.includes('font-size:12px!important;width:auto!important') &&
      html.includes('button#ptxHeaderAuthButton'),
