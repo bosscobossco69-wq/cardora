@@ -11,6 +11,8 @@ let source=readFileSync(path,"utf8")
   .replace("const respond=(value:unknown,status=200)=>","const respond=(value,status=200)=>")
   .replace("const classify=(r:{name?:string|null;email?:string|null})=>","const classify=(r)=>")
   .replace("const count=async(table:string,filter?:{field:string,value:string})=>","const count=async(table,filter)=>")
+  .replace("const dateRangeCount=async(table:string,start:number,end:number)=>","const dateRangeCount=async(table,start,end)=>")
+  .replace("const recent=async(table:string,fields:string)=>","const recent=async(table,fields)=>")
   .replace("const maskEmail=(value:string|null)=>","const maskEmail=(value)=>")
   .replace("const isExactHttpsOrigin=(value:string)=>","const isExactHttpsOrigin=(value)=>")
   .replace("const maskApplication=(a:{email?:string|null})=>","const maskApplication=(a)=>")
@@ -42,6 +44,8 @@ function harness({role="admin",status="active",verified="user-1",
     const chain={
       select(_fields,opts){head=!!opts?.head;return this},
       eq(){return this},
+      gte(){return this},
+      lt(){return this},
       order(){return this},
       limit(){return Promise.resolve(
         rosterError&&table==="users"?
@@ -145,6 +149,13 @@ await check("active admin obtains only masked email",{},{},200,({body},h)=>{
  assert.equal(body.applications[0].email,undefined);
  assert.equal(JSON.stringify(body).includes("seller@example.com"),false);
  assert.equal(body.legacy_history.available,false);
+ assert.equal(body.activity.timezone,"Asia/Kuala_Lumpur");
+ assert.equal(body.activity.profiles_today,1);
+ assert.equal(body.activity.applications_yesterday,1);
+ assert.equal(body.modules.orders.available,true);
+ assert.deepEqual(body.modules.orders.records,[]);
+ assert.equal(body.integrations.stripe_revenue,"not_connected");
+ assert.equal(body.integrations.outreach,"disabled_no_consent");
  assert.ok(h.getReads()>1);
 });
 await check("customer roster query failure refuses result",{rosterError:true},{},503);
