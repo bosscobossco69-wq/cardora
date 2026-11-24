@@ -65,6 +65,29 @@ must(queue.includes("limit least(greatest(coalesce(p_limit,100),1),100)"),'Admin
 must(admin.includes("u.role = 'admin'") && admin.includes("u.status = 'active'"),'Admin check missing');
 must(checkout.includes('CARDORA_CHECKOUT_RESERVATION_VERIFIED'),'Checkout safety gate absent');
 
+// Cross-project identity isolation: the legacy page must never be treated as
+// entitlement proof in Cardora billing. The staging build must explicitly
+// replace the old project and require a Cardora Auth owner identity.
+must(html.includes('https://crqqockaetgacddxkqpb.supabase.co'),
+  'Legacy public auth URL unexpectedly changed; migration requires a reviewed cutover');
+must(build.includes('https://fdkfquvzbswxocyrhduk.supabase.co') &&
+     build.includes('if(html.includes(oldProject)) fail('),
+  'Staging must use canonical Cardora Auth and fail if legacy project remains');
+must(build.includes("window.cardoraCheckAuthAlignment=async function()") &&
+     build.includes("client.auth.getUser()") &&
+     build.includes(".eq('auth_user_id',identity.user.id).maybeSingle()") &&
+     build.includes(".eq('user_id',profile.id).limit(1)"),
+  'Read-only Cardora user → seller profile alignment diagnostic missing');
+must(checkout.includes('client.auth.getUser()') &&
+     checkout.includes('.eq("auth_user_id",user.id).maybeSingle()') &&
+     checkout.includes('.eq("user_id",appUser.id).maybeSingle()') &&
+     checkout.includes('seller.status !== "approved" || seller.verification_status !== "verified"'),
+  'Checkout must derive approved seller from server-verified Cardora Auth, never client-provided user identifiers');
+must(checkout.includes('CARDORA_AUTH_MIGRATION_VERIFIED') &&
+     webhook.includes('CARDORA_AUTH_MIGRATION_VERIFIED'),
+  'Checkout and webhook must stay closed until same-project Auth migration is verified');
+
+
 // Offline-check the actual checkout origin parser (not a duplicated approximation).
 // This executes only a pure config function with a stubbed Deno.env, no network.
 const originStart=checkout.indexOf('const configuredOrigin =');
