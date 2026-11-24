@@ -22,22 +22,22 @@ const html=`<!doctype html>
 <meta http-equiv="Content-Security-Policy" content="${csp}">
 <title>Cardora | Admin Preview</title>
 <style>
-:root{color-scheme:dark;--bg:#110f11;--panel:#1e1b1e;--line:#403532;--gold:#e4bf76;--text:#f8f3eb;--muted:#b8a8a1}
-*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:radial-gradient(circle at 50% -10%,#382921 0,#171316 42%,#110f11 80%);min-height:100svh;color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+:root{color-scheme:dark;--bg:#080711;--panel:#201a2b;--line:#42334b;--gold:#f3ca7d;--text:#f7f2eb;--muted:#c9c2d0}
+*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:radial-gradient(circle at 70% -12%,#342346 0,#171125 38%,#080711 76%);min-height:100svh;color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 [hidden]{display:none!important}
 main{max-width:740px;margin:auto;padding:30px 18px 65px}
 h1{font-size:clamp(28px,5vw,37px);line-height:1.15;letter-spacing:-.045em;margin:8px 0 12px}
 h2{font-size:18px;margin:0 0 16px;letter-spacing:-.02em}
 p,.muted,small{color:var(--muted)}p{margin:0 0 13px}small{font-size:12px}
 .eyebrow{font-size:11px;letter-spacing:.16em;color:var(--gold);font-weight:800}
-.warning{border:1px solid #655031;background:#302519aa;border-radius:12px;padding:12px 15px;color:#f1d49e;font-size:12px;line-height:1.5;margin:0 0 19px}
-#loginState,#profileStatus,#resultStatus{color:#d5c2a0;font-size:13px;margin:14px 0;line-height:1.5}
-#authSection{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:clamp(20px,5vw,30px);box-shadow:0 20px 55px #0005}
-form{display:grid;gap:13px}label{display:grid;gap:8px;color:#e5d8cb;font-size:13px;font-weight:600}
-input{background:#141215;border:1px solid #64514c;color:var(--text);border-radius:10px;padding:13px 14px;min-height:47px;font:inherit;outline:0;width:100%}
-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px #e4bf7625}
-button{background:var(--gold);color:#231a17;border:0;border-radius:10px;min-height:46px;padding:12px 16px;font:700 14px/1.3 inherit;cursor:pointer}
-button.secondary{background:#31282a;color:var(--text);border:1px solid var(--line)}button:disabled{opacity:.5;cursor:not-allowed}
+.warning{border:1px solid #7b6236;background:#2b231e;border-radius:12px;padding:12px 15px;color:#f4dfba;font-size:12px;line-height:1.5;margin:0 0 19px}
+#loginState,#profileStatus,#resultStatus{color:#c9c2d0;font-size:13px;margin:14px 0;line-height:1.5}
+#authSection{background:linear-gradient(135deg,#201a2b 0%,#110e19 95%);border:1px solid var(--line);border-radius:20px;padding:clamp(20px,5vw,30px);box-shadow:0 20px 55px #0005}
+form{display:grid;gap:13px}label{display:grid;gap:8px;color:#f5e9d6;font-size:13px;font-weight:600}
+input{background:#110e19;border:1px solid #655670;color:var(--text);border-radius:10px;padding:13px 14px;min-height:47px;font:inherit;outline:0;width:100%}
+input:focus{border-color:var(--gold);box-shadow:0 0 0 3px #f3ca7d25}
+button{background:var(--gold);color:#1a1321;border:0;border-radius:10px;min-height:46px;padding:12px 16px;font:700 14px/1.3 inherit;cursor:pointer}
+button.secondary{background:#2d2537;color:var(--text);border:1px solid var(--line)}button:disabled{opacity:.5;cursor:not-allowed}
 button:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 #emailOtpForm button,#verifyOtpForm button,#loginForm button{width:100%;margin-top:4px}
 #verifyOtpForm{border-top:1px solid var(--line);padding-top:16px;margin-top:16px}
@@ -46,8 +46,8 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline
 .password-fallback summary{color:var(--gold);font-size:13px;font-weight:700;cursor:pointer;list-style:none}
 .password-fallback summary::-webkit-details-marker{display:none}.password-fallback form{margin-top:16px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:20px 0}
-.card{border:1px solid var(--line);background:var(--panel);padding:16px;border-radius:12px;color:var(--muted);font-size:13px}.value{color:var(--text);font-size:29px;font-weight:800}
-.row{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}article{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px;margin:10px 0;overflow-wrap:anywhere}a{color:var(--gold)}
+.card{border:1px solid var(--line);background:#211a2b;padding:16px;border-radius:12px;color:var(--muted);font-size:13px}.value{color:var(--text);font-size:29px;font-weight:800}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}article{border:1px solid var(--line);background:#211a2b;border-radius:12px;padding:14px;margin:10px 0;overflow-wrap:anywhere}a{color:var(--gold)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:var(--muted);font-size:12px}
 @media(max-width:480px){main{padding:24px 16px 50px}#authSection{border-radius:16px;padding:20px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.card{padding:12px}.row button{flex:1}}
 </style></head>
