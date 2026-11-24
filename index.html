@@ -4382,5 +4382,33 @@ renderAll();
 document.addEventListener('DOMContentLoaded',renderAll);
 })();
 </script>
+<style id="cardoraPremiumMobileNavigationOverride">
+/* Compatibility: legacy mobile icon navigation sets font-size:0 and button widths
+   globally. Preserve discoverable readable registration and membership CTAs. */
+@media(max-width:650px){
+ .ptx-brandbar{flex-wrap:wrap!important;gap:9px!important;align-items:center!important}
+ .ptx-brandbar .ptx-nav{
+  display:flex!important;flex:1 1 100%!important;width:100%!important;
+  flex-wrap:wrap!important;align-items:center!important;
+  margin-left:0!important;overflow:visible!important;gap:7px!important
+ }
+ .ptx-brandbar .ptx-nav button.cardora-header-register,
+ .ptx-brandbar .ptx-nav button.cardora-header-plans,
+ .ptx-brandbar .ptx-nav button#ptxHeaderAuthButton{
+  font-size:12px!important;width:auto!important;min-width:0!important;height:auto!important;
+  min-height:42px!important;padding:10px 12px!important;line-height:1.3!important;
+  white-space:normal!important;text-transform:none!important;
+  flex:1 1 auto!important;letter-spacing:0!important
+ }
+ .ptx-brandbar .ptx-nav button.cardora-header-register{order:-3!important;color:#211622!important;background:#f3ca7d!important;border-color:#f3ca7d!important}
+ .ptx-brandbar .ptx-nav button#ptxHeaderAuthButton{order:-2!important;color:#f7ebd8!important}
+ .ptx-brandbar .ptx-nav button.cardora-header-plans{order:-1!important;color:#f7ebd8!important}
+ .ptx-brandbar .ptx-nav button.cardora-header-register:after,
+ .ptx-brandbar .ptx-nav button.cardora-header-plans:after,
+ .ptx-brandbar .ptx-nav button#ptxHeaderAuthButton:after{content:none!important}
+ #cardoraPremiumLanding .cp-plan{overflow-wrap:break-word}
+ #cardoraPremiumLanding .cp-steps .cp-step h3{overflow-wrap:break-word}
+}
+</style>
 <!-- Analytics disabled: /_vercel/insights/script.js was served with an invalid JavaScript MIME type in Search Console; restore only after Vercel Analytics is verified. -->
 </body></html>
