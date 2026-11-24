@@ -62,7 +62,7 @@ Deno.serve(async(request)=>{
  });
  const verified=await authClient.auth.getUser();
  const authUser=verified.data?.user;
- if(verified.error||!authUser)return respond({error:"INVALID_SESSION"},401);
+ if(verified.error||!authUser||authUser.is_anonymous)return respond({error:"INVALID_SESSION"},401);
  const adminClient=createClient(projectUrl,serviceKey,{
    auth:{persistSession:false,autoRefreshToken:false}
  });
@@ -81,7 +81,7 @@ Deno.serve(async(request)=>{
  }):null;
  const classify=(r:{name?:string|null;email?:string|null})=>
    /(^|[^a-z])(test|demo|sample)([^a-z]|$)/i.test((r.name||"")+" "+(r.email||""))||
-   /@example\.(com|org|net)$/i.test(r.email||"");
+   /@example\.(com|org|net|invalid)$/i.test(r.email||"");
  const count=async(table:string,filter?:{field:string,value:string})=>{
    let query=adminClient.from(table).select("id",{head:true,count:"exact"});
    if(filter)query=query.eq(filter.field,filter.value);
