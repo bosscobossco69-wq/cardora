@@ -112,6 +112,7 @@ await check("production origin blocked by default",{},
 await check("preflight for allowed preview",{},
  {method:"OPTIONS",token:null},200,({headers},h)=>{
  assert.equal(headers.get("access-control-allow-origin"),origin);
+ assert.ok(headers.get("access-control-allow-headers").includes("x-client-info"));
  assert.equal(h.getReads(),0);
 });
 await check("wrong method rejected",{},
