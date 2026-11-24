@@ -229,7 +229,7 @@ exact('</body>',1);
 html=html.replace('</body>',adminOverviewScript+'\n</body>');
 // Customer password-auth UI exists ONLY in the opt-in staging build; the live
 // index.html and the currently deployed admin-only Preview are unchanged.
-const authLoginAnchor='<div class="ptx-auth-note">New to Trixovel?</div>';
+const authLoginAnchor='<div class="ptx-auth-note">New to Cardora?</div>';
 const authRegisterAnchor='<div class="ptx-auth-note">Already have an account?</div>';
 exact(authLoginAnchor,1);
 exact(authRegisterAnchor,1);
