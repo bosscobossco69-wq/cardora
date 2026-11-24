@@ -50,7 +50,16 @@ function setup(path,options={}){
   auth:{getUser:async()=>({data:{user:options.sessionInvalid?null:{id:owner,email:'synthetic@example.invalid'}},error:null})},
   from(table){
    const predicates=[];
-   const chain={select(){return chain},eq(column,value){predicates.push([column,value]);return chain},async maybeSingle(){
+   const chain={select(){return chain},eq(column,value){predicates.push([column,value]);return chain},
+    async limit(count){
+      lookups.push({url,table,predicates});
+      assert.equal(count,2,'Bound the current membership lookup');
+      if(table!=='seller_subscriptions')throw Error('unexpected list table: '+table);
+      assert.ok(predicates.some(([col,id])=>col==='seller_profile_id'&&id===seller));
+      assert.ok(predicates.some(([col,value])=>col==='is_current'&&value===true));
+      if(options.membershipLookupError)return {data:null,error:{code:'SYNTHETIC_RLS_ERROR'}};
+      return {data:options.currentMembership?[{id:'old_membership',status:'active',is_current:true}]:[],error:null};
+    },async maybeSingle(){
     lookups.push({url,table,predicates});
     if(url!==env.SUPABASE_URL)return {data:null,error:{message:'wrong project'}};
     if(table==='users'){
@@ -108,12 +117,14 @@ for(const [tier,config] of Object.entries(prices)){
  assert.equal(x.calls[0].body.client_reference_id,seller);
  assert.equal(x.calls[0].body.subscription_data.metadata.checkout_request_id,reservation);
  assert.equal(x.calls[0].opts.idempotencyKey,'cardora_checkout_'+reservation);
- assert.equal(x.lookups.length,3);
- assert.deepEqual(x.lookups.map(q=>q.table),['users','seller_profiles','cardora_stripe_subscription_links']);
+ assert.equal(x.lookups.length,4);
+ assert.deepEqual(x.lookups.map(q=>q.table),['users','seller_profiles','seller_subscriptions','cardora_stripe_subscription_links']);
  assert.ok(x.lookups.every(q=>q.url===settings.SUPABASE_URL));
  assert.equal(x.lookups[0].predicates.find(([k])=>k==='auth_user_id')?.[1],owner);
  assert.equal(x.lookups[1].predicates.find(([k])=>k==='user_id')?.[1],owner);
  assert.equal(x.lookups[2].predicates.find(([k])=>k==='seller_profile_id')?.[1],seller);
+ assert.equal(x.lookups[2].predicates.find(([k])=>k==='is_current')?.[1],true);
+ assert.equal(x.lookups[3].predicates.find(([k])=>k==='seller_profile_id')?.[1],seller);
  passes.push('Checkout '+tier+' RM'+config[1]/100);
 }
 for(const [label,opts,status] of [
@@ -121,6 +132,8 @@ for(const [label,opts,status] of [
  ['reservation gate',{env:{CARDORA_CHECKOUT_RESERVATION_VERIFIED:'false'}},503],
  ['Live key rejection',{env:{STRIPE_SECRET_KEY:'sk_live_fake'}},503],
  ['seller approval',{unapproved:true},403],
+ ['existing membership reconciliation',{currentMembership:true},409],
+ ['existing membership read failure',{membershipLookupError:true},503],
  ['existing subscription',{existing:true},409],
  ['missing account',{userMissing:true},403],
  ['missing linked seller',{sellerMissing:true},403],
