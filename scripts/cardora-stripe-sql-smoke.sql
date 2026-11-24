@@ -42,6 +42,7 @@ INSERT INTO public.seller_subscription_plans VALUES
  ('business','business','MYR',true,'human',20);
 COMMIT;
 \i supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql
+\i supabase/migrations/DRAFT_cardora_payment_email_outbox.sql
 
 DO $test$
 DECLARE
@@ -108,6 +109,31 @@ BEGIN
       AND status='active' AND is_current
       AND current_period_ends_at='2027-01-24T00:00:00Z'::timestamptz)
     THEN RAISE EXCEPTION 'Verified renewal failed to extend entitlement'; END IF;
+  -- Paid invoice email queued only after membership verified; retries never duplicate.
+  PERFORM public.cardora_queue_verified_payment_email(
+    'in_testpaid001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'sub_test001','basic','2027-01-24T00:00:00Z');
+  PERFORM public.cardora_queue_verified_payment_email(
+    'in_testpaid001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'sub_test001','basic','2027-01-24T00:00:00Z');
+  IF (SELECT count(*) FROM public.cardora_payment_email_outbox)<>1
+    THEN RAISE EXCEPTION 'Duplicate invoice email queued'; END IF;
+  denied:=false;
+  BEGIN
+    PERFORM public.cardora_queue_verified_payment_email(
+      'in_wrongowner1','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      'sub_test001','basic','2027-01-24T00:00:00Z');
+  EXCEPTION WHEN OTHERS THEN denied:=true;
+  END;
+  IF NOT denied THEN RAISE EXCEPTION 'Wrong seller email queue accepted'; END IF;
+  denied:=false;
+  BEGIN
+    PERFORM public.cardora_queue_verified_payment_email(
+      'in_wrongperiod1','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      'sub_test001','basic','2027-03-24T00:00:00Z');
+  EXCEPTION WHEN OTHERS THEN denied:=true;
+  END;
+  IF NOT denied THEN RAISE EXCEPTION 'Unpaid future period email queued'; END IF;
   -- One seller cannot swap the Stripe customer ID of an existing subscription.
   denied:=false;
   BEGIN
@@ -133,6 +159,6 @@ BEGIN
     WHERE seller_profile_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' AND is_current)
     THEN RAISE EXCEPTION 'Late stale paid event reactivated canceled membership'; END IF;
 
-  RAISE NOTICE 'PASS: reservation dedup, eligibility, paid entitlement, duplicate event, wrong owner/customer, stale failure, renewal, cancel, late paid replay';
+  RAISE NOTICE 'PASS: reservation dedup, eligibility, paid entitlement, duplicate event, wrong owner/customer, stale failure, renewal, cancel, late paid replay, deduplicated invoice email outbox';
 END
 $test$;
