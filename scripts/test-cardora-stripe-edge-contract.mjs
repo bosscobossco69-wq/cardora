@@ -74,7 +74,11 @@ function setup(path,options={}){
   async rpc(name,payload){
    rpcCalls.push({name,payload});
    if(name==='cardora_reserve_stripe_checkout')return {data:reservation,error:null};
-   if(['cardora_apply_verified_stripe_event','cardora_record_verified_stripe_risk_event'].includes(name))
+   if(name==='cardora_apply_verified_stripe_event')
+     return {data:true,error:options.applyError?{code:'SYNTHETIC_APPLY_ERROR'}:null};
+   if(name==='cardora_queue_verified_payment_email')
+     return {data:true,error:options.queueError?{code:'SYNTHETIC_QUEUE_ERROR'}:null};
+   if(name==='cardora_record_verified_stripe_risk_event')
      return {data:true,error:null};
    throw Error('unexpected rpc: '+name);
   }
@@ -151,6 +155,47 @@ async function webhook(type,object,opts={}){
  passes.push('Signed invoice.paid produces verified membership RPC');
  const bad=await webhook('invoice.paid',invoice,{badSignature:true});
  assert.equal(bad.status,400);assert.equal(bad.rpcCalls.length,0);
+ const queued=await webhook('invoice.paid',invoice,{
+   env:{CARDORA_PAYMENT_EMAIL_QUEUE_VERIFIED:'true'}
+  });
+  assert.equal(queued.status,200,JSON.stringify(queued.body));
+  assert.deepEqual(queued.rpcCalls.map(c=>c.name),
+   ['cardora_apply_verified_stripe_event','cardora_queue_verified_payment_email']);
+  assert.equal(queued.rpcCalls[1].payload.p_invoice_id,'in_synthetic1');
+  assert.equal(queued.rpcCalls[1].payload.p_seller_profile_id,seller);
+  assert.equal(queued.rpcCalls[1].payload.p_stripe_subscription_id,sub);
+  assert.equal(queued.rpcCalls[1].payload.p_plan_code,'basic');
+  assert.equal(queued.rpcCalls[1].payload.p_period_end,new Date(1798070400*1000).toISOString());
+  passes.push('Signed paid invoice queues email only after entitlement RPC');
+  const queueFailed=await webhook('invoice.paid',invoice,{
+   queueError:true,env:{CARDORA_PAYMENT_EMAIL_QUEUE_VERIFIED:'true'}
+  });
+  assert.equal(queueFailed.status,500);
+  assert.equal(queueFailed.body.error,'PAYMENT_EMAIL_QUEUE_FAILED');
+  assert.deepEqual(queueFailed.rpcCalls.map(c=>c.name),
+   ['cardora_apply_verified_stripe_event','cardora_queue_verified_payment_email']);
+  passes.push('Email outbox failure returns retryable HTTP 500');
+  const entitlementFailed=await webhook('invoice.paid',invoice,{
+   applyError:true,env:{CARDORA_PAYMENT_EMAIL_QUEUE_VERIFIED:'true'}
+  });
+  assert.equal(entitlementFailed.status,500);
+  assert.equal(entitlementFailed.body.error,'EVENT_PERSIST_FAILED');
+  assert.deepEqual(entitlementFailed.rpcCalls.map(c=>c.name),
+   ['cardora_apply_verified_stripe_event']);
+  passes.push('Membership persistence failure never queues payment email');
+  const gated=await webhook('invoice.paid',invoice,{
+   env:{CARDORA_PAYMENT_EMAIL_QUEUE_VERIFIED:'false'}
+  });
+  assert.equal(gated.status,200);
+  assert.deepEqual(gated.rpcCalls.map(c=>c.name),
+   ['cardora_apply_verified_stripe_event']);
+  passes.push('Email queue disabled by default');
+  const badWithQueue=await webhook('invoice.paid',invoice,{
+   badSignature:true,env:{CARDORA_PAYMENT_EMAIL_QUEUE_VERIFIED:'true'}
+  });
+  assert.equal(badWithQueue.status,400);
+  assert.equal(badWithQueue.rpcCalls.length,0);
+  passes.push('Forged Stripe webhook cannot enqueue payment email');
  passes.push('Invalid Stripe signature rejected');
 }
 {
