@@ -50,6 +50,23 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline
 .row{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}article{border:1px solid var(--line);background:#211a2b;border-radius:12px;padding:14px;margin:10px 0;overflow-wrap:anywhere}a{color:var(--gold)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:var(--muted);font-size:12px}
 @media(max-width:480px){main{padding:24px 16px 50px}#authSection{border-radius:16px;padding:20px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.card{padding:12px}.row button{flex:1}}
+body:has(#overview:not([hidden])) main{max-width:1240px}
+.dashboard-nav{display:flex;gap:8px;overflow-x:auto;padding:8px 0 16px;scrollbar-width:thin}
+.dashboard-nav a{flex-shrink:0;text-decoration:none;background:#211a2b;border:1px solid var(--line);border-radius:9px;padding:10px 13px;font-size:13px;font-weight:700}
+.dashboard-nav a:focus-visible{outline:2px solid var(--gold)}
+#overview .cards{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+#overview .card{background:linear-gradient(140deg,#2a2038,#1a1523);min-width:0}
+#overview .value{color:var(--gold);font-variant-numeric:tabular-nums}
+.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:20px}
+.dashboard-panel{min-width:0;border:1px solid var(--line);background:#14101e;border-radius:16px;padding:20px;scroll-margin-top:16px}
+.dashboard-panel.wide{grid-column:1/-1}
+.dashboard-panel article{margin:8px 0;background:#20192a}
+.dashboard-panel article p{font-size:13px;margin:5px 0}
+.dashboard-panel h2{color:var(--gold)}
+#customerSearch{margin:10px 0}
+#customerFilter{color:var(--muted);background:#110e19;border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;width:100%}
+.module-note{font-size:12px;color:var(--muted)}
+@media(max-width:650px){.dashboard-grid{grid-template-columns:1fr}.dashboard-panel{padding:15px}#overview .cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head>
 <body><main>
 <div class="eyebrow">CARDORA · SECURE ACCESS</div>\n<h1>Admin dashboard</h1>
@@ -71,7 +88,18 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
 </section>
 <section id="overview" hidden><p id="activeAccount" role="status" aria-live="polite"></p><div class="row"><button id="refreshButton" type="button">Refresh overview</button><button class="secondary" id="logoutButton" type="button">Sign out</button></div>
 <p id="profileStatus" role="status" aria-live="polite">Account link not yet verified.</p>\n<p id="resultStatus" role="status" aria-live="polite">Checking admin access…</p>
-<div class="cards" id="cards"></div><section id="customers"><h2>Customers · Read-only</h2><p>Customer data is unavailable until the admin API is verified.</p></section><section id="applications"></section><section id="archive"></section></section>
+<nav class="dashboard-nav" aria-label="Management modules">
+<a href="#cards">Overview</a><a href="#customerPanel">Customers / CRM</a><a href="#applications">Applications</a><a href="#sellers">Sellers</a><a href="#agents">Agents</a><a href="#listings">Listings</a><a href="#orders">Orders</a><a href="#subscriptions">Subscriptions</a><a href="#finance">Finance</a><a href="#security">AI security</a><a href="#archive">Archive</a>
+</nav><p id="calendarNote" class="module-note">Business calendar · Malaysia (UTC+8)</p>
+<div class="cards" id="cards"></div>
+<div class="dashboard-grid">
+<section id="customerPanel" class="dashboard-panel wide"><h2>Customer management / CRM</h2><label>Find a customer in loaded records<input id="customerSearch" type="search" placeholder="Member ID or masked email"></label><label>Account filter<select id="customerFilter"><option value="all">All loaded profiles</option><option value="active">Active profiles</option><option value="test">Possible test accounts</option><option value="non_test">Not flagged (not verified customers)</option></select></label><p id="customerMatch" role="status"></p><section id="customers"><h2>Customers · Read-only</h2><p>Customer data is unavailable until the admin API is verified.</p></section></section>
+<section id="applications" class="dashboard-panel wide"></section>
+<section id="sellers" class="dashboard-panel"></section><section id="agents" class="dashboard-panel"></section>
+<section id="listings" class="dashboard-panel"></section><section id="orders" class="dashboard-panel"></section>
+<section id="subscriptions" class="dashboard-panel"></section><section id="finance" class="dashboard-panel"><h2>Finance</h2><p>Stripe revenue not connected. No estimated figures.</p></section>
+<section id="security" class="dashboard-panel"><h2>AI security review</h2><p>Not connected. Test account flags require human review; no automated approvals.</p></section><section id="archive" class="dashboard-panel"></section>
+</div></section>
 <footer>Cardora preview · New Supabase project only. Archived records remain separate. No estimated statistics.</footer>
 </main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -97,9 +125,45 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
     if(a.suspected_test)create('small','Possible test record · Review required',entry);
    }
  };
- let loadGeneration=0, displayedUserId=null;
+ const modules=['sellers','agents','listings','orders','subscriptions'];
+ const moduleTitles={sellers:'Sellers',agents:'Agents',listings:'Listings',orders:'Orders',subscriptions:'Subscription records'};
+ const formatDate=(v)=>{if(!v)return 'Unknown date';const d=new Date(v);return Number.isNaN(d.getTime())?'Unknown date':d.toLocaleString('en-MY',{timeZone:'Asia/Kuala_Lumpur'});};
+ const renderModule=(id,mod,fields)=>{
+   const root=$(id);root.replaceChildren();create('h2',moduleTitles[id]+' · Read-only',root);
+   if(!mod?.available||!Array.isArray(mod.records)){create('p','Data not available. No count inferred.',root);return}
+   create('p','Recent '+mod.records.length+' records · maximum '+mod.limit,root);
+   if(!mod.records.length)create('p','No records returned.',root);
+   for(const record of mod.records){const entry=create('article','',root);
+     for(const [field,label] of fields){let v=record[field];if(field==='created_at')v=formatDate(v);
+       if(v!==null&&v!==undefined)create('p',label+': '+String(v),entry);}
+   }
+ };
+ let loadGeneration=0, displayedUserId=null, customerRows=null;
+ function renderCustomers(){
+   const root=$('customers');root.replaceChildren();create('h2','Customers · Read-only',root);
+   text($('customerMatch'),'');
+   if(!customerRows){create('p','Customer data unavailable.',root);return;}
+   const search=$('customerSearch').value.trim().toLowerCase(),filter=$('customerFilter').value;
+   const visible=customerRows.records.filter(u=>(!search||((u.member_id||'')+' '+(u.email_masked||'')).toLowerCase().includes(search))&&
+    (filter==='all'||(filter==='active'&&u.status==='active')||(filter==='test'&&u.suspected_test)||(filter==='non_test'&&!u.suspected_test)));
+   text($('customerMatch'),visible.length+' matching loaded records / '+customerRows.displayed_count+' loaded / '+customerRows.total_profiles+' total profiles');
+   create('p','Email outreach is disabled. Marketing consent is not configured.',root);
+   if(!visible.length)create('p','No matching loaded profiles.',root);
+   for(const u of visible){const item=create('article','',root);
+     create('strong',(u.member_id||'No member ID')+' · '+(u.role||'User'),item);
+     create('p','Created: '+formatDate(u.created_at)+' · Status: '+(u.status||'Unknown'),item);
+     if(u.email_masked)create('p',u.email_masked,item);
+     if(u.suspected_test)create('small','Possible test account · Review required',item);
+     create('small','Outreach disabled · Consent not configured',item);
+   }
+ }
+ $('customerSearch').addEventListener('input',renderCustomers);
+ $('customerFilter').addEventListener('change',renderCustomers);
  function clearOverview(){
    $('cards').replaceChildren();$('customers').replaceChildren();$('applications').replaceChildren();$('archive').replaceChildren();
+   customerRows=null;$('customerSearch').value='';$('customerFilter').value='all';renderCustomers();
+   for(const id of modules)renderModule(id,null,[]);
+   text($('calendarNote'),'Business calendar · Malaysia (UTC+8) · data unavailable');
    text($('activeAccount'),'');text($('profileStatus'),'Account link not yet verified.');
  }
  function invalidateOverview(){loadGeneration++;displayedUserId=null;clearOverview();}
@@ -160,7 +224,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
        text($('loginState'),'Session expired. Please sign in again.');
      }else if(status===403||code==='ADMIN_ONLY'){
        text($('resultStatus'),'Access denied. Admin permission is required.');
-     }else if(code==='ADMIN_OVERVIEW_NOT_VERIFIED'){
+     }else if(status===503||code==='ADMIN_OVERVIEW_NOT_VERIFIED'){
        text($('resultStatus'),'Admin API has not passed release verification.');
      }else if(status===404){
        text($('resultStatus'),'Admin API returned 404. Check the request URL, target deployment and function routing; the cause is not confirmed.');
@@ -170,30 +234,24 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding-top:16px;color:v
      return;
    }
    const c=result.counts;
+   const activity=result.activity;
+   text($('calendarNote'),'Malaysia business calendar · '+(activity?.date||'Date unavailable')+' · profile creation counts are not unique Auth registrations');
+   metric('Profiles created today',activity?.profiles_today??'—');metric('Profiles created yesterday',activity?.profiles_yesterday??'—');
+   metric('Applications today',activity?.applications_today??'—');metric('Applications yesterday',activity?.applications_yesterday??'—');
    for(const [label,value] of Object.entries({
      'Registered profiles':c.registered_profiles,'Sellers':c.sellers,'Agents':c.agents,
      'Applications':c.applications,'Pending':c.pending,'Approved':c.approved,
      'Seller applications':c.seller_applications,'Agent applications':c.agent_applications,
      'Listings':c.listings,'Orders':c.orders,'Subscriptions':c.subscription_records
    })) metric(label,value??'—');
-   const customersRoot=$('customers');
-   create('h2','Customers · Read-only',customersRoot);
    const roster=result.customers;
-   if(!roster||!Array.isArray(roster.records)){
-     create('p','Customer list is unavailable until the admin API is verified.',customersRoot);
-   }else{
-     create('p','Total profiles: '+roster.total_profiles+' · Limit: '+roster.limit+' (showing '+roster.displayed_count+' records). Not deduplicated customers.',customersRoot);
-     create('p','Email outreach is disabled. Marketing consent is not configured.',customersRoot);
-     if(!roster.records.length)create('p','No customer profiles available.',customersRoot);
-     for(const u of roster.records){
-       const item=create('article','',customersRoot);
-       create('strong',(u.member_id||'No member ID')+' · '+(u.role||'User'),item);
-       create('p','Created: '+(u.created_at||'Unknown')+' · Status: '+(u.status||'Unknown'),item);
-       if(u.email_masked)create('p',u.email_masked,item);
-       if(u.suspected_test)create('small','Possible test account · Review required',item);
-       create('small','Outreach disabled · Consent not configured',item);
-     }
-   }
+   customerRows=roster&&Array.isArray(roster.records)?roster:null;renderCustomers();
+   const m=result.modules||{};
+   renderModule('sellers',m.sellers,[['display_name','Name'],['status','Status'],['verification_status','Verification'],['trust_level','Trust'],['created_at','Created']]);
+   renderModule('agents',m.agents,[['display_name','Name'],['status','Status'],['created_at','Created']]);
+   renderModule('listings',m.listings,[['title','Title'],['status','Status'],['price','Price'],['currency','Currency'],['inventory','Inventory'],['created_at','Created']]);
+   renderModule('orders',m.orders,[['order_id','Order'],['status','Status'],['total','Order total (not revenue)'],['currency','Currency'],['created_at','Created']]);
+   renderModule('subscriptions',m.subscriptions,[['plan_code','Plan'],['status','Status'],['is_current','Current'],['created_at','Created']]);
    renderApps('applications','New Cardora applications · Read-only',result.applications);
    const old=result.legacy_history;
    if(old?.available){
