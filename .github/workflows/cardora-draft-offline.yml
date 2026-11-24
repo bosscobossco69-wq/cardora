@@ -82,6 +82,9 @@ jobs:
           grep -q 'cardoraShowSubmissionUnavailable' dist-staging/index.html
           grep -q 'cardoraCheckSellerEligibility' dist-staging/index.html
           grep -q 'cardoraCheckAuthAlignment' dist-staging/index.html
+          grep -Fq "s.status==='approved'&&s.verification_status==='verified'" dist-staging/index.html
+          grep -Fq "approved and verified" dist-staging/index.html
+          if grep -Fq "s.status==='approved');" dist-staging/index.html; then echo "Unverified seller shown as approved"; exit 1; fi
           grep -q 'New Cardora Auth verified, but no linked profile exists' dist-staging/index.html
           grep -q "eq('auth_user_id',identity.user.id)" dist-staging/index.html
           grep -q 'Legacy sign-in does not transfer' dist-staging/index.html
