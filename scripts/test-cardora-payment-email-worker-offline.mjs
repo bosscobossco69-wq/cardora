@@ -69,7 +69,7 @@ async function run(opts={}){
      if(table==='seller_profiles'){
       if(!filters.some(([column,id])=>column==='id'&&id===fixture().seller_profile_id))
         return {data:null,error:null};
-      return {data:{user_id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'},error:null};
+      return {data:{user_id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',status:opts.unapprovedSeller?'pending':'approved',verification_status:opts.unverifiedSeller?'unverified':'verified'},error:null};
      }
      if(table==='users'){
       if(!filters.some(([column,id])=>column==='id'&&id==='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'))
@@ -85,7 +85,7 @@ async function run(opts={}){
   state.requests.push({url,request});
   return opts.resendFailure?
     new Response('synthetic error',{status:503}):
-    new Response(JSON.stringify({id:'email_synthetic001'}),{status:200});
+    new Response(JSON.stringify(opts.missingResendId?{ok:true}:{id:'email_synthetic001'}),{status:200});
  };
  runInNewContext(source,{Deno:{env:{get:k=>overrides[k]},serve:fn=>handler=fn},
   Request,Response,Headers,TextEncoder,Date,console:{error(){}},fetch,
@@ -112,6 +112,10 @@ await test('wrong seller subscription link',{wrongLink:true},409,'MEMBERSHIP_NO_
 await test('canceled membership rejected',{cancelled:true},409,'MEMBERSHIP_NO_LONGER_VERIFIED',0);
 await test('missing Auth identifier rejected',{missingAuth:true},409,'CUSTOMER_IDENTITY_UNVERIFIED',0);
 await test('inactive Cardora account rejected',{inactiveAccount:true},409,'CUSTOMER_IDENTITY_UNVERIFIED',0);
+await test('seller approval revoked',{unapprovedSeller:true},409,'SELLER_IDENTITY_UNAVAILABLE',0);
+await test('seller verification revoked',{unverifiedSeller:true},409,'SELLER_IDENTITY_UNAVAILABLE',0);
+const missingReceipt=await test('Resend response lacks provider message ID',{missingResendId:true},502,'EMAIL_PROVIDER_ID_UNVERIFIED',1);
+assert.equal(missingReceipt.outbox.status,'sending');
 await test('unusable recipient email rejected',{invalidEmail:true},409,'CUSTOMER_EMAIL_UNVERIFIED',0);
 const good=await test('verified buyer gets one email',{ },200,null,1);
 assert.equal(good.body.processed,1);
