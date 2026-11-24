@@ -60,9 +60,9 @@ a{color:#ffd174}
 <p id="loginStatus" role="status" aria-live="polite"></p>
 </section>
 <section id="application" hidden>
-<h2>3. Apply as a seller or referral partner</h2>
-<p>Applications require an authenticated, active Cardora profile. Review is manual. A partner does not need stock and receives no automatic commission.</p>
-<form id="apply">
+<h2>3. Seller and partner applications</h2>
+<p class="notice"><strong>Applications temporarily paused.</strong> Our seller-approval safeguards are being verified. You can register a free collector account, but applications cannot be submitted or approved on this Preview. No payment is required.</p>
+<form id="apply" hidden>
 <label>Name / shop name<input id="appName" maxlength="120" required></label>
 <label>Country or city<input id="appCity" maxlength="100"></label>
 <label>Contact phone (optional)<input id="appPhone" maxlength="40"></label>
@@ -133,6 +133,11 @@ $('login').addEventListener('submit',async e=>{
  finally{btn.disabled=false}
 });
 $('apply').addEventListener('submit',async e=>{
+ e.preventDefault();
+ safeText('appStatus','Applications are paused until server-side manual approval is verified. No submission was sent.');
+ return;
+ /* SECURITY GATE: intentionally disabled; DO NOT remove without a verified
+    backend manual-review implementation and separately approved release. */
  e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;
  try{
  const user=await sessionUser();if(!user)throw Error('Sign in first');
