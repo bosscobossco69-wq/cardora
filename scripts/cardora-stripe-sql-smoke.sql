@@ -109,6 +109,36 @@ BEGIN
       AND status='active' AND is_current
       AND current_period_ends_at='2027-01-24T00:00:00Z'::timestamptz)
     THEN RAISE EXCEPTION 'Verified renewal failed to extend entitlement'; END IF;
+  -- A failed invoice can mark current membership past_due. A subsequent
+  -- verified payment for the SAME billed period must restore active access,
+  -- not be skipped simply because the period end is unchanged.
+  PERFORM public.cardora_apply_verified_stripe_event(
+    'evt_recoveryfail001','past_due','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','basic',
+    'cus_test001','sub_test001',NULL,NULL,rid,1795478460);
+  IF NOT EXISTS(SELECT 1 FROM public.seller_subscriptions
+    WHERE seller_profile_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+      AND status='past_due' AND is_current
+      AND current_period_ends_at='2027-01-24T00:00:00Z'::timestamptz)
+    THEN RAISE EXCEPTION 'Expected past_due state not applied'; END IF;
+  PERFORM public.cardora_apply_verified_stripe_event(
+    'evt_recoverpaid001','paid','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','basic',
+    'cus_test001','sub_test001','2026-12-24T00:00:00Z','2027-01-24T00:00:00Z',
+    rid,1795478470);
+  IF NOT EXISTS(SELECT 1 FROM public.seller_subscriptions
+    WHERE seller_profile_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+      AND status='active' AND is_current
+      AND current_period_ends_at='2027-01-24T00:00:00Z'::timestamptz)
+    THEN RAISE EXCEPTION 'Same-period paid invoice failed to restore active membership'; END IF;
+  -- An older invoice must not shorten an already-recovered membership period.
+  PERFORM public.cardora_apply_verified_stripe_event(
+    'evt_oldpaidafterrecover001','paid','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','basic',
+    'cus_test001','sub_test001','2026-11-24T00:00:00Z','2026-12-24T00:00:00Z',
+    rid,1795478480);
+  IF NOT EXISTS(SELECT 1 FROM public.seller_subscriptions
+    WHERE seller_profile_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+      AND status='active' AND is_current
+      AND current_period_ends_at='2027-01-24T00:00:00Z'::timestamptz)
+    THEN RAISE EXCEPTION 'Historical payment reduced active membership period'; END IF;
   -- Paid invoice email queued only after membership verified; retries never duplicate.
   PERFORM public.cardora_queue_verified_payment_email(
     'in_testpaid001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
@@ -159,6 +189,6 @@ BEGIN
     WHERE seller_profile_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' AND is_current)
     THEN RAISE EXCEPTION 'Late stale paid event reactivated canceled membership'; END IF;
 
-  RAISE NOTICE 'PASS: reservation dedup, eligibility, paid entitlement, duplicate event, wrong owner/customer, stale failure, renewal, cancel, late paid replay, deduplicated invoice email outbox';
+  RAISE NOTICE 'PASS: reservation dedup, eligibility, paid entitlement, duplicate event, wrong owner/customer, stale failure, renewal, same-period recovery, historical invoice rejection, cancel, late paid replay, deduplicated invoice email outbox';
 END
 $test$;
