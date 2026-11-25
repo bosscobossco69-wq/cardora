@@ -69,3 +69,5 @@ await register(unconfirmed);assert.equal(unconfirmed.signupCalls.length,0);
 assert.match(html,/sb_publishable_/);
 assert.doesNotMatch(html,/crqqockaetgacddxkqpb|sb_secret_|sk_live_|seller_applications'\)\.insert/);
 console.log('PASS: production-derived release keeps unverified accounts outside member view and excludes legacy/secret/write endpoints');
+
+assert.match(html,/id="freeInvite"/);assert.match(html,/id="inviteLink" readonly value="https:\/\/cardora-rose\.vercel\.app\/join\.html"/);assert.match(html,/navigator\.share\(/);assert.match(html,/navigator\.clipboard\?\.writeText/);assert.match(html,/不记录推荐归属，不产生佣金/);assert.doesNotMatch(html,/publicInvite[^\n]*(member_id|auth_user_id|access_token)/);console.log('PASS: public invitation uses fixed canonical URL without member identifier or payout');
