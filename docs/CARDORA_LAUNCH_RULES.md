@@ -1,0 +1,34 @@
+# CARDORA — Launch rules and policy gates / 上线条规
+Status: draft, 2026-11-25. Not effective transaction terms; no legal approval claimed.
+## 1. Current service / 当前开放范围
+Free ordinary membership and email verification only. Cardora is currently an individual project; do not claim SSM registration or registered Trixovel company until verified. No purchase, deposit, invitation, subscription or investment required. No active seller payments, payouts, reward claims, cash balance, paid random packs, repurchase or referral income. Do not transfer money to someone claiming to collect Cardora fees.
+## 2. Membership / 会员
+Use one's own email; no impersonation, abuse, spam, fraudulent accounts or trading credentials. Email confirmation is not identity verification. Separate manual review for sellers, partners and merchants; no automatic role escalation. Proposed commercial participation limited to adults 18+ pending review of applicable eligibility. Access restriction or suspension must have documented reasons, appeal channel and statutory rights preserved.
+## 3. Collection and grading / 收藏及评级
+Local notes stay in browser and are not linked automatically to an account; shared devices and clearing browser storage can expose or remove notes. Future cloud collection requires active verified membership, own-row access, explicit save and deletion/export procedure. Collection notes do not prove ownership, stock, authenticity or monetary value. Check CGC, PSA, BGS or TAG official certificate and physical card. No claim of official partnership. Obtain data/image use permissions before commercial reuse.
+## 4. Marketplace / 交易（未开放）
+Verify seller identity and lawful authority over stock. Require actual item, set, edition, language, condition, defects, photos, certificate if applicable, price, currency, delivery cost and estimated delivery. No counterfeit, stolen goods, deceptive listings, shill bidding or fake reviews. Distinguish seller from operator and disclose seller details as legally required. Provide clear checkout total and correction opportunity before confirmation, order receipt, tracked fulfillment where applicable, complaint route and refund/dispute process. No blanket waiver of consumer rights. Define evidence, missing/damaged/counterfeit goods, return eligibility, timelines, payment disputes and seller settlement before activation.
+## 5. Packs and live / 卡包及直播（未开放）
+Original sealed products, fixed disclosed bundles and individually identified cards only in initial commerce scope, subject to approval. Live video does not exempt random paid prizes from applicable law or provider policy. No paid mystery allocation, chance-based cash/value prize, instant buyback, stored value, or wagering until separate legal and processor approval; no external workaround. No fake live viewer counts or sales. Obtain content rights and moderation rules.
+## 6. Fees / 收费（待确认）
+Current platform fees zero; no payable commission. Legacy fees.html proposes 25% of gross platform commission, no subscription and free first 100 listings; later design proposes 20% of positive distributable net contribution and subscription tiers. These conflict. Do not silently choose or advertise either as active. Reconcile owner-approved schedule, base, processing costs, taxes, refunds, settlement and effective date; update fees.html, structured data, checkout and all promotions together. No retroactive charges. Stripe sandbox success does not establish live marketplace approval. Confirm provider-supported marketplace/payout architecture and live approval; do not hold third-party funds informally.
+## 7. Rewards / 奖励（未开放）
+Proposed maximum welcome 500 CP: email 100, profile 100, first qualifying purchase 200, first genuine transaction review 100. Not a balance, liability or promise. No required purchase to join; no payment for recruiting. No positive-review requirement; disclose review incentive. Publish funding cap, eligibility, redemption, expiry, reversals and appeal before issuance; no cash withdrawal, transferable currency or guaranteed returns. One direct referral only, no downline or recruitment-based payout. Verify consent, actual settled eligible transaction, fraud controls, refunds and identity before any payout. No guaranteed income. Codes inactive until review; no public identity information in QR.
+## 8. Privacy / 隐私
+Current auth data: email, identifier, membership status and authentication records; Supabase and Vercel. No automatic marketing consent. Before new collection/referral/KYC processing update notice: purpose, necessary vs optional fields, access, disclosure, international transfers, retention and deletion, security, breach handling and support. Do not collect documents via email/chat or frontend forms; approved provider, lawful purpose, restricted access and retention policy first. Review Malay and English notices and applicable PDPA requirements. Support contact as published on join.html; never ask for passwords or OTP.
+## 9. Mandatory release checklist / 上线门槛
+- [ ] Owner confirms scope, business registration/legal identity, applicable jurisdiction and official contact details.
+- [ ] Review Malaysian consumer/e-commerce, privacy, direct referral and random reward laws with qualified adviser; confirm applicable rules and effective dates.
+- [ ] Publish consistent Malay and English terms/privacy/fees; Chinese translation for community. Version/date and affirmative acceptance where required.
+- [ ] Verify real sign-up, email flow, suspended and cross-account API denial, deletion/export, access control and backup/restore.
+- [ ] Check actual TCGdex API and data rights, grading links and mobile interface.
+- [ ] Payment/refund/chargeback and signed webhook E2E in isolated test environment; provider approval and seller onboarding; no live activation without express authorization.
+- [ ] Confirm rewards budget and real evidence, anti-abuse rules, transaction audit, no double grants and reversal tests.
+- [ ] Reconcile all older pages, SEO metadata, marketing and UI. Keep disabled functions fail-closed.
+- [ ] Explicit separate release authorization for scope; document rollout, rollback and support.
+## Official references for review (not a legal opinion)
+- Malaysia SSM: https://www.malaysia.gov.my/en/digital-services/ssm-company-and-business-registration
+- Malaysian electronic trade transaction regulations 2024: https://mylaw.my/legislation/peraturan-peraturan-perlindungan-pengguna-urus-niaga-perdagangan-elektronik-2024 (text mirror; confirm against official gazette)
+- Malaysia PDPA and amendment: https://www.pdp.gov.my/en/akta/pdp-act-2010-en/ and https://www.pdp.gov.my/en/akta/personal-data-protection-amendment-act-2024/
+- Stripe Malaysia agreement: https://stripe.com/en-my/legal/ssa/my
+- Stripe restricted businesses: https://stripe.com/legal/restricted-businesses
