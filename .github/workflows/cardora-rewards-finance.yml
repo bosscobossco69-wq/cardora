@@ -3,7 +3,7 @@ on:
   push:
     branches: [draft/rewards-finance-20261125]
   pull_request:
-    paths: ['scripts/rewards-finance-preview.mjs','scripts/test-rewards-finance-preview.mjs','.github/workflows/cardora-rewards-finance.yml']
+    paths: ['scripts/rewards-finance-preview.mjs','scripts/test-rewards-finance-preview.mjs','scripts/test-welcome-entitlements.sql','supabase/drafts/CARDORA_DRAFT_welcome_entitlements.sql','.github/workflows/cardora-rewards-finance.yml']
 permissions:
   contents: read
 jobs:
@@ -14,3 +14,29 @@ jobs:
         with:
           persist-credentials: false
       - run: node scripts/test-rewards-finance-preview.mjs
+
+  database-isolation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: disposable-ci-only
+          POSTGRES_DB: cardora_ci
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cardora_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Test isolated database
+        env:
+          DB_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$DB_CONTAINER" mkdir -p /tmp/cardora/scripts /tmp/cardora/supabase/drafts
+          docker cp scripts/test-welcome-entitlements.sql "$DB_CONTAINER:/tmp/cardora/scripts/"
+          docker cp supabase/drafts/CARDORA_DRAFT_welcome_entitlements.sql "$DB_CONTAINER:/tmp/cardora/supabase/drafts/"
+          docker exec "$DB_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U postgres -d cardora_ci -f /tmp/cardora/scripts/test-welcome-entitlements.sql
