@@ -19,7 +19,7 @@ for(const id of ['en','zh'])document.getElementById(id).addEventListener('click'
 const statsEndpoint='https://fdkfquvzbswxocyrhduk.supabase.co/rest/v1/cardora_community_snapshot?select=registered_members,verified_members,new_today,day_myt,measured_at&singleton=eq.true';
 const statsKey='sb_publishable_V99GEROTQ492-d_w2QIoGg_RWx8DqwT';
 let snapshot=null, loading=false;
-function mytDay(t){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(t);}
+function mytDay(t){const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(t).map(p=>[p.type,p.value]));return [parts.year,parts.month,parts.day].join('-');}
 function validSnapshot(r, now=Date.now()){
   if(!r||typeof r!=='object')return false;
   const n=[r.registered_members,r.verified_members,r.new_today];
