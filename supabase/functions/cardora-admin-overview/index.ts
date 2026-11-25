@@ -1,0 +1,223 @@
+// Cardora management overview — expanded dashboard draft; deploy only after QA.
+// Administrator-only, read-only statistics from the NEW Cardora Supabase project.
+// The old pokemon-treasure-demo project is intentionally not silently combined.
+// Never put SUPABASE_SERVICE_ROLE_KEY into browser JavaScript.
+import { createClient } from "npm:@supabase/supabase-js@2.49.4";
+
+// Preview origins must be exact HTTPS origins (no wildcard or shared suffix).
+// More than one exact Preview URL may be configured, separated by commas.
+// Production is opt-in separately, and is NOT allowed by default.
+const previewOrigins=(Deno.env.get("CARDORA_STAGING_SITE_ORIGINS")||
+  Deno.env.get("CARDORA_STAGING_SITE_ORIGIN")||"").split(",").map(v=>v.trim()).filter(Boolean);
+const productionOrigin=Deno.env.get("CARDORA_SITE_ORIGIN")||"";
+const allowProductionOrigin=Deno.env.get("CARDORA_ALLOW_PRODUCTION_ORIGIN")==="true";
+const isExactHttpsOrigin=(value:string)=>{
+  try{
+    const url=new URL(value);
+    return url.protocol==="https:"&&url.origin===value&&!url.username&&!url.password;
+  }catch{return false;}
+};
+// CORS is not authorization: getUser + protected active admin role are mandatory.
+const safeOrigins=new Set([
+  ...previewOrigins,
+  ...(allowProductionOrigin?[productionOrigin]:[])
+].filter(isExactHttpsOrigin));
+Deno.serve(async(request)=>{
+ const origin=request.headers.get("origin");
+ const respond=(value:unknown,status=200)=>{
+   const headers=new Headers({
+     "content-type":"application/json; charset=utf-8",
+     "cache-control":"no-store, private",
+     "vary":"Origin"
+   });
+   // Unknown browser origins must not receive any CORS allow-origin header.
+   // Authorization is independently checked by Supabase getUser and active admin role.
+   if(origin && safeOrigins.has(origin)){
+     headers.set("access-control-allow-origin",origin);
+     headers.set("access-control-allow-headers","authorization, apikey, content-type, x-client-info");
+     headers.set("access-control-allow-methods","POST, OPTIONS");
+   }
+   return new Response(JSON.stringify(value),{status,headers});
+ };
+ if(origin && !safeOrigins.has(origin))
+   return respond({error:"INVALID_ORIGIN"},403);
+ if(request.method==="OPTIONS")return respond({ok:true});
+ if(request.method!=="POST")return respond({error:"METHOD_NOT_ALLOWED"},405);
+ // Separate, explicit preview release approval. Does not certify the global
+ // migration or enable checkout, application writes, or production access.
+ const previewReadOnly=Deno.env.get("CARDORA_ADMIN_PREVIEW_READONLY_VERIFIED")==="true"&&
+   !allowProductionOrigin&&!!origin&&previewOrigins.includes(origin)&&isExactHttpsOrigin(origin)&&
+   origin!==productionOrigin&&origin!=="https://cardora-rose.vercel.app";
+ const fullRelease=Deno.env.get("CARDORA_ADMIN_OVERVIEW_VERIFIED")==="true"&&
+   Deno.env.get("CARDORA_AUTH_MIGRATION_VERIFIED")==="true";
+ if(!previewReadOnly&&!fullRelease)
+   return respond({error:"ADMIN_OVERVIEW_NOT_VERIFIED"},503);
+ const projectUrl=Deno.env.get("SUPABASE_URL")||"";
+ if(projectUrl!=="https://fdkfquvzbswxocyrhduk.supabase.co")
+   return respond({error:"CARDORA_PROJECT_MISMATCH"},503);
+ const anon=Deno.env.get("SUPABASE_ANON_KEY")||"";
+ const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
+ if(!anon||!serviceKey)return respond({error:"CONFIG_UNAVAILABLE"},503);
+ const authorization=request.headers.get("authorization")||"";
+ if(!/^Bearer\s+\S+$/.test(authorization))
+   return respond({error:"LOGIN_REQUIRED"},401);
+ const authClient=createClient(projectUrl,anon,{
+   global:{headers:{Authorization:authorization}},
+   auth:{persistSession:false,autoRefreshToken:false}
+ });
+ const verified=await authClient.auth.getUser();
+ const authUser=verified.data?.user;
+ if(verified.error||!authUser||authUser.is_anonymous)return respond({error:"INVALID_SESSION"},401);
+ const adminClient=createClient(projectUrl,serviceKey,{
+   auth:{persistSession:false,autoRefreshToken:false}
+ });
+ // Role derives solely from protected public.users, NEVER client claims or email.
+ const {data:admin,error:roleError}=await adminClient.from("users")
+   .select("id,role,status").eq("auth_user_id",authUser.id).maybeSingle();
+ if(roleError)return respond({error:"AUTHORIZATION_UNAVAILABLE"},503);
+ if(!admin||admin.role!=="admin"||admin.status!=="active")
+   return respond({error:"ADMIN_ONLY"},403);
+ // Legacy is history ONLY. Credentials stay server-side and read-only queries
+ // never update old applications, users, wallets or permissions.
+ const legacyUrl="https://crqqockaetgacddxkqpb.supabase.co";
+ const legacyKey=fullRelease?(Deno.env.get("CARDORA_LEGACY_READ_SERVICE_KEY")||""):"";
+ const legacy=legacyKey?createClient(legacyUrl,legacyKey,{
+   auth:{persistSession:false,autoRefreshToken:false}
+ }):null;
+ const classify=(r:{name?:string|null;email?:string|null})=>
+   /(^|[^a-z])(test|demo|sample)([^a-z]|$)/i.test((r.name||"")+" "+(r.email||""))||
+   /@example\.(com|org|net|invalid)$/i.test(r.email||"");
+ const count=async(table:string,filter?:{field:string,value:string})=>{
+   let query=adminClient.from(table).select("id",{head:true,count:"exact"});
+   if(filter)query=query.eq(filter.field,filter.value);
+   const r=await query;
+   if(r.error)throw new Error("count failed for "+table);
+   if(typeof r.count!=="number")throw new Error("count unavailable for "+table);
+   return r.count;
+ };
+ try {
+   const [registered,sellers,agents,applications,pending,approved,
+     sellerApplications,agentApplications,listings,orders,subscriptions]=
+    await Promise.all([
+     count("users"),count("seller_profiles"),count("agent_profiles"),
+     count("seller_applications"),
+     count("seller_applications",{field:"status",value:"pending"}),
+     count("seller_applications",{field:"status",value:"approved"}),
+     count("seller_applications",{field:"role",value:"seller"}),
+     count("seller_applications",{field:"role",value:"agent"}),
+     count("listings"),count("orders"),count("seller_subscriptions")
+    ]);
+   // Malaysia business calendar, exact counts of created profile/application rows.
+   // Profiles are not Auth signups and include internal/test accounts.
+   const myToday=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+   const dayStart=new Date(myToday+"T00:00:00+08:00").getTime();
+   const dateRangeCount=async(table:string,start:number,end:number)=>{
+     const r=await adminClient.from(table).select("id",{head:true,count:"exact"})
+       .gte("created_at",new Date(start).toISOString()).lt("created_at",new Date(end).toISOString());
+     return r.error||typeof r.count!=="number"?null:r.count;
+   };
+   const [profilesToday,profilesYesterday,applicationsToday,applicationsYesterday]=await Promise.all([
+     dateRangeCount("users",dayStart,dayStart+86400000),
+     dateRangeCount("users",dayStart-86400000,dayStart),
+     dateRangeCount("seller_applications",dayStart,dayStart+86400000),
+     dateRangeCount("seller_applications",dayStart-86400000,dayStart)
+   ]);
+   // Explicit column allowlists; never include balances, addresses, phone numbers or payment credentials.
+   const recent=async(table:string,fields:string)=>{
+     const r=await adminClient.from(table).select(fields).order("created_at",{ascending:false}).limit(50);
+     return r.error?{available:false,records:[],limit:50}:{available:true,records:r.data||[],limit:50};
+   };
+   const [sellerRows,agentRows,listingRows,orderRows,subscriptionRows]=await Promise.all([
+     recent("seller_profiles","display_name,status,verification_status,trust_level,created_at"),
+     recent("agent_profiles","display_name,status,created_at"),
+     recent("listings","title,status,price,currency,inventory,created_at"),
+     recent("orders","order_id,status,total,currency,created_at"),
+     recent("seller_subscriptions","plan_code,status,is_current,created_at")
+   ]);
+   const details=await adminClient.from("seller_applications")
+     .select("id,created_at,name,email,role,status")
+     .order("created_at",{ascending:false}).limit(50);
+   if(details.error)throw new Error("application list unavailable");
+   // Admin-only roster. Do not expose financial balances or export bulk contacts.
+   // This is a capped read-only preview. Consent tables are not configured yet.
+   const rosterResult=await adminClient.from("users")
+     .select("id,member_id,email,role,status,created_at")
+     .order("created_at",{ascending:false}).limit(50);
+   if(rosterResult.error)throw new Error("customer roster unavailable");
+   // Minimize PII returned to browsers even after the active-admin check.
+   // Keep real addresses in the protected database; follow-up mailers must be server-only.
+   const maskEmail=(value:string|null)=>{
+     if(!value||!value.includes("@"))return null;
+     const [local,domain]=value.split("@");
+     if(!local||!domain)return null;
+     return local.slice(0,1)+"***@"+domain;
+   };
+   const customerRoster=(rosterResult.data||[]).map(u=>({
+     member_id:u.member_id||null,
+     email_masked:maskEmail(u.email),
+     role:u.role||"user",
+     status:u.status||"unknown",
+     created_at:u.created_at||null,
+     suspected_test:classify({email:u.email}),
+     marketing_consent:"not_configured",
+     email_followup:"disabled"
+   }));
+   // Minimize PII in application history too. Full applicant email remains
+   // protected in Supabase and is never needed for this read-only dashboard.
+   const maskApplication=(a:{email?:string|null})=>({
+     ...a,email_masked:maskEmail(a.email||null),email:undefined
+   });
+   // Keep source-specific records, never silently merging different identities.
+   // A test flag is a review cue, not proof that a customer is fake.
+   const canonical=(details.data||[]).map(a=>({
+      ...maskApplication(a),source:"cardora",suspected_test:classify(a)
+   }));
+   let legacyHistory:{source:string;available:boolean;error?:string;applications:unknown[];
+      record_count:number|null;suspected_test_count:number|null}={
+       source:"pokemon-treasure-demo",available:false,
+       error:"NOT_CONFIGURED",applications:[],record_count:null,
+       suspected_test_count:null
+   };
+   if(legacy){
+     const [legacyRows,legacyCount]=await Promise.all([
+       legacy.from("seller_applications").select("id,created_at,name,email,role,status")
+         .order("created_at",{ascending:false}).limit(50),
+       legacy.from("seller_applications").select("id",{head:true,count:"exact"})
+     ]);
+     if(legacyRows.error||legacyCount.error){
+       legacyHistory.error="LEGACY_READ_UNAVAILABLE";
+     }else{
+       const apps=(legacyRows.data||[]).map(a=>({
+         ...maskApplication(a),source:"legacy",suspected_test:classify(a)
+       }));
+       legacyHistory={source:"pokemon-treasure-demo",available:true,
+         applications:apps,record_count:legacyCount.count??0,
+         suspected_test_count:apps.filter(a=>a.suspected_test).length};
+     }
+   }
+   return respond({
+     source:"cardora_supabase",legacy_project_included:false,
+     updated_at:new Date().toISOString(),
+     counts:{registered_profiles:registered,sellers,agents,applications,
+       pending,approved,seller_applications:sellerApplications,
+       agent_applications:agentApplications,listings,orders,subscription_records:subscriptions},
+     // Admin-only; do not log or cache personal application information.
+     applications:canonical,legacy_history:legacyHistory,
+     activity:{timezone:"Asia/Kuala_Lumpur",date:myToday,profiles_today:profilesToday,profiles_yesterday:profilesYesterday,applications_today:applicationsToday,applications_yesterday:applicationsYesterday},
+     modules:{sellers:sellerRows,agents:agentRows,listings:listingRows,orders:orderRows,subscriptions:subscriptionRows},
+     integrations:{stripe_revenue:"not_connected",ai_review:"not_connected",outreach:"disabled_no_consent"},
+     customers:{source:"cardora",total_profiles:registered,
+       displayed_count:customerRoster.length,limit:50,
+       records:customerRoster,marketing_available:false,
+       followup_available:false,
+       note:"Only administrator-viewable read-only preview. Consent, email sending and engagement timestamps are not configured. Do not infer real customers from total profiles."},
+     labels:{canonical:"Cardora (new)",legacy:"Old archive: pokemon-treasure-demo"},
+     test_classification:"Name/email pattern only. Human review required; totals include test rows.",
+     suspected_test_applications_in_recent_50:canonical.filter(a=>a.suspected_test).length,
+     note:"Separate new and old sources; no deduplicated unique customer total or revenue."
+   });
+ } catch(e){
+   console.error("CARDORA_ADMIN_OVERVIEW_FAILED",e instanceof Error?e.message:"unknown");
+   return respond({error:"OVERVIEW_UNAVAILABLE"},503);
+ }
+});

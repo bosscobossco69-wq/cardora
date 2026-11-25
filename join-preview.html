@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Join Cardora early access as a collector, seller or referral partner. Free registration. No payments or guaranteed rewards.">
+<title>Join Cardora — Early Access</title>
+<style>
+:root{font:16px/1.5 system-ui,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:#100e1b;color:#f9f6ff}
+header,main,footer{max-width:760px;margin:auto;padding:22px}
+header{display:flex;justify-content:center;gap:12px;align-items:center;flex-direction:column}.brand{color:#e9c782;font-weight:850;text-decoration:none;font-size:27px;letter-spacing:.2em}header span{font-size:10px;letter-spacing:.12em;color:#bdb5c9}
+section{border:1px solid #413451;background:#1d172b;padding:22px;margin:20px 0;border-radius:18px}
+h1{font-size:clamp(29px,6vw,40px);letter-spacing:-1px;line-height:1.13;text-align:center;margin:4px 0 8px}.tagline{text-align:center;color:#bdb5c9;margin:0 0 22px}
+p,small{color:#d3c9e2}
+.notice{background:#312315;border:1px solid #ab8745;border-radius:12px;padding:15px;color:#ffde9e}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0}
+.roles label{display:block;text-align:center;border:1px solid #55426b;border-radius:11px;padding:13px;cursor:pointer}
+.roles label:has(input:checked){border-color:#f5cf77;background:#413020}
+input,select,textarea,button{font:inherit}
+input:not([type=radio]):not([type=checkbox]),select,textarea{width:100%;padding:12px;border-radius:9px;border:1px solid #716081;background:#13101f;color:#fff}
+form{display:grid;gap:14px}form label{display:grid;gap:5px}
+button{padding:13px 17px;border:0;border-radius:10px;background:#ffd174;color:#17121a;font-weight:800;cursor:pointer}
+button:disabled{opacity:.5}
+button.secondary{background:#423553;color:#fff}
+[hidden]{display:none!important}
+body{background:radial-gradient(ellipse at top,#2a1d3d 0,#100d19 52%,#080711 100%);min-height:100vh}
+main{max-width:520px;padding:12px 18px 30px}.auth-panel{background:#1a1427;border-color:#51445f;padding:24px;box-shadow:0 18px 50px #0004}.auth-panel h2{text-align:center;font-size:22px;margin:20px 0}
+#authTabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;background:#100d19;padding:4px;border-radius:12px}#authTabs button{background:transparent;color:#bdb5c9;font-size:14px;padding:10px}#authTabs button[aria-pressed=true]{background:#3b2e4b;color:#e9c782}
+.google-wrap button,.wide{width:100%}.google-wrap button{background:#fff;color:#202124}.google-wrap p{font-size:12px;text-align:center;margin:6px 0 14px}.or{display:flex;align-items:center;gap:12px;color:#aaa1b8;font-size:12px;margin:18px 0}.or:before,.or:after{content:'';height:1px;background:#51445f;flex:1}
+button{background:#e9c782;min-height:44px}button.secondary{background:#241b33;border:1px solid #51445f}.text-button{background:transparent;color:#e9c782;padding:4px;min-height:0;font-size:14px;text-decoration:underline}.switch-copy{text-align:center;font-size:14px}.consent{display:block;font-size:12px;color:#bdb5c9;border-top:1px solid #51445f;padding-top:14px;margin-top:16px}.consent input{vertical-align:middle;margin-right:6px}.notice{font-size:12px}.auth-panel label{font-size:14px}.auth-panel input:not([type=checkbox]){min-height:46px}#emailPanel{padding:12px 0}#forgotPassword{display:block;margin:10px 0 0 auto}#forgotHint{font-size:12px}footer{text-align:center;font-size:12px;color:#aaa1b8}
+
+a{color:#ffd174}
+@media(max-width:560px){.roles{grid-template-columns:1fr}.roles label{text-align:left}}
+
+/* Cardora premium account design — presentation only. */
+body{background:#100d19;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+header{padding:34px 20px 18px}.brand{font-size:26px;letter-spacing:.19em}
+main{max-width:430px;padding:8px 20px 30px}
+.auth-panel{background:#1b1527;border-color:#493a5b;border-radius:22px;padding:22px;box-shadow:none}
+.auth-panel h2{text-align:left;font-size:26px;line-height:1.2;margin:18px 0 8px;letter-spacing:-.5px}
+.auth-subtitle{font-size:13px;color:#beb5cc;margin:0 0 16px}
+.google-wrap #googleLogin{background:#f1f0f3;color:#202124;border:1px solid #f1f0f3;min-height:50px;border-radius:12px}
+.google-wrap #googleLogin:disabled{opacity:1;cursor:not-allowed;color:#34323a}
+.google-mark{color:#4285f4;font-weight:800;font-size:19px;margin-right:9px}
+.google-wrap p{color:#beb5cc;font-size:11px}
+button.secondary{background:#1b1527;border-color:#493a5b}
+.auth-panel button:not(.text-button){min-height:50px;border-radius:12px}
+#authTabs button{min-height:44px}
+.auth-panel input:not([type=checkbox]){min-height:50px;border-radius:12px;border-color:#493a5b;background:#100d19}
+.auth-panel input::placeholder{color:#a79cb8}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c782;outline-offset:3px}
+#loginStatus:empty,#registerStatus:empty,#otpStatus:empty{display:none}
+#forgotPassword{margin-top:12px}
+.switch-copy{text-align:left;margin:14px 0 0}
+.notice{font-size:12px}
+.desktop-story{display:none}
+@media(min-width:1000px){
+ body{background:#100d19}header{padding-bottom:24px}
+ main{max-width:1180px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(380px,1fr);gap:22px 32px;align-items:start;padding:16px 24px 32px}
+ .desktop-story{display:flex;grid-column:1;grid-row:1 / span 4;min-height:650px;flex-direction:column;justify-content:center;align-items:flex-start;padding:55px;border-radius:28px;background:#21172f}
+ .desktop-story strong{font-size:clamp(48px,5vw,68px);line-height:1.06;letter-spacing:-2px}
+ .desktop-story p{font-size:17px;color:#beb5cc}.desktop-story .eyebrow{font-size:12px;letter-spacing:.14em;color:#e9c782}
+ main> :not(.desktop-story){grid-column:2;margin-top:0;margin-bottom:0}
+ .auth-panel{width:100%}main h1{font-size:30px}
+}
+
+</style></head>
+<body>
+<header><a class="brand" href="/join.html">CARDORA</a><span>COLLECTORS · SELLERS · PARTNERS</span></header>
+<main>
+<aside class="desktop-story" aria-hidden="true"><p class="eyebrow">THE COLLECTOR’S MARKETPLACE</p><strong>Collect.<br>Buy.<br>Sell.<br>Connect.</strong><p>One account. A world of collectible cards.</p></aside>
+<h1>Welcome to Cardora</h1>
+<p class="tagline">Collect. Buy. Sell. Connect.</p>
+<p class="notice"><strong>Pre-launch preview:</strong> This is not a live store. No purchases, seller subscription checkout, referral points, cash commissions or promised earnings are available. Early access does not guarantee seller approval. Do not pay anyone to unlock a Cardora account.</p>
+<section id="registration" class="auth-panel">
+<div id="authTabs" role="group" aria-label="Account access"><button type="button" id="tabLogin" aria-pressed="true">Sign in</button><button type="button" id="tabRegister" aria-pressed="false">Create account</button></div>
+<h2 id="authTitle">Welcome back</h2><p class="auth-subtitle">Access your Cardora account.</p>
+<div class="google-wrap"><button id="googleLogin" type="button" class="secondary" disabled aria-describedby="googleHint"><span class="google-mark" aria-hidden="true">G</span>Continue with Google</button>
+<p id="googleHint"><small>Google sign-in is awaiting provider and redirect verification.</small></p>
+</div>
+<div id="loginPanel">
+<button type="button" id="emailToggle" class="secondary wide" aria-expanded="false">Continue with Email</button>
+<div id="emailPanel" hidden><form id="otpSend"><label>Email address<input id="otpEmail" type="email" autocomplete="email" maxlength="254" required></label><button type="submit">Send sign-in code</button></form>
+<form id="otpVerify" hidden><label>Six-digit code<input id="otpCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button type="submit">Verify & sign in</button></form>
+<p id="otpStatus" role="status" aria-live="polite"></p>
+<p><small>Existing accounts only. Enter the latest six-digit email code on this page. Never share your code.</small></p>
+</div>
+<div class="or"><span>OR</span></div>
+<form id="login">
+<label>Email<input id="loginEmail" placeholder="you@example.com" type="email" autocomplete="username" required></label>
+<label>Password<input id="loginPass" placeholder="Enter your password" type="password" autocomplete="current-password" required></label>
+<button type="submit">Sign In</button>
+</form>
+<p id="loginStatus" role="status" aria-live="polite"></p>
+
+<button type="button" id="forgotPassword" class="text-button">Forgot password?</button>
+<p id="forgotHint" hidden><small>Password recovery is not yet verified in this Preview. Use Continue with Email to sign in with an existing account.</small></p>
+<p class="switch-copy">New to Cardora? <button type="button" id="toRegister" class="text-button">Create an account</button></p>
+</div>
+<div id="registerPanel" hidden><form id="register">
+<label>Email address<input id="regEmail" placeholder="you@example.com" type="email" autocomplete="email" maxlength="254" required></label>
+<label>Password (12–128 characters)<input id="regPass" placeholder="At least 12 characters" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+<label>Confirm password<input id="regConfirm" placeholder="Re-enter password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+
+<button type="submit">Create account · Free</button>
+</form>
+<p id="registerStatus" role="status" aria-live="polite"></p>
+<p class="switch-copy">Already registered? <button type="button" id="toLogin" class="text-button">Sign in</button></p></div>
+<label class="consent"><input id="acceptTerms" type="checkbox"> I have reviewed the <a href="/terms.html" target="_blank" rel="noopener">draft terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">draft privacy notice</a>.</label>
+</section>
+<section id="interestPanel" hidden>
+<h2>Choose your interest</h2>
+<div class="roles" id="roles">
+<label><input type="radio" name="interest" value="collector" checked> Collector / Buyer</label>
+<label><input type="radio" name="interest" value="seller"> Seller</label>
+<label><input type="radio" name="interest" value="agent"> Referral Partner</label>
+</div>
+<p id="roleHint" aria-live="polite">Collect cards and follow our launch. No products can be purchased yet.</p>
+</section>
+<section id="application" hidden>
+<h2>Seller and partner applications</h2>
+<p class="notice"><strong>Applications temporarily paused.</strong> Our seller-approval safeguards are being verified. You can register a free collector account, but applications cannot be submitted or approved on this Preview. No payment is required.</p>
+<form id="apply" hidden>
+<label>Name / shop name<input id="appName" maxlength="120" required></label>
+<label>Country or city<input id="appCity" maxlength="100"></label>
+<label>Contact phone (optional)<input id="appPhone" maxlength="40"></label>
+<label>Card categories or promotional channels<input id="appCategories" maxlength="200" placeholder="Pokémon, One Piece / Facebook, TikTok, YouTube..." required></label>
+<label>Shop or social link (optional)<input id="appLinks" maxlength="250"></label>
+<label>About your business or promotion<input id="appMessage" maxlength="800"></label>
+<button type="submit">Submit application · Free</button>
+</form>
+<p id="appStatus" role="status" aria-live="polite"></p>
+</section>
+<section id="account" hidden>
+<h2>Your account</h2>
+<div id="memberDetails" hidden><p>Member ID: <strong id="memberNumber"></strong></p><p>Signed in as: <span id="memberEmail"></span></p><p>Membership status: <strong>Active</strong></p></div>
+<p id="accountStatus" role="status" aria-live="polite"></p>
+<button class="secondary" type="button" id="logout">Sign out</button>
+</section>
+<p><small>This pre-launch page is in a protected Preview, not a public production signup. We don't transfer old Pokémon Treasure passwords or permissions by email. Promotional messages need separate consent.</small></p>
+</main><footer>Cardora early access · No inventory required for registration · No paid referral scheme</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+'use strict';
+const url=__CARDORA_JOIN_URL_JSON__;
+const key=__CARDORA_JOIN_KEY_JSON__;
+// Disabled until a separately authorized protected-preview provider test.
+const googlePreviewVerified=false;
+const $=id=>document.getElementById(id);
+const client=window.supabase.createClient(url,key,{auth:{storageKey:'cardora-join-preview-v1',flowType:'pkce',persistSession:true,autoRefreshToken:true}});
+const role=()=>document.querySelector('input[name="interest"]:checked')?.value||'collector';
+const safeText=(id,v)=>{$(id).textContent=String(v)};
+function authMode(register){
+ $('loginPanel').hidden=register;$('registerPanel').hidden=!register;
+ $('tabLogin').setAttribute('aria-pressed',String(!register));$('tabRegister').setAttribute('aria-pressed',String(register));
+ safeText('authTitle',register?'Create your free account':'Sign in to Cardora');
+ $('loginPass').value='';$('regPass').value='';$('regConfirm').value='';
+}
+$('tabLogin').onclick=$('toLogin').onclick=()=>authMode(false);
+$('tabRegister').onclick=$('toRegister').onclick=()=>authMode(true);
+$('emailToggle').onclick=()=>{const panel=$('emailPanel');panel.hidden=!panel.hidden;$('emailToggle').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)$('otpEmail').focus();};
+$('forgotPassword').onclick=()=>{$('forgotHint').hidden=!$('forgotHint').hidden;};
+const sessionUser=async()=>{const {data,error}=await client.auth.getUser();return !error&&data?.user&&!data.user.is_anonymous?data.user:null};
+const googleButton=$('googleLogin');
+googleButton.disabled=!googlePreviewVerified;
+googleButton.addEventListener('click',async()=>{
+ if(!googlePreviewVerified||googleButton.disabled)return;
+ if(!$('acceptTerms').checked){safeText('googleHint','Review the draft terms and privacy notice first.');return;}
+ googleButton.disabled=true;
+ try{
+  if(await sessionUser())throw Error('Sign out before switching accounts');
+  const redirectTo=location.origin+'/join.html';
+  if(location.protocol!=='https:'||!location.hostname.endsWith('.vercel.app')||
+     location.hostname==='cardora-rose.vercel.app'||location.pathname!=='/join.html')
+   throw Error('Unapproved preview location');
+  const {error}=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo,queryParams:{prompt:'select_account'}}});
+  if(error)throw error;
+  safeText('googleHint','Opening Google sign-in…');
+ }catch(_){safeText('googleHint','Google sign-in unavailable. Verify provider and callback settings.');}
+ finally{googleButton.disabled=!googlePreviewVerified;}
+});
+let refreshGeneration=0;
+function clearMember(){ $('memberDetails').hidden=true;safeText('memberNumber','');safeText('memberEmail',''); }
+function clearAccountView(){clearMember();$('interestPanel').hidden=true;$('application').hidden=true;}
+function verificationUnavailable(){refreshGeneration++;clearAccountView();safeText('accountStatus','Account verification unavailable. Please retry or sign out.');}
+async function refresh(){
+ const generation=++refreshGeneration;
+ clearAccountView();
+ const user=await sessionUser();
+ if(generation!==refreshGeneration)return;
+ $('registration').hidden=!!user;
+ $('interestPanel').hidden=true;
+ $('application').hidden=true;
+ $('account').hidden=!user;
+ if(user){$('application').hidden=true;safeText('accountStatus','Signed in to Cardora Auth. Checking linked member profile…');
+  const {data:profile,error}=await client.from('users').select('id,status,member_id').eq('auth_user_id',user.id).maybeSingle();
+  if(generation!==refreshGeneration)return;
+  const confirmed=await sessionUser();
+  if(generation!==refreshGeneration)return;
+  if(!confirmed||confirmed.id!==user.id){verificationUnavailable();return;}
+  if(error||!profile||profile.status!=='active'){
+   $('application').hidden=true;
+   safeText('accountStatus','Your account is signed in but its Cardora profile is not active or cannot be read. No application will be submitted.');
+  }else{
+   safeText('memberNumber',profile.member_id||'Unavailable');safeText('memberEmail',confirmed.email||'Unavailable');$('memberDetails').hidden=false;
+   $('interestPanel').hidden=false;
+   $('application').hidden=role()==='collector';
+   safeText('accountStatus','Your linked Cardora member profile is active. Seller and partner approvals remain separate.');
+  }
+ }else safeText('accountStatus','');
+}
+const hints={
+ collector:'Explore collectible cards and be notified about launch only if you separately opt in later.',
+ seller:'You can apply without inventory today; real listings require owned stock and separate review.',
+ agent:'Promote Cardora truthfully through your own Facebook, TikTok, Shopee or other channels. No commissions or points are active.'
+};
+document.getElementById('roles').addEventListener('change',()=>{safeText('roleHint',hints[role()]);refresh().catch(verificationUnavailable)});
+$('register').addEventListener('submit',async e=>{
+ e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+ try{
+ const email=$('regEmail').value.trim().toLowerCase(),password=$('regPass').value;
+ if(password.length<12||password.length>128||password!==$('regConfirm').value)throw Error('Password requirements not met.');
+ if(!$('acceptTerms').checked)throw Error('Review the terms and privacy notice first.');
+ if(await sessionUser())throw Error('Sign out before creating another account');
+ const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+'/join.html'}});
+ $('regPass').value='';$('regConfirm').value='';
+ if(error)throw error;
+ if(data?.session){
+   const identity=await sessionUser();
+   if(!identity||identity.email?.toLowerCase()!==email){
+     await client.auth.signOut();throw Error('Registration identity mismatch');
+   }
+ }
+ safeText('registerStatus',data?.session?'Account session verified. Checking your member profile.':'If registration is accepted, check your email for the confirmation link. Open it in the same browser, then sign in. No account or seller approval is guaranteed.');
+ await refresh();
+ }catch(e){safeText('registerStatus','Registration not completed. Check your details or try again later.');}
+ finally{$('regPass').value='';$('regConfirm').value='';btn.disabled=false}
+});
+$('login').addEventListener('submit',async e=>{
+ e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+ try{const {data,error}=await client.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPass').value});
+ $('loginPass').value='';
+ if(error||!data?.session)throw Error('Invalid session');
+ safeText('loginStatus','Signed in.');await refresh();}
+ catch(e){safeText('loginStatus','Sign-in failed. Verify email confirmation and password.');}
+ finally{btn.disabled=false}
+});
+let otpTarget='',otpBusy=false;
+function resetOtp(){otpTarget='';$('otpCode').value='';$('otpVerify').hidden=true;}
+$('otpEmail').addEventListener('input',resetOtp);
+$('otpSend').addEventListener('submit',async e=>{
+ e.preventDefault();if(otpBusy)return;otpBusy=true;
+ const btn=e.currentTarget.querySelector('button');btn.disabled=true;resetOtp();
+ try{
+  const email=$('otpEmail').value.trim().toLowerCase();
+  if(await sessionUser())throw Error('Sign out first');
+  const {error}=await client.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});
+  if(error)throw error;
+  if($('otpEmail').value.trim().toLowerCase()!==email)return;
+  otpTarget=email;$('otpVerify').hidden=false;
+  safeText('otpStatus','If the account exists, check your inbox or spam folder for the latest sign-in code.');
+ }catch(_){safeText('otpStatus','Unable to request a code. Check email settings or try later.');}
+ finally{otpBusy=false;btn.disabled=false;}
+});
+$('otpVerify').addEventListener('submit',async e=>{
+ e.preventDefault();if(otpBusy)return;otpBusy=true;
+ const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+ try{
+  const email=otpTarget,token=$('otpCode').value.trim();
+  if(!email||email!==$('otpEmail').value.trim().toLowerCase()||!/^\d{6}$/.test(token))throw Error('Invalid code');
+  if(await sessionUser())throw Error('Sign out first');
+  const {error}=await client.auth.verifyOtp({email,token,type:'email'});
+  if(error)throw error;
+  const user=await sessionUser();
+  if(!user||user.email?.toLowerCase()!==email||otpTarget!==email){
+   await client.auth.signOut();throw Error('Identity mismatch');
+  }
+  resetOtp();safeText('otpStatus','Signed in.');await refresh();
+ }catch(_){safeText('otpStatus','Verification failed. Check the code and try again.');}
+ finally{otpBusy=false;btn.disabled=false;}
+});
+$('apply').addEventListener('submit',e=>{
+ e.preventDefault();
+ safeText('appStatus','Seller and partner applications are paused pending secure manual-review release. No request was sent.');
+});
+$('logout').addEventListener('click',async()=>{const {error}=await client.auth.signOut();if(error){safeText('accountStatus','Unable to sign out. Please retry.');return;}resetOtp();safeText('otpStatus','');await refresh()});
+client.auth.onAuthStateChange((event)=>{
+ if(event==='SIGNED_OUT'){refreshGeneration++;clearAccountView();$('account').hidden=true;$('registration').hidden=false;safeText('accountStatus','');resetOtp();}
+ // Run Supabase calls outside the auth callback to avoid re-entrant auth locks.
+ if(event==='SIGNED_IN'||event==='USER_UPDATED'){refreshGeneration++;clearAccountView();}
+ setTimeout(()=>refresh().catch(verificationUnavailable),0);
+});
+refresh().catch(verificationUnavailable);
+})();
+</script></body></html>

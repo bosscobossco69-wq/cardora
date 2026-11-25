@@ -6,13 +6,13 @@
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <meta content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://crqqockaetgacddxkqpb.supabase.co https://api.tcgdex.net; frame-src https://accounts.google.com https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests" http-equiv="Content-Security-Policy"/>
 <!-- Preview deployments must remain on their own origin so PKCE verifier storage matches the OAuth callback origin. -->
-<title>Trixovel — Global Collectibles Marketplace</title>
-<meta name="description" content="Trixovel is a global collectible card marketplace: browse Pokémon card listings, compare sellers and shipping, and manage your account. Payments are not live yet."/>
+<title>Cardora — Premium Trading Card Marketplace</title>
+<meta name="description" content="Cardora helps card collectors discover listings and explore seller memberships. Membership checkout is not available until account and payment verification is complete."/>
 <meta name="robots" content="index,follow"/>
 <link rel="canonical" href="https://cardora-rose.vercel.app/"/>
 <meta name="theme-color" content="#080711"/>
 <meta property="og:type" content="website"/>
-<meta property="og:title" content="Trixovel — Global Collectibles Marketplace"/>
+<meta property="og:title" content="Cardora — Premium Trading Card Marketplace"/>
 <meta property="og:description" content="Browse collectible card listings, compare sellers and manage your account. Local payments are not connected yet."/>
 <meta name="twitter:card" content="summary"/>
 <meta content="no-store, no-cache, must-revalidate" http-equiv="Cache-Control"/>
@@ -150,7 +150,7 @@ img, video, iframe, canvas, svg { max-width:100%; }
 @media(max-width:700px){.cs-grid{grid-template-columns:1fr}#cardoraSealedCenter{padding:12px}.cs-stat b{font-size:16px}}
 </style>
 <div class="ptx-brandbar" id="ptxBrandbar">
-<div class="ptx-logo"><div class="ptx-logo-mark ptx-float">⚡</div><div>Trixovel<small>GLOBAL CARD MARKET</small></div></div>
+<div class="ptx-logo"><div class="ptx-logo-mark ptx-float">◆</div><div>Cardora<small>PREMIUM CARD MARKETPLACE</small></div></div>
 <div class="ptx-nav">
 <button onclick="ptxJump('ptxOfficialHome')">Home</button>
 <button onclick="ptxJump('ptxMarketplace')">Market</button>
@@ -158,7 +158,7 @@ img, video, iframe, canvas, svg { max-width:100%; }
 <button onclick="ptxJump('ptxSellCard')">Sell</button>
 <button onclick="ptxJump('ptxAccountCenter')">Wallet</button>
 <button onclick="ptxJump('ptxBattleArena')">⚔️ Battle</button>
-<button id="ptxHeaderAuthButton" onclick="ptxOpenAuth('login')">Sign in</button>
+<button class="cardora-header-register premium-guest-auth" type="button" onclick="ptxOpenAuth('register')">Create account</button><button class="cardora-header-plans" type="button" onclick="document.getElementById('cardoraMembershipPreview')?.scrollIntoView({behavior:'smooth'})">Membership</button><button id="ptxHeaderAuthButton" onclick="ptxOpenAuth('login')">Sign in</button>
 </div>
 </div>
 <div id="ptxCurrencyBar" style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:#100b18;border-bottom:1px solid #30213f;color:#e8def5;font:12px system-ui,sans-serif">
@@ -169,6 +169,91 @@ img, video, iframe, canvas, svg { max-width:100%; }
 <span id="ptxCurrencyNote" style="color:#c6b7d9">Indicative preview rates only — not live FX or a payment quote.</span>
 </div>
 <div role="status" aria-live="polite" class="ca-promobar">Trixovel is live · <b>0% listing and selling fee</b> until a fee schedule is published · No payment is connected yet — if anyone asks you to pay outside Trixovel, report it.</div>
+<style id="cardoraPremiumLandingStyles">
+/* Cardora concept integration — responsive, additive, no payments or schema writes. */
+#cardoraPremiumLanding,#cardoraPremiumLanding *{box-sizing:border-box}
+#cardoraPremiumLanding{max-width:1260px;margin:22px auto 26px;padding:0 18px;color:#f7f2eb;font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#cardoraPremiumLanding .cp-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(285px,.8fr);align-items:stretch;gap:22px}
+#cardoraPremiumLanding .cp-panel{min-width:0;border:1px solid #42334b;border-radius:22px;padding:clamp(22px,4vw,46px);background:linear-gradient(135deg,#201a2b 0%,#110e19 72%);box-shadow:0 18px 48px #0003}
+#cardoraPremiumLanding .cp-feature{background:linear-gradient(150deg,#2a2236,#1a1525)}
+#cardoraPremiumLanding .cp-eyebrow{font-size:12px;font-weight:850;letter-spacing:.16em;text-transform:uppercase;color:#f1c879;margin:0 0 10px}
+#cardoraPremiumLanding h1{font-size:clamp(30px,4.15vw,56px);line-height:1.12;letter-spacing:-.045em;max-width:720px;margin:0 0 16px;overflow-wrap:break-word}
+#cardoraPremiumLanding h2{font-size:clamp(24px,3vw,34px);line-height:1.2;letter-spacing:-.025em;margin:0 0 9px;color:#fff}
+#cardoraPremiumLanding h3{font-size:21px;line-height:1.25;margin:0 0 8px;color:#fff}
+#cardoraPremiumLanding p{margin:0 0 18px;color:#c9c2d0}
+#cardoraPremiumLanding .cp-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#cardoraPremiumLanding .cp-btn,.ptx-nav .cardora-header-register,.ptx-nav .cardora-header-plans{display:inline-flex;justify-content:center;align-items:center;gap:7px;min-height:46px;padding:11px 20px;text-decoration:none;line-height:1.25;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;white-space:normal;text-align:center;transition:filter .15s,transform .15s}
+#cardoraPremiumLanding .cp-btn:hover,.ptx-nav .cardora-header-register:hover{filter:brightness(1.08);transform:translateY(-1px)}
+#cardoraPremiumLanding .cp-btn-primary,.ptx-nav .cardora-header-register{color:#1a1321;border:1px solid #f3ca7d;background:#f3ca7d}
+#cardoraPremiumLanding .cp-btn-secondary,.ptx-nav .cardora-header-plans{color:#f5e9d6;border:1px solid #655670;background:#2d2537}
+#cardoraPremiumLanding .cp-note{font-size:13px;line-height:1.55;color:#bbb1c6;margin-top:17px}
+#cardoraPremiumLanding .cp-gold{color:#f3ca7d}
+#cardoraPremiumLanding .cp-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:22px}
+#cardoraPremiumLanding .cp-step{min-width:0;border:1px solid #40344a;background:#211a2b;border-radius:16px;padding:20px}
+#cardoraPremiumLanding .cp-step .cp-num{font-size:12px;color:#f3ca7d;font-weight:900;letter-spacing:.09em}
+#cardoraPremiumLanding .cp-step p{font-size:14px;margin:8px 0 0}
+#cardoraPremiumLanding .cp-plans{margin-top:25px;scroll-margin-top:90px}
+#cardoraPremiumLanding .cp-plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:17px 0}
+#cardoraPremiumLanding .cp-plan{min-width:0;border:1px solid #493b52;border-radius:18px;background:#1e1828;padding:22px}
+#cardoraPremiumLanding .cp-plan.featured{border-color:#cfaa69;background:linear-gradient(145deg,#30263a,#1d1728)}
+#cardoraPremiumLanding .cp-plan strong{display:block;font-size:19px;color:#fff}
+#cardoraPremiumLanding .cp-price{font-size:34px;line-height:1.2;font-weight:900;color:#f3ca7d;margin:9px 0}
+#cardoraPremiumLanding .cp-price small{font-size:14px;font-weight:550;color:#c5b9cc}
+#cardoraPremiumLanding .cp-plan p{font-size:14px;min-height:44px;margin-bottom:14px}
+#cardoraPremiumLanding .cp-locked{display:block;width:100%;min-height:44px;border:1px solid #585164;border-radius:10px;background:#383342;color:#e8deee;opacity:.82;font-size:14px;font-weight:750;cursor:not-allowed}
+#cardoraPremiumLanding .cp-callout{border:1px solid #7b6236;border-radius:13px;background:#2b231e;color:#f4dfba;padding:15px 18px;font-size:13px;line-height:1.6}
+#cardoraPremiumLanding .cp-callout b{color:#ffe5ad}
+#cardoraPremiumLanding .cp-foot{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:18px}
+#cardoraPremiumLanding .cp-foot a{color:#f3ca7d;font-size:13px}
+.ptx-nav .cardora-header-register{min-height:36px;padding:8px 13px;font-size:12px;white-space:nowrap}
+.ptx-nav .cardora-header-plans{min-height:36px;padding:8px 12px;font-size:12px;white-space:nowrap}
+html[data-ptx-auth="signed-in"] .premium-guest-auth{display:none!important}
+@media(max-width:800px){#cardoraPremiumLanding .cp-hero{grid-template-columns:1fr}#cardoraPremiumLanding .cp-steps,#cardoraPremiumLanding .cp-plan-grid{grid-template-columns:1fr}#cardoraPremiumLanding .cp-plan p{min-height:0}}
+@media(max-width:520px){#cardoraPremiumLanding{margin:14px auto 22px;padding:0 12px;font-size:15px}#cardoraPremiumLanding .cp-panel{padding:23px 19px;border-radius:18px}#cardoraPremiumLanding h1{font-size:clamp(29px,8vw,38px)}#cardoraPremiumLanding .cp-actions .cp-btn{width:100%;min-height:49px}#cardoraPremiumLanding .cp-step,#cardoraPremiumLanding .cp-plan{padding:18px}#cardoraPremiumLanding .cp-price{font-size:32px}.ptx-brandbar{flex-wrap:wrap}.ptx-brandbar .ptx-nav{width:100%;padding-bottom:5px;scrollbar-width:thin}}
+@media(prefers-reduced-motion:reduce){#cardoraPremiumLanding .cp-btn{transition:none!important}}
+</style>
+<section id="cardoraPremiumLanding" aria-label="Cardora marketplace and seller membership">
+ <div class="cp-hero">
+  <div class="cp-panel">
+   <p class="cp-eyebrow">THE COLLECTOR'S MARKETPLACE</p>
+   <h1>Collect with confidence. Trade with purpose.</h1>
+   <p>A refined marketplace for trading-card collectors and emerging sellers. Discover cards, explore the community, and take the first step toward your own seller space.</p>
+   <div class="cp-actions">
+    <button type="button" class="cp-btn cp-btn-primary premium-guest-auth" onclick="ptxOpenAuth('register')">Create account with Google</button>
+    <button type="button" class="cp-btn cp-btn-secondary premium-guest-auth" onclick="ptxOpenAuth('login')">Log in</button>
+    <button type="button" class="cp-btn cp-btn-primary" onclick="ptxJump('ptxMarketplace')">Explore cards</button>
+   </div>
+   <div class="cp-note">Browsing is free. Google sign-in is currently available; email verification codes are not. Seller approval and paid memberships are separate steps.</div>
+  </div>
+  <aside class="cp-panel cp-feature">
+   <p class="cp-eyebrow">THE SELLER PROGRAM</p>
+   <h2>Your seller journey begins here.</h2>
+   <p>Open an account, apply as a seller, then compare transparent monthly memberships.</p>
+   <div class="cp-actions">
+    <a href="join-preview.html" class="cp-btn cp-btn-primary">View seller interest form</a>
+    <a href="#cardoraMembershipPreview" class="cp-btn cp-btn-secondary">Compare plans</a>
+   </div>
+   <div class="cp-note">Early-access application only. Approval and payment are not currently available.</div>
+  </aside>
+ </div>
+ <div class="cp-steps" aria-label="How Cardora works">
+  <div class="cp-step"><div class="cp-num">01 — JOIN</div><h3>Create your account</h3><p>Use the existing login flow to register and manage your Cardora profile.</p></div>
+  <div class="cp-step"><div class="cp-num">02 — APPLY</div><h3>Become a seller</h3><p>Explore the application requirements. Seller review is not automatic.</p></div>
+  <div class="cp-step"><div class="cp-num">03 — GROW</div><h3>Explore membership</h3><p>Review the pricing clearly before any future payment step.</p></div>
+ </div>
+ <section id="cardoraMembershipPreview" class="cp-plans" aria-label="Seller membership plans">
+  <p class="cp-eyebrow">TRANSPARENT SELLER PRICING</p>
+  <h2>Membership built around your collection.</h2>
+  <p>All prices are in Malaysian Ringgit (MYR), billed monthly only if subscriptions are activated after verification.</p>
+  <div class="cp-plan-grid">
+   <article class="cp-plan"><strong>Basic</strong><div class="cp-price">RM29 <small>/ month</small></div><p>For independent sellers getting started.</p><button class="cp-locked" disabled aria-disabled="true" type="button">Checkout not yet available</button></article>
+   <article class="cp-plan featured"><strong>Pro</strong><div class="cp-price">RM79 <small>/ month</small></div><p>For growing seller collections.</p><button class="cp-locked" disabled aria-disabled="true" type="button">Checkout not yet available</button></article>
+   <article class="cp-plan"><strong>Business</strong><div class="cp-price">RM199 <small>/ month</small></div><p>For established seller operations.</p><button class="cp-locked" disabled aria-disabled="true" type="button">Checkout not yet available</button></article>
+  </div>
+  <div class="cp-callout" role="status"><b>Payment safety:</b> Paid Checkout is paused while Cardora verifies account identity, automatic membership activation, billing cancellation, and confirmation emails. Do not send money to an individual or an external payment link for membership.</div>
+  <div class="cp-foot"><a href="seller-start.html">Read seller guide</a><a href="fees.html">Fee schedule</a><a href="terms.html">Seller terms (draft)</a><a href="privacy.html">Privacy (draft)</a></div>
+ </section>
+</section>
 <script>
 (function(){
  const state={rows:[],source:'loading',error:''};
@@ -2490,11 +2575,11 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 <button class="ptx-auth-main" onclick="ptxVerifyOtp('login')" type="button">Verify &amp; Sign in</button>
 </div>
 </div>
-<div class="ptx-auth-note">New to Trixovel?</div>
+<div class="ptx-auth-note">New to Cardora?</div>
 <button class="ptx-auth-switch" onclick="ptxOpenAuth('register')" type="button">Create account</button>
 </div>
 <div class="ptx-auth-view" id="ptxAuthRegister">
-<div class="ptx-register-subtitle">Create your account with Google — no password needed.</div>
+<div class="ptx-register-subtitle">Create your Cardora account using Google. Email-code sign-up is not enabled yet.</div>
 <button class="ptx-google-btn" onclick="ptxGoogleAuth()" type="button"><span class="ptx-google-icon">G</span><span>Continue with Google</span></button>
 <div class="ptx-auth-note">Email codes are not available yet: this project cannot deliver verification mail. Sign up with Google instead.</div>
 <div class="ptx-auth-note" id="ptxRegisterMessage" style="min-height:20px"></div>
@@ -2508,7 +2593,7 @@ window.ptxToggle=function(b){b.classList.toggle("on");};
 <button class="ptx-auth-main" onclick="ptxVerifyOtp('register')" type="button">Verify &amp; Create account</button>
 </div>
 </div>
-<div class="ptx-auth-note">By continuing, you agree to the Terms of Service and Privacy Policy.</div>
+<div class="ptx-auth-note">Before continuing, please review the <a href="terms.html" target="_blank" rel="noopener noreferrer">Terms of Service (draft)</a> and <a href="privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy (draft)</a>. Registration does not activate a paid membership.</div>
 <div class="ptx-auth-note">Already have an account?</div>
 <button class="ptx-auth-switch" onclick="ptxOpenAuth('login')" type="button">Sign in</button>
 </div>
@@ -4297,5 +4382,33 @@ renderAll();
 document.addEventListener('DOMContentLoaded',renderAll);
 })();
 </script>
-<script defer src="/_vercel/insights/script.js"></script>
+<style id="cardoraPremiumMobileNavigationOverride">
+/* Compatibility: legacy mobile icon navigation sets font-size:0 and button widths
+   globally. Preserve discoverable readable registration and membership CTAs. */
+@media(max-width:650px){
+ .ptx-brandbar{flex-wrap:wrap!important;gap:9px!important;align-items:center!important}
+ .ptx-brandbar .ptx-nav{
+  display:flex!important;flex:1 1 100%!important;width:100%!important;
+  flex-wrap:wrap!important;align-items:center!important;
+  margin-left:0!important;overflow:visible!important;gap:7px!important
+ }
+ .ptx-brandbar .ptx-nav button.cardora-header-register,
+ .ptx-brandbar .ptx-nav button.cardora-header-plans,
+ .ptx-brandbar .ptx-nav button#ptxHeaderAuthButton{
+  font-size:12px!important;width:auto!important;min-width:0!important;height:auto!important;
+  min-height:42px!important;padding:10px 12px!important;line-height:1.3!important;
+  white-space:normal!important;text-transform:none!important;
+  flex:1 1 auto!important;letter-spacing:0!important
+ }
+ .ptx-brandbar .ptx-nav button.cardora-header-register{order:-3!important;color:#211622!important;background:#f3ca7d!important;border-color:#f3ca7d!important}
+ .ptx-brandbar .ptx-nav button#ptxHeaderAuthButton{order:-2!important;color:#f7ebd8!important}
+ .ptx-brandbar .ptx-nav button.cardora-header-plans{order:-1!important;color:#f7ebd8!important}
+ .ptx-brandbar .ptx-nav button.cardora-header-register:after,
+ .ptx-brandbar .ptx-nav button.cardora-header-plans:after,
+ .ptx-brandbar .ptx-nav button#ptxHeaderAuthButton:after{content:none!important}
+ #cardoraPremiumLanding .cp-plan{overflow-wrap:break-word}
+ #cardoraPremiumLanding .cp-steps .cp-step h3{overflow-wrap:break-word}
+}
+</style>
+<!-- Analytics disabled: /_vercel/insights/script.js was served with an invalid JavaScript MIME type in Search Console; restore only after Vercel Analytics is verified. -->
 </body></html>

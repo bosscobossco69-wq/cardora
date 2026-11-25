@@ -1,0 +1,338 @@
+name: Cardora draft offline smoke checks
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'seller-start.html'
+      - 'join-preview.html'
+      - 'pokemon-card-numbers-explained.html'
+      - 'listing-guide.html'
+      - 'sar-sir-ar-difference.html'
+      - 'fees.html'
+      - 'how-to-spot-a-fake-pokemon-card.html'
+      - 'scripts/build-cardora-staging.mjs'
+      - 'scripts/build-cardora-admin-preview.mjs'
+      - 'vercel.json'
+      - 'scripts/check-cardora-draft.mjs'
+      - 'scripts/test-cardora-member-offline.mjs'
+      - 'scripts/test-cardora-admin-overview-offline.mjs'
+      - 'scripts/cardora-stripe-sql-smoke.sql'
+      - 'scripts/cardora-admin-review-sql-smoke.sql'
+      - 'supabase/drafts/CARDORA_DRAFT_pending_application_intake.sql'
+      - 'scripts/test-cardora-stripe-edge-contract.mjs'
+      - 'scripts/test-cardora-email-smoke-offline.mjs'
+      - 'scripts/test-cardora-payment-email-worker-offline.mjs'
+      - 'supabase/functions/cardora-stripe-checkout/index.ts'
+      - 'supabase/functions/cardora-stripe-portal/index.ts'
+      - 'supabase/functions/cardora-admin-overview/index.ts'
+      - 'supabase/functions/cardora-stripe-webhook/index.ts'
+      - 'supabase/functions/cardora-email-smoke/index.ts'
+      - 'supabase/functions/cardora-payment-email-worker/index.ts'
+      - 'supabase/migrations/DRAFT_cardora_admin_seller_queue.sql'
+      - 'supabase/migrations/DRAFT_cardora_auth_is_admin_compat.sql'
+      - 'supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql'
+      - 'supabase/migrations/DRAFT_cardora_payment_email_outbox.sql'
+      - 'supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql'
+      - 'supabase/drafts/CARDORA_DRAFT_private_listing_evidence_bucket.sql'
+      - 'supabase/functions/cardora-evidence-upload/index.ts'
+      - '.github/workflows/cardora-draft-offline.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reject broken Analytics script in all known public pages
+        run: |
+          for f in index.html listing-guide.html sar-sir-ar-difference.html fees.html pokemon-card-numbers-explained.html how-to-spot-a-fake-pokemon-card.html; do
+            if grep -Fq '<script defer src="/_vercel/insights/script.js"></script>' "$f"; then echo "Invalid script still included in $f"; exit 1; fi
+          done
+      - name: Verify published article drafts have no broken Insights script or old brand
+        run: |
+          for f in pokemon-card-numbers-explained.html how-to-spot-a-fake-pokemon-card.html; do
+            if grep -Fq '<script defer src="/_vercel/insights/script.js"></script>' "$f"; then echo "Broken insights script still referenced in $f"; exit 1; fi
+            if grep -iq 'Trixovel' "$f"; then echo "Legacy site brand in $f"; exit 1; fi
+            grep -q 'https://cardora-rose.vercel.app/' "$f"
+          done
+      - name: Verify seller acquisition landing remains transparent and not live
+        run: |
+          grep -q 'Draft / Early access' seller-start.html
+          grep -q 'noindex,nofollow' seller-start.html
+          grep -q 'Applying is free' seller-start.html
+          grep -q 'No guaranteed sales' seller-start.html
+          grep -q 'There are no active cash rewards' seller-start.html
+          grep -q 'Checkout is not live' seller-start.html || grep -q 'checkout is not live' seller-start.html
+          if grep -Eq 'sk_(test|live)_[A-Za-z0-9]+|sb_secret_' seller-start.html; then echo "Secret in acquisition landing"; exit 1; fi
+      - name: Check JavaScript syntax
+        run: |
+          node --check scripts/build-cardora-staging.mjs
+          node --check scripts/build-cardora-admin-preview.mjs
+          node --check scripts/check-cardora-draft.mjs
+          node --check scripts/test-cardora-admin-overview-offline.mjs
+      - name: Build customer password-auth staging offline without real accounts
+        run: |
+          CARDORA_STAGING_BUILD=YES CARDORA_STAGING_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_STAGING_SUPABASE_ANON_KEY=sb_publishable_offline_test_only node scripts/build-cardora-staging.mjs
+          node -e "const fs=require('node:fs'),vm=require('node:vm');const html=fs.readFileSync('dist-staging/index.html','utf8');const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(x=>x[1]);const auth=scripts.find(x=>x.includes('const pwValid=p=>'));if(!auth)throw Error('staging password script missing');new vm.Script(auth);console.log('PASS: password auth browser script parses');"
+          grep -q 'cardoraPwLoginForm' dist-staging/index.html
+          grep -q 'cardoraPwRegisterForm' dist-staging/index.html
+          grep -q 'cardoraPwRecoveryForm' dist-staging/index.html
+          grep -q 'Submit for Review (not live)' dist-staging/index.html
+          grep -q 'cardoraShowSubmissionUnavailable' dist-staging/index.html
+          grep -q 'cardoraCheckSellerEligibility' dist-staging/index.html
+          grep -q 'cardoraCheckAuthAlignment' dist-staging/index.html
+          grep -Fq "s.status==='approved'&&s.verification_status==='verified'" dist-staging/index.html
+          grep -Fq "approved and verified" dist-staging/index.html
+          if grep -Fq "s.status==='approved');" dist-staging/index.html; then echo "Unverified seller shown as approved"; exit 1; fi
+          grep -q 'New Cardora Auth verified, but no linked profile exists' dist-staging/index.html
+          grep -q "eq('auth_user_id',identity.user.id)" dist-staging/index.html
+          grep -q 'Legacy sign-in does not transfer' dist-staging/index.html
+          grep -q 'This read-only check never grants admin access or enables payments' dist-staging/index.html
+          grep -q 'Local preview only:' dist-staging/index.html
+          grep -q 'photos stay in this browser and are NOT uploaded' dist-staging/index.html
+          grep -q 'image/jpeg,image/png,image/webp' dist-staging/index.html
+          grep -q 'const maxSize=10\*1024\*1024;' dist-staging/index.html
+          grep -q 'window.ptxPhotoClear' dist-staging/index.html
+          grep -q 'Photo rejected.' dist-staging/index.html
+          grep -q 'Legacy submission review is disabled in staging' dist-staging/index.html
+          node -e "const s=require('fs').readFileSync('dist-staging/index.html','utf8'); const p=s.indexOf(\"const overview=document.createElement('div');overview.id='cardoraAdminOverview'\"); if(p<0||s.slice(p,p+1300).includes('if(window.ptxLoadSubmissionQueue)window.ptxLoadSubmissionQueue();'))process.exit(1);"
+          grep -q 'admin_get_seller_application_queue' dist-staging/index.html
+          grep -q "where id=p_listing_id and status='pending_review'" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
+          grep -q "p_status not in ('active','rejected')" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
+          grep -q "v_app.status not in ('pending','contacted')" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
+          grep -q "APPLICATION_ALREADY_DECIDED" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
+          grep -q "u.status='active'" supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql
+          grep -q "u.role='admin' and u.status='active'" supabase/migrations/DRAFT_cardora_admin_seller_queue.sql
+          grep -q 'limit least(greatest(coalesce(p_limit,100),1),100)' supabase/migrations/DRAFT_cardora_admin_seller_queue.sql
+          grep -q 'grant execute on function public.admin_get_seller_application_queue(integer)' supabase/migrations/DRAFT_cardora_admin_seller_queue.sql
+          grep -q 'to authenticated;' supabase/migrations/DRAFT_cardora_admin_seller_queue.sql
+          grep -Fq "select('id,status,verification_status').eq('user_id',profile.id).limit(2)" dist-staging/index.html
+          grep -Fq "Multiple seller profiles found. Manual review required." dist-staging/index.html
+          grep -Fq "More than one visible seller profile is linked." dist-staging/index.html
+          grep -Fq "sessionData.user.is_anonymous" dist-staging/index.html
+          grep -q "client.auth.getUser()" dist-staging/index.html
+          grep -Fq 'server-side eligibility and listing submission remain paused' dist-staging/index.html
+          if grep -q "rpc('create_seller_listing'" dist-staging/index.html; then echo "Unreviewed listing create enabled"; exit 1; fi
+          grep -q 'Your details will not be submitted or saved' dist-staging/index.html
+          if grep -q 'onclick="ptxSubmitListing()"' dist-staging/index.html; then echo "Unsafe seller submit button still active"; exit 1; fi
+          grep -q 'signInWithPassword' dist-staging/index.html
+          grep -q 'signUp({email,password' dist-staging/index.html
+          grep -q 'resetPasswordForEmail' dist-staging/index.html
+          grep -q 'if(error)throw error;' dist-staging/index.html
+          grep -q 'recoveryChecks<40' dist-staging/index.html
+          grep -q "a.email_masked||''" dist-staging/index.html
+          if grep -q "line('p',a.email||''" dist-staging/index.html; then echo "Raw applicant email displayed"; exit 1; fi
+          grep -q 'PASSWORD_RECOVERY' dist-staging/index.html
+          grep -q 'Promotional emails are not automatically enabled' dist-staging/index.html
+          if grep -q 'crqqockaetgacddxkqpb' dist-staging/index.html; then echo "Legacy Supabase in staging output"; exit 1; fi
+          if grep -q 'signInWithPassword' index.html; then echo "Production source modified"; exit 1; fi
+      - name: Verify preview refuses production or wrong branch without network
+        run: |
+          if CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=production VERCEL_GIT_COMMIT_REF=draft/stripe-sandbox-subscriptions-20261121 CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs; then echo "Unsafe production build accepted"; exit 1; fi
+          if CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=preview VERCEL_GIT_COMMIT_REF=main CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs; then echo "Unsafe main branch build accepted"; exit 1; fi
+          CARDORA_PREVIEW_BUILD=YES VERCEL_ENV=preview VERCEL_GIT_COMMIT_REF=draft/stripe-sandbox-subscriptions-20261121 CARDORA_PREVIEW_SUPABASE_URL=https://fdkfquvzbswxocyrhduk.supabase.co CARDORA_PREVIEW_SUPABASE_PUBLISHABLE_KEY=sb_publishable_offline_test_only node scripts/build-cardora-admin-preview.mjs
+          test -s dist-preview/join.html
+          test -s dist-preview/privacy.html
+          test -s dist-preview/terms.html
+          grep -q 'DRAFT' dist-preview/privacy.html
+          grep -q 'DRAFT' dist-preview/terms.html
+          grep -q 'noindex' dist-preview/privacy.html
+          grep -q 'noindex' dist-preview/terms.html
+          grep -q 'Create account · Free' dist-preview/join.html
+          grep -q 'shouldCreateUser:false' scripts/build-cardora-admin-preview.mjs
+          grep -q "auth.signUp({email,password" dist-preview/join.html
+          grep -q "eq('auth_user_id',user.id)" dist-preview/join.html
+          grep -Fq 'Applications temporarily paused.' dist-preview/join.html
+          grep -Fq 'Seller and partner applications are paused pending secure manual-review release.' dist-preview/join.html
+          if grep -Fq "seller_applications').insert(payload)" dist-preview/join.html; then echo "Unsafe seller application write enabled in Preview"; exit 1; fi
+          grep -q "No purchases, seller subscription checkout" dist-preview/join.html
+          grep -q "noindex,nofollow" dist-preview/join.html
+          if grep -q '__CARDORA_JOIN_' dist-preview/join.html; then echo "Public registration config was not injected"; exit 1; fi
+          if grep -q 'crqqockaetgacddxkqpb' dist-preview/join.html; then echo "Old Auth project leaked into registration"; exit 1; fi
+          node -e "const fs=require('fs'),vm=require('vm');const s=fs.readFileSync('dist-preview/join.html','utf8');const scripts=[...s.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(x=>x[1]);for(const x of scripts)new vm.Script(x);console.log('PASS: join page scripts parse');"
+          grep -q 'Admin dashboard' dist-preview/index.html
+          grep -q 'Sign in with email' dist-preview/index.html
+          grep -q 'Read-only preview.' dist-preview/index.html
+          grep -q 'id="profileStatus"' dist-preview/index.html
+          grep -Fq '<html lang="en">' dist-preview/index.html
+          grep -Fq 'Sign in with email' dist-preview/index.html
+          grep -Fq 'Use a password instead' dist-preview/index.html
+          grep -Fq 'Read-only preview.' dist-preview/index.html
+          grep -q "eq('auth_user_id',verified.data.user.id)" dist-preview/index.html
+          grep -q "select('id,status,role')" dist-preview/index.html
+          grep -q "profileResult.data.status!=='active'" dist-preview/index.html
+          grep -q "profileResult.data.role!=='admin'" dist-preview/index.html
+          grep -q 'Requesting server-side admin authorization' dist-preview/index.html
+          grep -q 'Legacy admin access is not transferred' dist-preview/index.html
+          if grep -q 'cardoraCheckAuthAlignment' dist-preview/index.html; then echo "Admin preview must not pretend to contain the customer staging diagnostic"; exit 1; fi
+          grep -q 'cardoraCheckAuthAlignment' dist-staging/index.html
+          grep -q 'signInWithPassword' dist-preview/index.html
+          grep -q 'signInWithOtp' dist-preview/index.html
+          grep -q 'shouldCreateUser:false' dist-preview/index.html
+          grep -Fq "Signed in as " dist-preview/index.html
+          grep -Fq "current.user.email?.toLowerCase()!==email" dist-preview/index.html
+          grep -Fq "afterLogout?.session" dist-preview/index.html
+          grep -Fq "identity.user.email?.toLowerCase()!==email.toLowerCase()" dist-preview/index.html
+          grep -Fq "id=\"activeAccount\"" dist-preview/index.html
+          grep -q "verifyOtp({email,token,type:'email'})" dist-preview/index.html
+          grep -q 'cardora-admin-overview' dist-preview/index.html
+          grep -q 'Customers · Read-only' dist-preview/index.html
+          grep -q "status===401" dist-preview/index.html
+          grep -q "status===403" dist-preview/index.html
+          grep -q "status===404" dist-preview/index.html
+          grep -q "ADMIN_OVERVIEW_NOT_VERIFIED" dist-preview/index.html
+          grep -q "Access denied. Admin permission is required." dist-preview/index.html
+          grep -q "Admin API returned 404" dist-preview/index.html
+          grep -q "the cause is not confirmed" dist-preview/index.html
+          grep -Fq "verified.data.user.id!==session.user?.id" dist-preview/index.html
+          grep -Fq "if(!current())return;" dist-preview/index.html
+          grep -Fq "event==='SIGNED_OUT'" dist-preview/index.html
+          grep -Fq "invalidateOverview();" dist-preview/index.html
+          node -e "const fs=require('node:fs'),vm=require('node:vm');const html=fs.readFileSync('dist-preview/index.html','utf8');for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);console.log('PASS: admin browser scripts parse');"
+          grep -q 'Marketing consent is not configured' dist-preview/index.html
+          grep -q 'Outreach disabled' dist-preview/index.html
+          grep -q 'customers' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'marketing_consent:"not_configured"' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'email_masked:maskEmail(u.email)' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'if(u.email_masked)' scripts/build-cardora-admin-preview.mjs
+          grep -q 'if(a.email_masked)' scripts/build-cardora-admin-preview.mjs
+          grep -q 'maskApplication(a)' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'email_masked:maskEmail(a.email||null)' supabase/functions/cardora-admin-overview/index.ts
+          if grep -q 'if(a.email)create' scripts/build-cardora-admin-preview.mjs; then echo "Unmasked application email leaked in preview"; exit 1; fi
+          if grep -q 'email:u.email||null' supabase/functions/cardora-admin-overview/index.ts; then echo "Unmasked customer email returned"; exit 1; fi
+          grep -q 'admin.role!=="admin"||admin.status!=="active"' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'authClient.auth.getUser()' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'if(origin && !safeOrigins.has(origin))' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'if(origin && safeOrigins.has(origin))' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'CARDORA_ALLOW_PRODUCTION_ORIGIN' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'CARDORA_STAGING_SITE_ORIGINS' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'isExactHttpsOrigin' supabase/functions/cardora-admin-overview/index.ts
+          if grep -q '||"https://cardora-rose.vercel.app"' supabase/functions/cardora-admin-overview/index.ts; then echo "Production origin allowed without opt-in"; exit 1; fi
+          if grep -q 'safeOrigins.has(origin)?origin:productionOrigin' supabase/functions/cardora-admin-overview/index.ts; then echo "Unsafe CORS origin fallback"; exit 1; fi
+          grep -q 'CARDORA_ADMIN_OVERVIEW_VERIFIED' supabase/functions/cardora-admin-overview/index.ts
+          grep -q 'CARDORA_AUTH_MIGRATION_VERIFIED' supabase/functions/cardora-admin-overview/index.ts
+          if grep -Eq '\.insert\(|\.update\(|\.delete\(|\.upsert\(' supabase/functions/cardora-admin-overview/index.ts; then echo "Mutation detected in read-only overview"; exit 1; fi
+          if grep -Eq 'signUp\(|\.insert\(|\.update\(|\.delete\(|cardora-stripe-checkout' dist-preview/index.html; then echo "Dangerous API in read-only preview"; exit 1; fi
+      - name: Run member identity regression tests (no network)
+        run: node scripts/test-cardora-member-offline.mjs
+      - name: Run isolated administrator endpoint contract tests (no network)
+        run: node scripts/test-cardora-admin-overview-offline.mjs
+      - name: Verify draft builder and fail-closed guards (no network from test)
+        run: node scripts/check-cardora-draft.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check uploader fail-closed security (static offline)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('supabase/functions/cardora-evidence-upload/index.ts').read_text()
+          for required in (
+            'CARDORA_EVIDENCE_UPLOAD_VERIFIED',
+            'CARDORA_AUTH_MIGRATION_VERIFIED',
+            'CARDORA_EVIDENCE_MODERATION_VERIFIED',
+            'auth.getUser()',
+            'user.is_anonymous',
+            'APPROVED_SELLER_REQUIRED',
+            'LISTING_NOT_OWNED_OR_PENDING',
+            'file.size>MAX_BYTES',
+            'file.type!==detected.contentType',
+            'upsert:false',
+            'cardora-listing-evidence',
+            'access-control-allow-origin'
+          ):
+            assert required in s, required
+          assert 'getPublicUrl(' not in s
+          assert 'createSignedUrl(' not in s
+          assert 'request?.seller_id' not in s
+          print('PASS: uploader retains verification and private asset guards')
+          PY
+      - name: Validate private seller evidence Storage policies (offline)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('supabase/drafts/CARDORA_DRAFT_private_listing_evidence_bucket.sql').read_text()
+          assert "false,10485760" in s
+          assert "cardora_evidence_owner_select" in s
+          assert "u.status='active'" in s and "sp.status='approved'" in s
+          assert "(storage.foldername(name))[1]=(select auth.uid())::text" in s
+          assert "storage.objects for select to authenticated" in s
+          assert "storage.objects for insert" not in s.lower()
+          assert "storage.objects for update" not in s.lower()
+          assert "storage.objects for delete" not in s.lower()
+          print('PASS: Evidence bucket draft is private and owner-read-only')
+          PY
+      - name: Execute payment confirmation email worker with synthetic Auth and Resend
+        run: node scripts/test-cardora-payment-email-worker-offline.mjs
+      - name: Verify payment email worker does not trust public recipient input
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('supabase/functions/cardora-payment-email-worker/index.ts').read_text()
+          for x in ('CARDORA_PAYMENT_EMAIL_WORKER_VERIFIED','CARDORA_AUTH_MIGRATION_VERIFIED','CARDORA_PAYMENT_EMAIL_QUEUE_VERIFIED','CARDORA_EMAIL_WORKER_TOKEN','cardora_payment_email_outbox','getUserById','Idempotency-Key','status:"sent"','MEMBERSHIP_NO_LONGER_VERIFIED'):
+            assert x in s, x
+          assert 'req.json(' not in s
+          assert 'x-cardora-worker-token' in s
+          print('PASS: payment email worker uses verified seller identity, queued invoice and gated Resend')
+          PY
+      - name: Execute Cardora Resend smoke handler against offline mock API
+        run: node scripts/test-cardora-email-smoke-offline.mjs
+      - name: Enforce Cardora email test stays disabled and recipient-locked
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('supabase/functions/cardora-email-smoke/index.ts').read_text()
+          for required in ('CARDORA_EMAIL_SMOKE_ENABLED','CARDORA_AUTH_MIGRATION_VERIFIED','CARDORA_EMAIL_TEST_TOKEN','CARDORA_ADMIN_EMAIL','CARDORA_FROM_EMAIL','RESEND_API_KEY','https://api.resend.com/emails'):
+            assert required in s, required
+          assert 'req.json(' not in s, 'Email smoke must never accept arbitrary recipient from request'
+          assert 'get("CARDORA_ADMIN_EMAIL")' in s
+          assert 'test' in s.lower()
+          print('PASS: Cardora email smoke route gated and admin-recipient locked; no network')
+          PY
+      - name: Exercise actual Checkout and signed Webhook Edge handlers with synthetic adapters
+        run: |
+          npm install --no-save --no-package-lock stripe@17.7.0
+          node scripts/test-cardora-stripe-edge-contract.mjs
+      - name: Exercise Stripe subscription SQL on disposable PostgreSQL 17
+        run: |
+          set -euo pipefail
+          docker run -d --name cardora-stripe-test-db \
+            -e POSTGRES_PASSWORD=cardora_offline_disposable_only \
+            postgres:17
+          trap 'docker rm -f cardora-stripe-test-db >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 45); do
+            if docker exec cardora-stripe-test-db pg_isready -U postgres >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          docker exec cardora-stripe-test-db pg_isready -U postgres
+          docker exec cardora-stripe-test-db mkdir -p /work/scripts /work/supabase/migrations
+          docker cp scripts/cardora-stripe-sql-smoke.sql cardora-stripe-test-db:/work/scripts/cardora-stripe-sql-smoke.sql
+          docker cp supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql cardora-stripe-test-db:/work/supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql
+          docker cp supabase/migrations/DRAFT_cardora_payment_email_outbox.sql cardora-stripe-test-db:/work/supabase/migrations/DRAFT_cardora_payment_email_outbox.sql
+          docker exec -w /work cardora-stripe-test-db \
+            psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
+              -f scripts/cardora-stripe-sql-smoke.sql
+      - name: Exercise seller moderation SQL on disposable PostgreSQL 17
+        run: |
+          set -euo pipefail
+          docker run -d --name cardora-review-test-db -e POSTGRES_PASSWORD=offline_disposable_only postgres:17
+          trap 'docker rm -f cardora-review-test-db >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 45); do
+            if docker exec cardora-review-test-db pg_isready -U postgres >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          docker exec cardora-review-test-db mkdir -p /work/scripts /work/supabase/drafts
+          docker cp scripts/cardora-admin-review-sql-smoke.sql cardora-review-test-db:/work/scripts/
+          docker cp supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql cardora-review-test-db:/work/supabase/drafts/
+          docker cp supabase/drafts/CARDORA_DRAFT_pending_application_intake.sql cardora-review-test-db:/work/supabase/drafts/
+          docker exec -w /work cardora-review-test-db psql -v ON_ERROR_STOP=1 -U postgres -d postgres -f scripts/cardora-admin-review-sql-smoke.sql
+      - name: Parse draft SQL without connecting to a database
+        run: |
+          python -m pip install --disable-pip-version-check pglast
+          python -c "from pglast import parse_sql; from pathlib import Path; parse_sql(Path('supabase/migrations/DRAFT_cardora_stripe_subscription_schema.sql').read_text()); parse_sql(Path('supabase/migrations/DRAFT_cardora_payment_email_outbox.sql').read_text()); parse_sql(Path('supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql').read_text()); parse_sql(Path('supabase/migrations/DRAFT_cardora_admin_seller_queue.sql').read_text()); parse_sql(Path('supabase/drafts/CARDORA_DRAFT_private_listing_evidence_bucket.sql').read_text()); print('PASS: three PostgreSQL draft SQL files parsed; database not accessed')"
+
