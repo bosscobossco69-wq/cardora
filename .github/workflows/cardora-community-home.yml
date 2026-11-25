@@ -1,0 +1,16 @@
+name: Cardora community home checks
+on:
+  push:
+    branches: [draft/community-home-20261125]
+  pull_request:
+    paths: ['home-preview.html','supabase/drafts/CARDORA_DRAFT_community_snapshot.sql','scripts/test-community-home-offline.mjs','.github/workflows/cardora-community-home.yml']
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node scripts/test-community-home-offline.mjs
