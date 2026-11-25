@@ -1,0 +1,20 @@
+name: Cardora integrated release gates
+on:
+  push:
+    branches: [draft/integrated-release-20261125]
+  pull_request:
+    paths: ['join.html','fees.html','rules-preview.html','member-collection-preview.html','packs-live-preview.html','scripts/test-integrated-release-gates.mjs','.github/workflows/cardora-integrated-release.yml']
+permissions:
+  contents: read
+jobs:
+  release-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node scripts/test-integrated-release-gates.mjs
+      - run: node scripts/test-member-release-offline.mjs
+      - run: node scripts/test-member-collection-preview.mjs
+      - run: node scripts/test-card-catalog-offline.mjs
+      - run: node scripts/test-rewards-finance-preview.mjs
