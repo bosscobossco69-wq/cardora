@@ -1,0 +1,29 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const html=fs.readFileSync('home-preview.html','utf8');
+const sql=fs.readFileSync('supabase/drafts/CARDORA_DRAFT_community_snapshot.sql','utf8');
+const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+assert.match(html,/href="https:\/\/cardora-rose\.vercel\.app\/join\.html"/);
+assert.match(html,/noindex,nofollow/);
+assert.match(sql,/enable row level security/);
+assert.match(sql,/security invoker/);
+assert.match(sql,/grant select on public\.cardora_community_snapshot to anon, authenticated/);
+assert.match(sql,/revoke all on function cardora_metrics_private\.refresh_community_snapshot\(\) from public, anon, authenticated/);
+const elements=new Map();
+const get=id=>{if(!elements.has(id))elements.set(id,{textContent:'',setAttribute(){},addEventListener(){}});return elements.get(id)};
+const document={hidden:true,documentElement:{},querySelectorAll:()=>[],getElementById:get,addEventListener(){}};
+let interval;
+const context=vm.createContext({document,Intl,Date,AbortController,setTimeout,clearTimeout,setInterval:(fn,ms)=>{interval=ms},fetch:()=>{throw Error('network forbidden in offline test')}});
+vm.runInContext(script,context);
+assert.equal(interval,60000);
+const now=Date.parse('2026-11-25T16:00:02Z');
+const row={registered_members:3,verified_members:2,new_today:1,day_myt:'2026-11-26',measured_at:'2026-11-25T16:00:00Z'};
+context.row=row;context.now=now;
+const valid=()=>vm.runInContext('validSnapshot(row,now)',context);
+assert.equal(valid(),true);
+for(const patch of [{registered_members:-1},{verified_members:4},{new_today:4},{registered_members:'3'},{day_myt:'2026-11-25'},{measured_at:'2026-11-25T15:50:00Z'},{measured_at:'2026-11-25T16:01:00Z'}]){
+context.row={...row,...patch};assert.equal(valid(),false,JSON.stringify(patch));}
+vm.runInContext('renderStats()',context);
+for(const id of ['members','verified','today'])assert.equal(get(id).textContent,'—');
+console.log('Offline community homepage checks passed');
