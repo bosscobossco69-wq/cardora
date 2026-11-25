@@ -3,7 +3,7 @@ on:
   push:
     branches: [draft/integrated-release-20261125]
   pull_request:
-    paths: ['join.html','fees.html','rules-preview.html','member-collection-preview.html','packs-live-preview.html','scripts/test-integrated-release-gates.mjs','.github/workflows/cardora-integrated-release.yml']
+    paths: ['vercel.json','scripts/build-public-site.mjs','join.html','fees.html','rules-preview.html','member-collection-preview.html','packs-live-preview.html','scripts/test-integrated-release-gates.mjs','.github/workflows/cardora-integrated-release.yml']
 permissions:
   contents: read
 jobs:
@@ -18,3 +18,24 @@ jobs:
       - run: node scripts/test-member-collection-preview.mjs
       - run: node scripts/test-card-catalog-offline.mjs
       - run: node scripts/test-rewards-finance-preview.mjs
+      - name: Verify production static allowlist
+        run: |
+          VERCEL_ENV=production node scripts/build-public-site.mjs
+          test -f dist/index.html
+          test -f dist/join.html
+          test -f dist/fees.html
+          test ! -e dist/scripts
+          test ! -e dist/supabase
+          test ! -e dist/docs
+          test ! -e dist/SECURITY_AUDIT.md
+          test ! -e dist/member-collection-preview.html
+          test ! -e dist/collection-preview.html
+          test ! -e dist/packs-live-preview.html
+      - name: Verify protected preview assets
+        run: |
+          VERCEL_ENV=preview node scripts/build-public-site.mjs
+          test -f dist/member-collection-preview.html
+          test -f dist/collection-preview.html
+          test -f dist/packs-live-preview.html
+          test ! -e dist/supabase
+          test ! -e dist/docs
