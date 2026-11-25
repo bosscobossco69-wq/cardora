@@ -1,0 +1,16 @@
+name: Cardora rewards finance offline checks
+on:
+  push:
+    branches: [draft/rewards-finance-20261125]
+  pull_request:
+    paths: ['scripts/rewards-finance-preview.mjs','scripts/test-rewards-finance-preview.mjs','.github/workflows/cardora-rewards-finance.yml']
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node scripts/test-rewards-finance-preview.mjs
