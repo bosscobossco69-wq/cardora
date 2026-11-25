@@ -3,7 +3,7 @@ on:
   push:
     branches: [draft/card-catalog-20261125]
   pull_request:
-    paths: ['collection-preview.html','packs-live-preview.html','supabase/drafts/CARDORA_DRAFT_member_collection.sql','scripts/test-member-collection-isolation.sql','scripts/test-card-catalog-offline.mjs','.github/workflows/cardora-card-catalog.yml']
+    paths: ['collection-preview.html','member-collection-preview.html','scripts/test-member-collection-preview.mjs','packs-live-preview.html','supabase/drafts/CARDORA_DRAFT_member_collection.sql','scripts/test-member-collection-isolation.sql','scripts/test-card-catalog-offline.mjs','.github/workflows/cardora-card-catalog.yml']
 permissions:
   contents: read
 jobs:
@@ -14,6 +14,7 @@ jobs:
         with:
           persist-credentials: false
       - run: node scripts/test-card-catalog-offline.mjs
+      - run: node scripts/test-member-collection-preview.mjs
 
   database-isolation:
     runs-on: ubuntu-latest
