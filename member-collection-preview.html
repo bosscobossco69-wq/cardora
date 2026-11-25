@@ -1,0 +1,45 @@
+<!doctype html><html lang="zh-Hans"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline' https://cdn.jsdelivr.net; connect-src https://fdkfquvzbswxocyrhduk.supabase.co; base-uri 'none'; form-action 'none'"><title>Cardora | Member collection preview</title><style>*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;background:#110d19;color:#eee;font:16px/1.5 system-ui,sans-serif}main{max-width:700px;margin:auto;padding:20px}a,h1,h2{color:#e9ce88}section,article{padding:16px;margin:14px 0;background:#21172e;border:1px solid #554265;border-radius:14px}label{display:block;margin:8px 0}input,select,button{font:inherit;padding:10px;border-radius:8px;border:1px solid #89729b}input,select{width:100%;background:#151020;color:white}button{background:#e9ce88;color:#21172e;cursor:pointer}button:disabled{opacity:.5}p,small{color:#c6b9d3}</style></head><body><main><a href="/">CARDORA</a> · <a href="/join.html">Member sign-in · 会员登录</a><h1>My Collection · 云端收藏册</h1><p>Private account tools · 私人会员工具。收藏记录不代表所有权、认证、商品库存或奖励资格。</p><section><p id="status" role="status" aria-live="polite">功能测试版，尚未开放云端写入。</p><button id="load" type="button" disabled>Load my collection · 读取收藏</button></section><div id="member" hidden><section><h2>Profile · 个人资料</h2><form id="profile"><label>Nickname · 昵称<input id="nickname" maxlength="40" required></label><label>Language · 语言<select id="language"><option value="en">English</option><option value="zh">中文</option><option value="ms">Bahasa Melayu</option><option value="th">ไทย</option></select></label><button>Save profile · 保存资料</button></form><p>昵称仅供收藏功能使用，不是实名认证。请勿填写证件或金融资料。</p></section><section><h2>Add card · 添加收藏</h2><p><a href="/collection-preview.html">查询卡牌数据库 ID</a> 后手动输入。暂不自动导入本机收藏。</p><form id="add"><label>Catalog ID · 卡牌数据库 ID<input id="catalog" maxlength="100" required></label><label>Quantity · 数量<input id="quantity" type="number" min="1" max="99" value="1" required></label><button>Save card · 保存卡牌</button></form><p id="count"></p><div id="cards"></div></section></div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script><script>
+'use strict';
+// Must remain false until the database migration and real authorization tests are approved.
+const CLOUD_COLLECTION_VERIFIED=false;
+const URL_BASE='https://fdkfquvzbswxocyrhduk.supabase.co',PUBLIC_KEY='sb_publishable_V99GEROTQ492-d_w2QIoGg_RWx8DqwT';
+const $=id=>document.getElementById(id);
+let client=null,epoch=0,current=null,busy=false,rows=[],hasProfile=false;
+function cardInput(id,quantity){const n=Number(quantity);return /^[A-Za-z0-9_-]{1,100}$/.test(id)&&Number.isInteger(n)&&n>=1&&n<=99?{catalog_id:id,quantity:n}:null;}
+function profileInput(n,l){n=n.trim();return n.length>=1&&n.length<=40&&['en','zh','ms','th'].includes(l)?{nickname:n,preferred_language:l}:null;}
+function freeSlot(list){const used=new Set(list.map(x=>x.slot));for(let i=1;i<=200;i++)if(!used.has(i))return i;return null;}
+function clear(){epoch++;current=null;rows=[];hasProfile=false;$('member').hidden=true;$('cards').replaceChildren();$('nickname').value='';$('catalog').value='';$('quantity').value='1';$('count').textContent='';}
+function status(t){$('status').textContent=t;}
+async function request(ctx,table,method='GET',filter={},body){
+ if(!CLOUD_COLLECTION_VERIFIED||ctx.epoch!==epoch||!['users','cardora_member_preferences','cardora_member_collection'].includes(table))throw Error('Unavailable');
+ const u=new URL(URL_BASE+'/rest/v1/'+table);for(const [k,v] of Object.entries(filter))u.searchParams.set(k,v);
+ const res=await fetch(u,{method,headers:{apikey:PUBLIC_KEY,Authorization:'Bearer '+ctx.token,'Content-Type':'application/json',Prefer:'return=representation'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer'});
+ if(!res.ok||ctx.epoch!==epoch)throw Error('Request failed');return res.json();
+}
+async function identity(){
+ if(!CLOUD_COLLECTION_VERIFIED||!client)throw Error('Unavailable');
+ const generation=epoch;const {data,error}=await client.auth.getSession();const s=data?.session;
+ if(error||!s?.access_token||generation!==epoch)throw Error('Sign in');
+ const {data:v,error:e}=await client.auth.getUser(s.access_token);const u=v?.user;
+ if(e||!u||u.is_anonymous||!u.email_confirmed_at||u.id!==s.user?.id||generation!==epoch)throw Error('Not verified');
+ const ctx={id:u.id,token:s.access_token,epoch:generation};
+ const p=await request(ctx,'users','GET',{select:'status',auth_user_id:'eq.'+u.id,limit:'2'});
+ if(!Array.isArray(p)||p.length!==1||p[0].status!=='active')throw Error('Inactive');return ctx;
+}
+function render(){
+ $('cards').replaceChildren();$('count').textContent=rows.length+' / 200';
+ for(const row of rows){const el=document.createElement('article'),label=document.createElement('p'),b=document.createElement('button');label.textContent=row.catalog_id+' · × '+row.quantity;b.type='button';b.textContent='Remove · 移除';b.addEventListener('click',()=>operate(async ctx=>{const result=await request(ctx,'cardora_member_collection','DELETE',{owner_auth_id:'eq.'+ctx.id,slot:'eq.'+row.slot,catalog_id:'eq.'+row.catalog_id});if(!Array.isArray(result)||result.length!==1)throw Error('Not removed');}));el.append(label,b);$('cards').append(el);}
+}
+async function read(ctx){
+ const p=await request(ctx,'cardora_member_preferences','GET',{select:'nickname,preferred_language',owner_auth_id:'eq.'+ctx.id,limit:'2'});
+ const c=await request(ctx,'cardora_member_collection','GET',{select:'slot,catalog_id,quantity',owner_auth_id:'eq.'+ctx.id,order:'slot.asc',limit:'200'});
+ if(!Array.isArray(p)||p.length>1||!Array.isArray(c)||c.length>200||ctx.epoch!==epoch)throw Error('Invalid data');
+ hasProfile=p.length===1;$('nickname').value=p[0]?.nickname||'';$('language').value=p[0]?.preferred_language||'en';rows=c;current=ctx;render();$('member').hidden=false;
+}
+async function operate(action){if(busy||!current)return;busy=true;const before=current;try{const ctx=await identity();if(ctx.id!==before.id||ctx.epoch!==before.epoch)throw Error('Account changed');await action(ctx);await read(ctx);status('Saved · 已更新');}catch{clear();status('操作未能确认，请重新读取收藏。');}finally{busy=false;}}
+async function load(){if(busy||!CLOUD_COLLECTION_VERIFIED)return;busy=true;clear();try{await read(await identity());status('已读取私人收藏。')}catch{clear();status('无法读取：请登录并验证邮箱，或检查功能是否开放。')}finally{busy=false;}}
+$('load').addEventListener('click',load);
+$('profile').addEventListener('submit',e=>{e.preventDefault();const p=profileInput($('nickname').value,$('language').value);if(!p)return;operate(async ctx=>{const result=await request(ctx,'cardora_member_preferences',hasProfile?'PATCH':'POST',hasProfile?{owner_auth_id:'eq.'+ctx.id}:{},p);if(!Array.isArray(result)||result.length!==1)throw Error('Not saved');});});
+$('add').addEventListener('submit',e=>{e.preventDefault();const c=cardInput($('catalog').value.trim(),$('quantity').value),slot=freeSlot(rows);if(!c||slot===null||rows.some(x=>x.catalog_id===c.catalog_id)){status('编号无效、已收藏或达到上限。');return}operate(async ctx=>{const result=await request(ctx,'cardora_member_collection','POST',{}, {...c,slot});if(!Array.isArray(result)||result.length!==1)throw Error('Not saved');});});
+if(CLOUD_COLLECTION_VERIFIED&&window.supabase){client=window.supabase.createClient(URL_BASE,PUBLIC_KEY,{auth:{storageKey:'cardora-member-v1',flowType:'pkce',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});client.auth.onAuthStateChange(()=>{clear();status('账户状态有变化，请重新读取收藏。');});$('load').disabled=false;}
+</script></body></html>
