@@ -3,7 +3,7 @@ on:
   push:
     branches: [draft/card-catalog-20261125]
   pull_request:
-    paths: ['collection-preview.html','scripts/test-card-catalog-offline.mjs','.github/workflows/cardora-card-catalog.yml']
+    paths: ['collection-preview.html','packs-live-preview.html','supabase/drafts/CARDORA_DRAFT_member_collection.sql','scripts/test-member-collection-isolation.sql','scripts/test-card-catalog-offline.mjs','.github/workflows/cardora-card-catalog.yml']
 permissions:
   contents: read
 jobs:
@@ -14,3 +14,29 @@ jobs:
         with:
           persist-credentials: false
       - run: node scripts/test-card-catalog-offline.mjs
+
+  database-isolation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: disposable-ci-only
+          POSTGRES_DB: cardora_ci
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cardora_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Test member collection with synthetic accounts
+        env:
+          DB_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$DB_CONTAINER" mkdir -p /tmp/cardora/scripts /tmp/cardora/supabase/drafts
+          docker cp scripts/test-member-collection-isolation.sql "$DB_CONTAINER:/tmp/cardora/scripts/"
+          docker cp supabase/drafts/CARDORA_DRAFT_member_collection.sql "$DB_CONTAINER:/tmp/cardora/supabase/drafts/"
+          docker exec "$DB_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U postgres -d cardora_ci -f /tmp/cardora/scripts/test-member-collection-isolation.sql
