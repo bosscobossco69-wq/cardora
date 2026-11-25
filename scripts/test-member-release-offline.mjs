@@ -69,3 +69,8 @@ await register(unconfirmed);assert.equal(unconfirmed.signupCalls.length,0);
 assert.match(html,/sb_publishable_/);
 assert.doesNotMatch(html,/crqqockaetgacddxkqpb|sb_secret_|sk_live_|seller_applications'\)\.insert/);
 console.log('PASS: production-derived release keeps unverified accounts outside member view and excludes legacy/secret/write endpoints');
+
+const details=html.slice(html.indexOf('<div id="memberDetails" hidden>'),html.indexOf('<p id="accountStatus"'));
+assert.match(details,/id="rewardsPlan"/);assert.match(details,/No points have been granted/);assert.match(details,/Email verification: <strong>Confirmed/);assert.match(details,/cannot be redeemed or withdrawn now/);assert.doesNotMatch(details,/<button|<form|<input/);
+for(const kind of ['Email verification','Complete profile','First eligible purchase','First genuine transaction review'])assert.ok(details.includes(kind));
+console.log('PASS: proposed reward display inside verified member view, no claim or payout control');

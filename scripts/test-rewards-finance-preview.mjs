@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {welcomePreview,commissionPreview} from './rewards-finance-preview.mjs';
+const events=['email_verified','profile_completed','first_eligible_purchase','first_genuine_review'].map(kind=>({kind,eligible:true}));
+assert.deepEqual(welcomePreview([...events,...events,{kind:'unknown',eligible:true}]),{potentialCP:500,maxCP:500,redeemableNowCP:0,active:false});
+assert.equal(welcomePreview([{kind:'email_verified',eligible:false}]).potentialCP,0);
+const sale={itemSen:20000,processingSen:700,eligible:true,settled:true,referrerVerified:true};
+assert.deepEqual(commissionPreview(sale),{currency:'MYR',grossFeeSen:1000,netContributionSen:300,potentialReferralSen:60,payableSen:0,active:false});
+for(const patch of [{settled:false},{reversed:true},{eligible:false},{referrerVerified:false},{processingSen:1200}])assert.equal(commissionPreview({...sale,...patch}).potentialReferralSen,0);
+assert.throws(()=>commissionPreview({...sale,itemSen:1.5}),RangeError);
+assert.throws(()=>commissionPreview({...sale,processingSen:-1}),RangeError);
+console.log('Offline rewards finance checks passed');
