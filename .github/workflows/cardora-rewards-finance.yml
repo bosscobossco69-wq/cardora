@@ -3,7 +3,7 @@ on:
   push:
     branches: [draft/rewards-finance-20261125]
   pull_request:
-    paths: ['scripts/rewards-finance-preview.mjs','scripts/test-rewards-finance-preview.mjs','scripts/test-welcome-entitlements.sql','supabase/drafts/CARDORA_DRAFT_welcome_entitlements.sql','.github/workflows/cardora-rewards-finance.yml']
+    paths: ['join.html','scripts/test-member-release-offline.mjs','scripts/rewards-finance-preview.mjs','scripts/test-rewards-finance-preview.mjs','scripts/test-welcome-entitlements.sql','supabase/drafts/CARDORA_DRAFT_welcome_entitlements.sql','.github/workflows/cardora-rewards-finance.yml']
 permissions:
   contents: read
 jobs:
@@ -14,6 +14,7 @@ jobs:
         with:
           persist-credentials: false
       - run: node scripts/test-rewards-finance-preview.mjs
+      - run: node scripts/test-member-release-offline.mjs
 
   database-isolation:
     runs-on: ubuntu-latest
