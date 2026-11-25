@@ -6,7 +6,7 @@ const root=fs.readFileSync('index.html','utf8');
 assert.match(root,/href="https:\/\/cardora-rose\.vercel\.app\/join\.html"/);
 assert.match(root,/noindex,nofollow/);
 assert.doesNotMatch(root,/crqqockaetgacddxkqpb/);
-assert.equal(root.match(/<script>([\s\S]*?)<\/script>/)[1],html.match(/<script>([\s\S]*?)<\/script>/)[1]);
+assert.equal(root.match(/<script>([\s\S]*?)<\/script>/)[1],html.match(/<script>([\s\S]*?)<\/script>/)[1].replace('本页为首页预览。',''));
 const sql=fs.readFileSync('supabase/drafts/CARDORA_DRAFT_community_snapshot.sql','utf8');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
 assert.match(html,/href="https:\/\/cardora-rose\.vercel\.app\/join\.html"/);
@@ -31,4 +31,5 @@ for(const patch of [{registered_members:-1},{verified_members:4},{new_today:4},{
 context.row={...row,...patch};assert.equal(valid(),false,JSON.stringify(patch));}
 vm.runInContext('renderStats()',context);
 for(const id of ['members','verified','today'])assert.equal(get(id).textContent,'—');
+vm.runInContext(root.match(/<script>([\s\S]*?)<\/script>/)[1],vm.createContext({document,Intl,Date,AbortController,setTimeout,clearTimeout,setInterval:(fn,ms)=>{assert.equal(ms,60000)},fetch:()=>{throw Error('network forbidden in offline test')}}));
 console.log('Offline community homepage checks passed');
