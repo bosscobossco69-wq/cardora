@@ -18,6 +18,7 @@ on:
       - 'scripts/test-cardora-admin-overview-offline.mjs'
       - 'scripts/cardora-stripe-sql-smoke.sql'
       - 'scripts/cardora-admin-review-sql-smoke.sql'
+      - 'supabase/drafts/CARDORA_DRAFT_pending_application_intake.sql'
       - 'scripts/test-cardora-stripe-edge-contract.mjs'
       - 'scripts/test-cardora-email-smoke-offline.mjs'
       - 'scripts/test-cardora-payment-email-worker-offline.mjs'
@@ -328,6 +329,7 @@ jobs:
           docker exec cardora-review-test-db mkdir -p /work/scripts /work/supabase/drafts
           docker cp scripts/cardora-admin-review-sql-smoke.sql cardora-review-test-db:/work/scripts/
           docker cp supabase/drafts/CARDORA_DRAFT_admin_active_status_guard.sql cardora-review-test-db:/work/supabase/drafts/
+          docker cp supabase/drafts/CARDORA_DRAFT_pending_application_intake.sql cardora-review-test-db:/work/supabase/drafts/
           docker exec -w /work cardora-review-test-db psql -v ON_ERROR_STOP=1 -U postgres -d postgres -f scripts/cardora-admin-review-sql-smoke.sql
       - name: Parse draft SQL without connecting to a database
         run: |
