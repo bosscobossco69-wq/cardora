@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
+const html=fs.readFileSync('member-collection-preview.html','utf8');
+const elements=new Map();const node=()=>({hidden:true,disabled:true,value:'',textContent:'',addEventListener(){},replaceChildren(){},append(){}});
+const document={getElementById(id){if(!elements.has(id))elements.set(id,node());return elements.get(id)},createElement:node};
+let calls=0;const c=vm.createContext({document,window:{supabase:{createClient(){calls++;throw Error('must not connect')}}},URL,fetch(){calls++;throw Error('offline')}});
+vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1],c);
+assert.equal(calls,0);assert.equal(document.getElementById('member').hidden,true);
+assert.equal(vm.runInContext("cardInput('base1-4',99).quantity",c),99);
+for(const q of ['0','100','1.5'])assert.equal(vm.runInContext("cardInput('base1-4',"+JSON.stringify(q)+")",c),null);
+assert.equal(vm.runInContext("cardInput('<script>',1)",c),null);
+assert.equal(vm.runInContext("profileInput('  Collector  ','zh').nickname",c),'Collector');
+assert.equal(vm.runInContext("profileInput('Name','unknown')",c),null);
+assert.equal(vm.runInContext("freeSlot([{slot:1},{slot:3}])",c),2);
+assert.equal(vm.runInContext("freeSlot(Array.from({length:200},(_,i)=>({slot:i+1})))",c),null);
+await assert.rejects(vm.runInContext("request({epoch:0},'users')",c));assert.equal(calls,0);
+assert.match(html,/getUser\(s.access_token\)/);assert.match(html,/owner_auth_id:'eq.'\+ctx.id/);
+assert.doesNotMatch(html,/innerHTML|service_role|sb_secret_/);
+console.log('Member collection validation and disabled release gate passed');
