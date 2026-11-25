@@ -3,7 +3,7 @@ on:
   push:
     branches: [draft/rewards-finance-20261125]
   pull_request:
-    paths: ['join.html','scripts/test-member-release-offline.mjs','scripts/rewards-finance-preview.mjs','scripts/test-rewards-finance-preview.mjs','scripts/test-welcome-entitlements.sql','supabase/drafts/CARDORA_DRAFT_welcome_entitlements.sql','.github/workflows/cardora-rewards-finance.yml']
+    paths: ['join.html','scripts/test-member-release-offline.mjs','scripts/rewards-finance-preview.mjs','scripts/test-rewards-finance-preview.mjs','scripts/test-welcome-entitlements.sql','scripts/test-referral-eligibility.sql','supabase/drafts/CARDORA_DRAFT_referral_eligibility.sql','supabase/drafts/CARDORA_DRAFT_welcome_entitlements.sql','.github/workflows/cardora-rewards-finance.yml']
 permissions:
   contents: read
 jobs:
@@ -41,3 +41,12 @@ jobs:
           docker cp scripts/test-welcome-entitlements.sql "$DB_CONTAINER:/tmp/cardora/scripts/"
           docker cp supabase/drafts/CARDORA_DRAFT_welcome_entitlements.sql "$DB_CONTAINER:/tmp/cardora/supabase/drafts/"
           docker exec "$DB_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U postgres -d cardora_ci -f /tmp/cardora/scripts/test-welcome-entitlements.sql
+      - name: Test referral eligibility with synthetic records
+        env:
+          DB_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$DB_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U postgres -c 'CREATE DATABASE referral_ci'
+          docker cp scripts/test-referral-eligibility.sql "$DB_CONTAINER:/tmp/cardora/scripts/"
+          docker cp supabase/drafts/CARDORA_DRAFT_referral_eligibility.sql "$DB_CONTAINER:/tmp/cardora/supabase/drafts/"
+          docker exec "$DB_CONTAINER" sh -c 'sed -i "/^create role /d" /tmp/cardora/scripts/test-referral-eligibility.sql'
+          docker exec "$DB_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U postgres -d referral_ci -f /tmp/cardora/scripts/test-referral-eligibility.sql
