@@ -1,0 +1,42 @@
+name: Cardora community home checks
+on:
+  push:
+    branches: [draft/community-home-20261125]
+  pull_request:
+    paths: ['home-preview.html','supabase/drafts/CARDORA_DRAFT_community_snapshot.sql','scripts/test-community-home-offline.mjs','scripts/test-community-snapshot.sql','.github/workflows/cardora-community-home.yml']
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node scripts/test-community-home-offline.mjs
+
+  database-isolation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: disposable-ci-only
+          POSTGRES_DB: cardora_ci
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cardora_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Test isolated database with synthetic records
+        env:
+          DB_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$DB_CONTAINER" mkdir -p /tmp/cardora/scripts /tmp/cardora/supabase/drafts
+          docker cp scripts/test-community-snapshot.sql "$DB_CONTAINER:/tmp/cardora/scripts/"
+          docker cp supabase/drafts/CARDORA_DRAFT_community_snapshot.sql "$DB_CONTAINER:/tmp/cardora/supabase/drafts/"
+          docker exec "$DB_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U postgres -d cardora_ci -f /tmp/cardora/scripts/test-community-snapshot.sql
