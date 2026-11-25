@@ -137,7 +137,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c7
 <p id="accountStatus" role="status" aria-live="polite"></p>
 <button class="secondary" type="button" id="logout">Sign out</button>
 </section>
-<section id="member-terms"><h2>Free membership terms</h2><p>Cardora early access is a personal project operated from Malaysia, not a registered company. Free ordinary membership only; no payments, seller approval, rewards or earnings are offered. Use your own email, keep your credentials private, and do not impersonate others or abuse the service. Legacy accounts and privileges are not transferred automatically.</p></section>
+<section id="freeInvite"><h2>Invite friends · 邀请朋友 · Jemput rakan</h2><p>Anyone can share the free registration link. No identity check, purchase or referral reward is required. 普通邀请免费，不记录推荐归属，不产生佣金。</p><label for="inviteLink">Official registration link</label><input id="inviteLink" readonly value="https://cardora-rose.vercel.app/join.html"><p><button type="button" id="shareInvite">Share / Copy link · 分享链接</button></p><p id="inviteStatus" role="status" aria-live="polite"></p></section><section id="member-terms"><h2>Free membership terms</h2><p>Cardora early access is a personal project operated from Malaysia, not a registered company. Free ordinary membership only; no payments, seller approval, rewards or earnings are offered. Use your own email, keep your credentials private, and do not impersonate others or abuse the service. Legacy accounts and privileges are not transferred automatically.</p></section>
 <section id="member-privacy"><h2>Member privacy notice</h2><p>We use your email, account identifier, membership status and authentication records to create and secure your account, prevent abuse and respond to support requests. Supabase provides authentication and database services; Vercel hosts the site. Essential browser storage maintains your session. Registration does not opt you into marketing. Do not submit identity documents, bank details or payment information. You may request access, correction or deletion by contacting <a href="mailto:nkj30733838@gmail.com">nkj30733838@gmail.com</a>. Account data is retained while needed for your account and security or legal requirements. Never email passwords or codes.</p></section>
 <p><small>For assistance, email Cardora support. This account is separate from legacy marketplace accounts.</small></p>
 </main><footer>Cardora early access · No inventory required for registration · No paid referral scheme</footer>
@@ -292,6 +292,15 @@ client.auth.onAuthStateChange((event)=>{
  // Run Supabase calls outside the auth callback to avoid re-entrant auth locks.
  if(event==='SIGNED_IN'||event==='USER_UPDATED'){refreshGeneration++;clearAccountView();}
  setTimeout(()=>refresh().catch(verificationUnavailable),0);
+});
+
+const publicInvite='https://cardora-rose.vercel.app/join.html';
+$('shareInvite').addEventListener('click',async()=>{
+ try{
+  if(typeof navigator.share==='function'){await navigator.share({title:'CARDORA — Free membership',text:'Join CARDORA for free. No payment required.',url:publicInvite});return;}
+  if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(publicInvite);safeText('inviteStatus','Registration link copied. 注册链接已复制。');return;}
+ }catch(e){if(e?.name==='AbortError')return;}
+ $('inviteLink').focus();$('inviteLink').select();safeText('inviteStatus','Select and copy the official link. 请长按复制注册链接。');
 });
 refresh().catch(verificationUnavailable);
 })();
