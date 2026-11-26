@@ -17,6 +17,7 @@ async function fixture({user={id:'synthetic-a',email:'a@example.invalid',email_c
 }
 const active=await fixture();
 assert.equal(active.node('memberDetails').hidden,false);
+assert.equal(active.node('memberMain')['data-member-view'],'active');
 assert.equal(active.node('memberNumber').textContent,'TRX-SYNTHETIC');
 assert.equal(active.node('memberEmail').textContent,'a@example.invalid');
 assert.ok(active.calls.every(id=>id==='synthetic-a'));
@@ -31,10 +32,11 @@ assert.equal(active.node('apply').hidden,true);
 await active.node('logout').handlers.click();await active.drain();assert.equal(active.logoutCalls[0].scope,'local');assert.equal(active.node('registration').hidden,false);assert.equal(active.node('account').hidden,true);
 assert.equal(active.node('memberDetails').hidden,true);
 assert.equal(active.node('memberEmail').textContent,'');
+assert.equal(active.node('memberMain')['data-member-view'],'entry');
 assert.equal(active.node('memberNumber').textContent,'');
 assert.equal(active.node('application').hidden,true);
 for(const args of [{profile:null},{profile:{status:'suspended'}},{error:{message:'offline failure'}},{user:{id:'anonymous',is_anonymous:true}}]){
- const f=await fixture(args);assert.equal(f.node('memberDetails').hidden,true);assert.equal(f.node('interestPanel').hidden,true);assert.equal(f.node('application').hidden,true);
+ const f=await fixture(args);assert.equal(f.node('memberMain')['data-member-view'],'entry');assert.equal(f.node('memberDetails').hidden,true);assert.equal(f.node('interestPanel').hidden,true);assert.equal(f.node('application').hidden,true);
 }
 const switching=await fixture();
 let release;switching.holdLookup(new Promise(r=>{release=r;}));
@@ -42,9 +44,9 @@ switching.event('USER_UPDATED');await switching.drain();
 switching.setUser({id:'synthetic-b',email:'b@example.invalid',email_confirmed_at:'2026-11-25T00:00:00Z'});
 switching.setProfile({id:'profile-b',status:'active',member_id:'TRX-SECOND'});
 switching.holdLookup(null);switching.event('SIGNED_IN');
-assert.equal(switching.node('memberEmail').textContent,'');
+assert.equal(switching.node('memberEmail').textContent,'');assert.equal(switching.node('memberMain')['data-member-view'],'entry');
 await switching.drain();release();await tick();
-assert.equal(switching.node('memberEmail').textContent,'b@example.invalid');
+assert.equal(switching.node('memberEmail').textContent,'b@example.invalid');assert.equal(switching.node('memberMain')['data-member-view'],'active');
 assert.equal(switching.node('memberNumber').textContent,'TRX-SECOND');
 assert.ok(switching.calls.includes('synthetic-b'));
 console.log('PASS: active identity, inactive/missing/error/anonymous denial, logout, paused application and stale account switch (offline)');
@@ -174,3 +176,16 @@ const noLink=await recoveryFixture();noLink.setSession(noLink.makeUser());noLink
 const failedUpdate=await recoveryFixture({updateError:true});await requestRecovery(failedUpdate);await failedUpdate.submit('verification');failedUpdate.node('password').value=failedUpdate.node('confirmation').value='synthetic-new-password';await failedUpdate.submit('change');assert.match(failedUpdate.node('status').textContent,/not completed/);assert.equal(failedUpdate.node('password').value,'');
 assert.doesNotMatch(recoveryHtml,/sb_secret_|service_role|sk_live_/);
 console.log('PASS: recovery preview blocked, OTP and PKCE event verification, identity mismatch and normal-session denial, password mismatch, update and logout (mocked)');
+
+const hub=html.slice(html.indexOf('<div id="memberDetails" hidden>'),html.indexOf('<p id="accountStatus"'));
+assert.ok(html.indexOf('<section id="account" hidden>')<html.indexOf('<section id="interestPanel" hidden>'));
+assert.ok(html.indexOf('id="memberMain" data-member-view="entry"')>=0);
+for(const target of ['/collection-preview.html#search','/collection-preview.html#saved','/collection-preview.html#cert-heading','/packs-live-preview.html','#memberProfile','#freeInvite','/'])assert.ok(hub.includes('href="'+target+'"'),target);
+assert.equal([...hub.matchAll(/class="hub-tile hub-locked"/g)].length,4);
+assert.doesNotMatch(hub,/class="hub-tile hub-locked"[^>]*href|<form|<input|<button/);
+assert.match(hub,/On this device only/);assert.match(hub,/Concept preview · no purchase or stream/);
+const allIds=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);assert.equal(allIds.length,new Set(allIds).size);
+const dictionaries={};for(const m of script.matchAll(/(?:const staticL10n=|Object\.assign\(staticL10n,)(\{[^\n]*?\})(?:;|\);)/g))Object.assign(dictionaries,JSON.parse(m[1]));
+for(const m of html.matchAll(/data-l10n="(\d+)"/g)){assert.equal(dictionaries[m[1]]?.length,3,'translation '+m[1]);assert.ok(dictionaries[m[1]].every(v=>typeof v==='string'&&v.trim().length>0));}
+for(const page of ['collection-preview.html','packs-live-preview.html']){const content=readFileSync(new URL('../'+page,import.meta.url),'utf8');assert.match(content,/<a href="\/join\.html"><span data-l10n="\d+">Member center<\/span><\/a>/);assert.match(content,/noindex,nofollow/);assert.match(content,/trixovel-language/);}
+console.log('PASS: member hub navigation, locked features, existing identity gates, unique IDs and three-language labels');
