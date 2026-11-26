@@ -93,4 +93,52 @@ console.log('PASS: signup confirmation and resend, invalid or mismatched identit
 
 const visibility=await fixture({user:null});visibility.node('tabRegister').onclick();assert.equal(visibility.node('registerPanel').hidden,false);assert.equal(visibility.node('loginPanel').hidden,true);assert.equal(visibility.node('consentRow').hidden,false);assert.equal(visibility.node('signupHelp').hidden,true);for(const id of ['loginPass','regPass','regConfirm']){const input=visibility.node(id),toggle=visibility.node(id+'Toggle');input.value='synthetic-password';assert.equal(input.type,'password');toggle.handlers.click();assert.equal(input.type,'text');assert.equal(toggle['aria-pressed'],'true');assert.equal(input.value,'synthetic-password');toggle.handlers.click();assert.equal(input.type,'password');assert.equal(toggle['aria-pressed'],'false');}visibility.node('regPassToggle').handlers.click();visibility.node('tabLogin').onclick();assert.equal(visibility.node('regPass').type,'password');assert.equal(visibility.node('regPass').value,'');assert.equal(visibility.node('loginPanel').hidden,false);assert.equal(visibility.node('registerPanel').hidden,true);assert.equal(visibility.node('consentRow').hidden,true);visibility.node('forgotPassword').onclick();assert.equal(visibility.node('emailPanel').hidden,false);visibility.node('openConfirm').handlers.click();assert.equal(visibility.node('loginPanel').hidden,true);assert.equal(visibility.node('registerPanel').hidden,true);assert.equal(visibility.node('signupHelp').hidden,false);visibility.node('backLogin').handlers.click();assert.equal(visibility.node('signupHelp').hidden,true);assert.equal(visibility.node('loginPanel').hidden,false);assert.match(html,/<div class="google-wrap" hidden>/);for(const id of ['loginPass','regPass','regConfirm'])assert.match(html,new RegExp('id="'+id+'Toggle" aria-controls="'+id+'" aria-label="Show password" aria-pressed="false"'));console.log('PASS: accessible eye controls, login/register isolation, confirmation and recovery navigation');
 
-const locale=await fixture({user:null});locale.node('langMs').handlers.click();locale.node('tabRegister').onclick();assert.equal(locale.node('authTitle').textContent,'Daftar akaun percuma');locale.node('regPass').value='synthetic-password';locale.node('langZh').handlers.click();assert.equal(locale.node('authTitle').textContent,'创建免费账户');assert.equal(locale.node('regPass').value,'synthetic-password');locale.node('langEn').handlers.click();assert.equal(locale.node('authTitle').textContent,'Create your free account');assert.equal(locale.node('regPass').value,'synthetic-password');console.log('PASS: language switch preserves inputs and updates dynamic labels');
+const locale=await fixture({user:null});locale.node('languageSelect').value='ms';locale.node('languageSelect').handlers.change();locale.node('tabRegister').onclick();assert.equal(locale.node('authTitle').textContent,'Daftar akaun percuma');locale.node('regPass').value='synthetic-password';locale.node('languageSelect').value='zh';locale.node('languageSelect').handlers.change();assert.equal(locale.node('authTitle').textContent,'创建免费账户');assert.equal(locale.node('regPass').value,'synthetic-password');locale.node('languageSelect').value='en';locale.node('languageSelect').handlers.change();assert.equal(locale.node('authTitle').textContent,'Create your free account');assert.equal(locale.node('regPass').value,'synthetic-password');console.log('PASS: language switch preserves inputs and updates dynamic labels');
+
+
+// Native single OTP input retains autofill and paste; six visual cells are non-interactive.
+const premium=await fixture({user:null});
+premium.node('otpCode').value='12a34-56';premium.node('otpCode').handlers.input();
+assert.equal(premium.node('otpCode').value,'123456');assert.equal(premium.node('otpCodeCell5').textContent,'6');
+premium.node('regPass').value='123456789012';premium.node('regPass').handlers.input();
+assert.equal(premium.node('strengthBar1')['data-filled'],'true');
+premium.node('tabLogin').onclick();assert.equal(premium.node('strengthBar0')['data-filled'],'false');
+assert.match(html,/href="\/reset-password\.html"/);
+assert.match(html,/prefers-reduced-motion:reduce/);
+console.log('PASS: premium language selector, single accessible OTP input and advisory length meter');
+
+const recoveryHtml=readFileSync(new URL('../reset-password.html',import.meta.url),'utf8');
+const recoveryScript=[...recoveryHtml.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1];
+async function recoveryFixture({origin='https://trixovel.com',search='',wrong=false,otpError=false,updateError=false,logoutError=false}={}){
+ const nodes=new Map(),calls=[],timers=[];let callback,session=null,created=0;
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{hidden:['verification','change','cancel'].includes(id),value:'',textContent:'',disabled:false,type:'password',handlers:{},setAttribute(k,v){this[k]=v},addEventListener(k,v){this.handlers[k]=v}});return nodes.get(id)};
+ const makeUser=(email='test@example.invalid',id='synthetic-recovery')=>({id,email,email_confirmed_at:'2026-11-25T00:00:00Z'});
+ function setSession(u){session=u?{user:u,access_token:'synthetic-token'}:null}
+ const auth={
+  getSession:async()=>({data:{session},error:null}),
+  getUser:async()=>({data:{user:session?.user||null},error:null}),
+  resetPasswordForEmail:async(email,options)=>{calls.push(['request',email,options]);return {error:null}},
+  verifyOtp:async(args)=>{calls.push(['verify',args]);if(otpError)return {error:{code:'otp_expired'}};setSession(makeUser(wrong?'other@example.invalid':args.email));callback?.('SIGNED_IN',session);return {data:{session},error:null}},
+  updateUser:async(args)=>{calls.push(['update',args]);return {error:updateError?{code:'weak_password'}:null}},
+  signOut:async({scope})=>{calls.push(['logout',scope]);if(logoutError&&scope==='global')return {error:{code:'offline'}};setSession(null);callback?.('SIGNED_OUT',null);return {error:null}},
+  onAuthStateChange(fn){callback=fn}
+ };
+ vm.runInNewContext(recoveryScript,{window:{supabase:{createClient:(_url,_key,options)=>{created++;assert.equal(options.auth.storageKey,'trixovel-recovery-v1');return {auth}}}},document:{getElementById:node,querySelectorAll:()=>[],documentElement:{}},location:{origin,pathname:'/reset-password.html',search,hash:''},URLSearchParams,setTimeout:fn=>{timers.push(fn)},localStorage:{getItem:()=>null,setItem(){}},Date});
+ const submit=async id=>node(id).handlers.submit?.({preventDefault(){}});
+ const drain=async()=>{while(timers.length)await timers.shift()();await tick()};
+ return {node,calls,submit,drain,created,setSession:(u)=>setSession(u),event:(name)=>callback?.(name,session),makeUser};
+}
+const previewRecovery=await recoveryFixture({origin:'https://preview.example.invalid'});
+assert.equal(previewRecovery.created,0);assert.equal(previewRecovery.node('send').disabled,true);await previewRecovery.submit('request');assert.equal(previewRecovery.calls.length,0);
+const ordinary=await recoveryFixture();ordinary.setSession(ordinary.makeUser());ordinary.event('SIGNED_IN');ordinary.event('INITIAL_SESSION');assert.equal(ordinary.node('change').hidden,true);await ordinary.submit('change');assert.equal(ordinary.calls.length,0);
+async function requestRecovery(f){f.node('email').value='test@example.invalid';await f.submit('request');assert.equal(f.calls.find(c=>c[0]==='request')[2].redirectTo,'https://trixovel.com/reset-password.html');f.node('code').value='123456'}
+const good=await recoveryFixture();await requestRecovery(good);await good.submit('verification');assert.equal(good.calls.find(c=>c[0]==='verify')[1].type,'recovery');assert.equal(good.node('change').hidden,false);
+good.node('password').value='synthetic-new-password';good.node('confirmation').value='mismatch';await good.submit('change');assert.equal(good.calls.filter(c=>c[0]==='update').length,0);
+good.node('password').value=good.node('confirmation').value='synthetic-new-password';await good.submit('change');assert.equal(good.calls.filter(c=>c[0]==='update').length,1);assert.ok(good.calls.some(c=>c[0]==='logout'&&c[1]==='global'));assert.equal(good.node('password').value,'');assert.match(good.node('status').textContent,/Password updated/);
+for(const opts of [{wrong:true},{otpError:true}]){const f=await recoveryFixture(opts);await requestRecovery(f);await f.submit('verification');assert.equal(f.node('change').hidden,true);await f.submit('change');assert.equal(f.calls.filter(c=>c[0]==='update').length,0)}
+const changed=await recoveryFixture();await requestRecovery(changed);await changed.submit('verification');changed.setSession(changed.makeUser('other@example.invalid','other-user'));changed.node('password').value=changed.node('confirmation').value='synthetic-new-password';await changed.submit('change');assert.equal(changed.calls.filter(c=>c[0]==='update').length,0);
+const link=await recoveryFixture({search:'?code=synthetic'});link.setSession(link.makeUser());link.event('SIGNED_IN');assert.equal(link.node('change').hidden,true);link.event('PASSWORD_RECOVERY');await link.drain();assert.equal(link.node('change').hidden,false);
+const noLink=await recoveryFixture();noLink.setSession(noLink.makeUser());noLink.event('PASSWORD_RECOVERY');await noLink.drain();assert.equal(noLink.node('change').hidden,true);
+const failedUpdate=await recoveryFixture({updateError:true});await requestRecovery(failedUpdate);await failedUpdate.submit('verification');failedUpdate.node('password').value=failedUpdate.node('confirmation').value='synthetic-new-password';await failedUpdate.submit('change');assert.match(failedUpdate.node('status').textContent,/not completed/);assert.equal(failedUpdate.node('password').value,'');
+assert.doesNotMatch(recoveryHtml,/sb_secret_|service_role|sk_live_/);
+console.log('PASS: recovery preview blocked, OTP and PKCE event verification, identity mismatch and normal-session denial, password mismatch, update and logout (mocked)');
