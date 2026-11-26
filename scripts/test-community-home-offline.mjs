@@ -4,7 +4,19 @@ import vm from 'node:vm';
 const html=fs.readFileSync('home-preview.html','utf8');
 const root=fs.readFileSync('index.html','utf8');
 assert.match(root,/href="\/join\.html"/);assert.match(root,/>TRIXOVEL</);
-assert.match(root,/noindex,nofollow/);
+assert.match(root,/<meta name="robots" content="index,follow">/);
+assert.match(root,/<link rel="canonical" href="https:\/\/trixovel\.com\/">/);
+assert.doesNotMatch(root,/<meta[^>]*name="robots"[^>]*noindex/);
+const sitemap=fs.readFileSync('sitemap.xml','utf8');
+assert.deepEqual([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]),['https://trixovel.com/']);
+assert.match(fs.readFileSync('robots.txt','utf8'),/Sitemap: https:\/\/trixovel\.com\/sitemap\.xml/);
+for(const page of ['join.html','reset-password.html','collection-preview.html','packs-live-preview.html','home-preview.html'])assert.match(fs.readFileSync(page,'utf8'),/noindex,nofollow/);
+for(const page of ['fees.html','listing-guide.html','sar-sir-ar-difference.html','how-to-spot-a-fake-pokemon-card.html','pokemon-card-numbers-explained.html']){
+ const content=fs.readFileSync(page,'utf8');assert.match(content,/<meta name="robots" content="noindex,follow">/);
+ assert.ok(content.includes('<link rel="canonical" href="https://trixovel.com/'+page+'">'));
+ assert.doesNotMatch(content,/cardora-rose\.vercel\.app/);
+}
+
 assert.doesNotMatch(root,/crqqockaetgacddxkqpb/);
 const statsScript=page=>page.match(/<script>([\s\S]*?)<\/script>/)[1].split('// Read only the public singleton aggregate. No session token, no user table.')[1];
 assert.ok(statsScript(root));const securityPart=x=>x.slice(0,x.indexOf('function renderStats()'))+x.slice(x.indexOf('async function refreshStats()'),x.indexOf('for(const id of',x.indexOf('async function refreshStats()')));assert.equal(securityPart(statsScript(root)),securityPart(statsScript(html)));
