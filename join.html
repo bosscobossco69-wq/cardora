@@ -2,8 +2,8 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="Join Cardora early access as a collector, seller or referral partner. Free registration. No payments or guaranteed rewards.">
-<title>Join Cardora — Early Access</title>
+<meta name="description" content="Join Trixovel early access as a collector, seller or referral partner. Free registration. No payments or guaranteed rewards.">
+<title>Join Trixovel — Early Access</title>
 <style>
 :root{font:16px/1.5 system-ui,sans-serif;color-scheme:dark}
 *{box-sizing:border-box}body{margin:0;background:#100e1b;color:#f9f6ff}
@@ -32,7 +32,7 @@ button{background:#e9c782;min-height:44px}button.secondary{background:#241b33;bo
 a{color:#ffd174}
 @media(max-width:560px){.roles{grid-template-columns:1fr}.roles label{text-align:left}}
 
-/* Cardora premium account design — presentation only. */
+/* Trixovel premium account design — presentation only. */
 body{background:#100d19;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
 header{padding:34px 20px 18px}.brand{font-size:26px;letter-spacing:.19em}
 main{max-width:430px;padding:8px 20px 30px}
@@ -49,7 +49,8 @@ button.secondary{background:#1b1527;border-color:#493a5b}
 .auth-panel input:not([type=checkbox]){min-height:50px;border-radius:12px;border-color:#493a5b;background:#100d19}
 .auth-panel input::placeholder{color:#a79cb8}
 button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c782;outline-offset:3px}
-#loginStatus:empty,#registerStatus:empty,#otpStatus:empty{display:none}
+#confirmStatus:empty,#loginStatus:empty,#registerStatus:empty,#otpStatus:empty{display:none}
+#confirmStatus:not(:empty),#loginStatus:not(:empty){margin:0;padding:12px;border-radius:10px;border:1px solid #947548;color:#ffde9e;background:#312315;overflow-wrap:anywhere;font-size:14px}#loginStatus[data-state="error"]{color:#ffd0d0;background:#3b1925;border-color:#e58a92}
 #forgotPassword{margin-top:12px}
 .switch-copy{text-align:left;margin:14px 0 0}
 .notice{font-size:12px}
@@ -64,17 +65,18 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c7
  .auth-panel{width:100%}main h1{font-size:30px}
 }
 
+#signupHelp{margin:16px 0;border:1px solid #51445f;padding:12px;border-radius:12px}#signupHelp summary{color:#e9c782;cursor:pointer;font-weight:700}
 </style></head>
 <body>
-<header><a class="brand" href="/join.html">CARDORA</a><span>COLLECTORS · SELLERS · PARTNERS</span></header>
+<header><a class="brand" href="/">TRIXOVEL</a><span>COLLECTORS · SELLERS · PARTNERS</span></header>
 <main>
 <aside class="desktop-story" aria-hidden="true"><p class="eyebrow">THE COLLECTOR’S MARKETPLACE</p><strong>Collect.<br>Buy.<br>Sell.<br>Connect.</strong><p>One account. A world of collectible cards.</p></aside>
-<h1>Welcome to Cardora</h1>
+<h1>Welcome to Trixovel</h1><p><small>Formerly Cardora. Existing members can use the same account. If you previously signed in on the old website, sign in again here. Local collections remain on the original browser domain.</small></p>
 <p class="tagline">Collect. Buy. Sell. Connect.</p>
 <p class="notice"><strong>Early access · Free membership:</strong> Register to access your collector account. Shopping, seller applications, referrals, points, commissions and payments are not available. Never pay to unlock an account.</p>
-<section id="registration" class="auth-panel">
+<p id="callbackStatus" class="notice" role="status" aria-live="polite" hidden></p><section id="registration" class="auth-panel">
 <div id="authTabs" role="group" aria-label="Account access"><button type="button" id="tabLogin" aria-pressed="true">Sign in</button><button type="button" id="tabRegister" aria-pressed="false">Create account</button></div>
-<h2 id="authTitle">Welcome back</h2><p class="auth-subtitle">Access your Cardora account.</p>
+<h2 id="authTitle">Welcome back</h2><p class="auth-subtitle">Access your Trixovel account.</p>
 <div class="google-wrap"><button id="googleLogin" type="button" class="secondary" disabled aria-describedby="googleHint"><span class="google-mark" aria-hidden="true">G</span>Continue with Google</button>
 <p id="googleHint"><small>Google sign-in is not available yet.</small></p>
 </div>
@@ -89,13 +91,13 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c7
 <form id="login">
 <label>Email<input id="loginEmail" placeholder="you@example.com" type="email" autocomplete="username" required></label>
 <label>Password<input id="loginPass" placeholder="Enter your password" type="password" autocomplete="current-password" required></label>
+<p id="loginStatus" role="status" aria-live="polite" aria-atomic="true"></p>
 <button type="submit">Sign In</button>
 </form>
-<p id="loginStatus" role="status" aria-live="polite"></p>
 
 <button type="button" id="forgotPassword" class="text-button">Forgot password?</button>
 <p id="forgotHint" hidden><small>Password recovery is not yet available. Use Continue with Email to sign in with an existing account.</small></p>
-<p class="switch-copy">New to Cardora? <button type="button" id="toRegister" class="text-button">Create an account</button></p>
+<p class="switch-copy">New to Trixovel? <button type="button" id="toRegister" class="text-button">Create an account</button></p>
 </div>
 <div id="registerPanel" hidden><form id="register">
 <label>Email address<input id="regEmail" placeholder="you@example.com" type="email" autocomplete="email" maxlength="254" required></label>
@@ -106,7 +108,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c7
 </form>
 <p id="registerStatus" role="status" aria-live="polite"></p>
 <p class="switch-copy">Already registered? <button type="button" id="toLogin" class="text-button">Sign in</button></p></div>
-<label class="consent"><input id="acceptTerms" type="checkbox"> I have reviewed the <a href="#member-terms">membership terms</a> and <a href="#member-privacy">privacy notice</a>.</label>
+<details id="signupHelp"><summary>Confirm your email / 邮箱验证</summary><p>For new accounts: enter the six-digit signup code from your email. If you received a link instead, open it in the original browser. Never share verification codes.</p><form id="confirmSignup"><label>Email address<input id="confirmEmail" type="email" autocomplete="email" required maxlength="254"></label><label>Six-digit confirmation code<input id="confirmCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button type="submit">Verify email &amp; sign in · 验证并登录</button></form><p><button type="button" class="secondary" id="resendSignup">Resend confirmation · 重发验证邮件</button></p><p id="confirmStatus" role="status" aria-live="polite" aria-atomic="true"></p></details><label class="consent"><input id="acceptTerms" type="checkbox"> I have reviewed the <a href="#member-terms">membership terms</a> and <a href="#member-privacy">privacy notice</a>.</label>
 </section>
 <section id="interestPanel" hidden>
 <h2>Choose your interest</h2>
@@ -137,10 +139,10 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c7
 <p id="accountStatus" role="status" aria-live="polite"></p>
 <button class="secondary" type="button" id="logout">Sign out</button>
 </section>
-<section id="freeInvite"><h2>Invite friends · 邀请朋友 · Jemput rakan</h2><p>Anyone can share the free registration link. No identity check, purchase or referral reward is required. 普通邀请免费，不记录推荐归属，不产生佣金。</p><label for="inviteLink">Official registration link</label><input id="inviteLink" readonly value="https://cardora-rose.vercel.app/join.html"><p><button type="button" id="shareInvite">Share / Copy link · 分享链接</button></p><p id="inviteStatus" role="status" aria-live="polite"></p></section><section id="member-terms"><h2>Free membership terms</h2><p>Cardora early access is a personal project operated from Malaysia, not a registered company. Free ordinary membership only; no payments, seller approval, rewards or earnings are offered. Use your own email, keep your credentials private, and do not impersonate others or abuse the service. Legacy accounts and privileges are not transferred automatically.</p></section>
+<section id="freeInvite"><h2>Invite friends · 邀请朋友 · Jemput rakan</h2><p>Anyone can share the free registration link. No identity check, purchase or referral reward is required. 普通邀请免费，不记录推荐归属，不产生佣金。</p><label for="inviteLink">Official registration link</label><input id="inviteLink" readonly value="https://trixovel.com/join.html"><p><button type="button" id="shareInvite">Share / Copy link · 分享链接</button></p><p id="inviteStatus" role="status" aria-live="polite"></p></section><section id="member-terms"><h2>Free membership terms</h2><p>Trixovel early access is a personal project operated from Malaysia, not a registered company. Free ordinary membership only; no payments, seller approval, rewards or earnings are offered. Use your own email, keep your credentials private, and do not impersonate others or abuse the service. Legacy accounts and privileges are not transferred automatically.</p></section>
 <section id="member-privacy"><h2>Member privacy notice</h2><p>We use your email, account identifier, membership status and authentication records to create and secure your account, prevent abuse and respond to support requests. Supabase provides authentication and database services; Vercel hosts the site. Essential browser storage maintains your session. Registration does not opt you into marketing. Do not submit identity documents, bank details or payment information. You may request access, correction or deletion by contacting <a href="mailto:nkj30733838@gmail.com">nkj30733838@gmail.com</a>. Account data is retained while needed for your account and security or legal requirements. Never email passwords or codes.</p></section>
-<p><small>For assistance, email Cardora support. This account is separate from legacy marketplace accounts.</small></p>
-</main><footer>Cardora early access · No inventory required for registration · No paid referral scheme</footer>
+<p><small>For assistance, email Trixovel support. This account is separate from legacy marketplace accounts.</small></p>
+</main><footer>Trixovel early access · No inventory required for registration · No paid referral scheme</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
@@ -150,13 +152,16 @@ const key="sb_publishable_V99GEROTQ492-d_w2QIoGg_RWx8DqwT";
 // Disabled until a separately authorized protected-preview provider test.
 const googlePreviewVerified=false;
 const $=id=>document.getElementById(id);
+const callbackParams=[new URLSearchParams(location.search||''),new URLSearchParams((location.hash||'').replace(/^#/,''))];
+const callbackError=callbackParams.some(p=>p.has('error')||p.has('error_code'));
+const callbackAttempt=callbackError||callbackParams.some(p=>p.has('code'));
 const client=window.supabase.createClient(url,key,{auth:{storageKey:'cardora-member-v1',flowType:'pkce',persistSession:true,autoRefreshToken:true}});
 const role=()=>document.querySelector('input[name="interest"]:checked')?.value||'collector';
 const safeText=(id,v)=>{$(id).textContent=String(v)};
 function authMode(register){
  $('loginPanel').hidden=register;$('registerPanel').hidden=!register;
  $('tabLogin').setAttribute('aria-pressed',String(!register));$('tabRegister').setAttribute('aria-pressed',String(register));
- safeText('authTitle',register?'Create your free account':'Sign in to Cardora');
+ safeText('authTitle',register?'Create your free account':'Sign in to Trixovel');
  $('loginPass').value='';$('regPass').value='';$('regConfirm').value='';
 }
 $('tabLogin').onclick=$('toLogin').onclick=()=>authMode(false);
@@ -164,6 +169,9 @@ $('tabRegister').onclick=$('toRegister').onclick=()=>authMode(true);
 $('emailToggle').onclick=()=>{const panel=$('emailPanel');panel.hidden=!panel.hidden;$('emailToggle').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)$('otpEmail').focus();};
 $('forgotPassword').onclick=()=>{$('forgotHint').hidden=!$('forgotHint').hidden;};
 const sessionUser=async()=>{const {data,error}=await client.auth.getUser();return !error&&data?.user&&!data.user.is_anonymous&&data.user.email_confirmed_at?data.user:null};
+function showConfirmation(email=''){if(email)$('confirmEmail').value=email;$('signupHelp').open=true;}
+function callbackNotice(message){safeText('callbackStatus',message);$('callbackStatus').hidden=false;}
+if(callbackAttempt){callbackNotice(callbackError?'Verification link could not be completed. Use Confirm your email to request a new code. 邮箱验证链接失败，请重发验证码。':'Checking your verification link… 正在检查验证链接。');showConfirmation();}
 const googleButton=$('googleLogin');
 googleButton.disabled=!googlePreviewVerified;
 googleButton.addEventListener('click',async()=>{
@@ -195,7 +203,7 @@ async function refresh(){
  $('interestPanel').hidden=true;
  $('application').hidden=true;
  $('account').hidden=!user;
- if(user){$('application').hidden=true;safeText('accountStatus','Signed in to Cardora Auth. Checking linked member profile…');
+ if(user){$('application').hidden=true;safeText('accountStatus','Signed in to Trixovel Auth. Checking linked member profile…');
   const {data:profile,error}=await client.from('users').select('id,status,member_id').eq('auth_user_id',user.id).maybeSingle();
   if(generation!==refreshGeneration)return;
   const confirmed=await sessionUser();
@@ -203,19 +211,20 @@ async function refresh(){
   if(!confirmed||confirmed.id!==user.id){verificationUnavailable();return;}
   if(error||!profile||profile.status!=='active'){
    $('application').hidden=true;
-   safeText('accountStatus','Your account is signed in but its Cardora profile is not active or cannot be read. No application will be submitted.');
+   safeText('accountStatus','Your account is signed in but its Trixovel profile is not active or cannot be read. No application will be submitted.');
   }else{
    safeText('memberNumber',profile.member_id||'Unavailable');safeText('memberEmail',confirmed.email||'Unavailable');$('memberDetails').hidden=false;
    $('interestPanel').hidden=false;
    $('application').hidden=role()==='collector';
-   safeText('accountStatus','Your linked Cardora member profile is active. Seller and partner approvals remain separate.');
+   safeText('accountStatus','Your linked Trixovel member profile is active. Seller and partner approvals remain separate.');
+   if(callbackAttempt&&!callbackError)callbackNotice('Signed in to your verified account. 已登录邮箱验证账户。');
   }
- }else safeText('accountStatus','');
+ }else {safeText('accountStatus','');if(callbackAttempt&&!callbackError){callbackNotice('No verified session found. Sign in if already confirmed, or request a new confirmation code. 未找到验证会话，请登录或重发验证码。');showConfirmation();}}
 }
 const hints={
  collector:'Explore collectible cards and be notified about launch only if you separately opt in later.',
  seller:'You can apply without inventory today; real listings require owned stock and separate review.',
- agent:'Promote Cardora truthfully through your own Facebook, TikTok, Shopee or other channels. No commissions or points are active.'
+ agent:'Promote Trixovel truthfully through your own Facebook, TikTok, Shopee or other channels. No commissions or points are active.'
 };
 document.getElementById('roles').addEventListener('change',()=>{safeText('roleHint',hints[role()]);refresh().catch(verificationUnavailable)});
 $('register').addEventListener('submit',async e=>{
@@ -234,20 +243,53 @@ $('register').addEventListener('submit',async e=>{
      await client.auth.signOut();throw Error('Registration identity mismatch');
    }
  }
- safeText('registerStatus',data?.session?'Account session verified. Checking your member profile.':'If registration is accepted, check your email for the confirmation link. Open it in the same browser, then sign in. No account or seller approval is guaranteed.');
+ safeText('registerStatus',data?.session?'Account session verified. Checking your member profile.':'If registration is accepted, check your email for the confirmation link. Use the confirmation code below if provided, or open the link in the same browser. No account or seller approval is guaranteed.');
+ if(!data?.session)showConfirmation(email);
  await refresh();
  }catch(e){safeText('registerStatus','Registration not completed. Check your details or try again later.');}
  finally{$('regPass').value='';$('regConfirm').value='';btn.disabled=false}
 });
 $('login').addEventListener('submit',async e=>{
- e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+ e.preventDefault();const btn=e.currentTarget.querySelector('button');if(btn.disabled)return;btn.disabled=true;
+ const status=$('loginStatus');status.setAttribute('data-state','pending');btn.textContent='Signing in…';
+ safeText('loginStatus','Signing in… 正在登录，请稍候。');
+ const slow=setTimeout(()=>{safeText('loginStatus','Still connecting. Please check your network. 连接较慢，请检查网络。');},10000);
  try{const {data,error}=await client.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPass').value});
- $('loginPass').value='';
- if(error||!data?.session)throw Error('Invalid session');
- safeText('loginStatus','Signed in.');await refresh();}
- catch(e){safeText('loginStatus','Sign-in failed. Verify email confirmation and password.');}
- finally{btn.disabled=false}
+ if(error||!data?.session)throw error||Error('Invalid session');
+ clearTimeout(slow);status.setAttribute('data-state','pending');safeText('loginStatus','Signed in. Checking your member profile…');await refresh();}
+ catch(e){clearTimeout(slow);if(e?.code==='email_not_confirmed')showConfirmation($('loginEmail').value.trim());status.setAttribute('data-state','error');safeText('loginStatus',e?.code==='email_not_confirmed'?'Confirm your email first. 请先验证邮箱。':e?.code==='invalid_credentials'?'Sign-in failed: incorrect email or password. 邮箱或密码错误。':'Sign-in failed. Check your email, password or connection, or use Continue with Email. 登录失败，请检查资料或网络。');}
+ finally{clearTimeout(slow);$('loginPass').value='';btn.textContent='Sign In';btn.disabled=false}
 });
+let confirmBusy=false;
+async function signupConfirmation(e,resend){
+ e.preventDefault();if(confirmBusy)return;confirmBusy=true;
+ const btn=resend?$('resendSignup'):e.currentTarget.querySelector('button');btn.disabled=true;
+ const email=$('confirmEmail').value.trim().toLowerCase();
+ try{
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)throw Error('Invalid email');
+  if((await client.auth.getUser()).data?.user)throw Error('Sign out first');
+  safeText('confirmStatus',resend?'Requesting confirmation… 正在发送。':'Checking confirmation code… 正在验证。');
+  if(resend){
+   const {error}=await client.auth.resend({type:'signup',email,options:{emailRedirectTo:location.origin+'/join.html'}});
+   if(error)throw error;
+   safeText('confirmStatus','If eligible, check your inbox for a new confirmation email. 请查收最新邮件。');
+  }else{
+   const token=$('confirmCode').value.trim();
+   if(!/^\d{6}$/.test(token))throw Error('Invalid code');
+   const {error}=await client.auth.verifyOtp({email,token,type:'email'});
+   if(error)throw error;
+   const user=await sessionUser();
+   if(!user||user.email?.toLowerCase()!==email||$('confirmEmail').value.trim().toLowerCase()!==email){
+    await client.auth.signOut();throw Error('Identity mismatch');
+   }
+   callbackNotice('Email verified. Signed in successfully. 邮箱验证成功，已登录。');
+   await refresh();
+  }
+ }catch(_){safeText('confirmStatus',resend?'Unable to request confirmation. Check email or try later. 无法重发，请稍后再试。':'Confirmation failed. Check the latest code or request a new one. 验证失败，请检查验证码或重新发送。');}
+ finally{$('confirmCode').value='';btn.disabled=false;confirmBusy=false;}
+}
+$('confirmSignup').addEventListener('submit',e=>signupConfirmation(e,false));
+$('resendSignup').addEventListener('click',e=>signupConfirmation(e,true));
 let otpTarget='',otpBusy=false;
 function resetOtp(){otpTarget='';$('otpCode').value='';$('otpVerify').hidden=true;}
 $('otpEmail').addEventListener('input',resetOtp);
@@ -294,10 +336,10 @@ client.auth.onAuthStateChange((event)=>{
  setTimeout(()=>refresh().catch(verificationUnavailable),0);
 });
 
-const publicInvite='https://cardora-rose.vercel.app/join.html';
+const publicInvite='https://trixovel.com/join.html';
 $('shareInvite').addEventListener('click',async()=>{
  try{
-  if(typeof navigator.share==='function'){await navigator.share({title:'CARDORA — Free membership',text:'Join CARDORA for free. No payment required.',url:publicInvite});return;}
+  if(typeof navigator.share==='function'){await navigator.share({title:'TRIXOVEL — Free membership',text:'Join TRIXOVEL for free. No payment required.',url:publicInvite});return;}
   if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(publicInvite);safeText('inviteStatus','Registration link copied. 注册链接已复制。');return;}
  }catch(e){if(e?.name==='AbortError')return;}
  $('inviteLink').focus();$('inviteLink').select();safeText('inviteStatus','Select and copy the official link. 请长按复制注册链接。');

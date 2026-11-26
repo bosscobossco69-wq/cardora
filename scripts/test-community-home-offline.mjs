@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 const html=fs.readFileSync('home-preview.html','utf8');
 const root=fs.readFileSync('index.html','utf8');
-assert.match(root,/href="https:\/\/cardora-rose\.vercel\.app\/join\.html"/);
+assert.match(root,/href="\/join\.html"/);assert.match(root,/>TRIXOVEL</);
 assert.match(root,/noindex,nofollow/);
 assert.doesNotMatch(root,/crqqockaetgacddxkqpb/);
 const statsScript=page=>page.match(/<script>([\s\S]*?)<\/script>/)[1].split('// Read only the public singleton aggregate. No session token, no user table.')[1];
