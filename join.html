@@ -49,8 +49,8 @@ button.secondary{background:#1b1527;border-color:#493a5b}
 .auth-panel input:not([type=checkbox]){min-height:50px;border-radius:12px;border-color:#493a5b;background:#100d19}
 .auth-panel input::placeholder{color:#a79cb8}
 button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c782;outline-offset:3px}
-#loginStatus:empty,#registerStatus:empty,#otpStatus:empty{display:none}
-#loginStatus:not(:empty){margin:0;padding:12px;border-radius:10px;border:1px solid #947548;color:#ffde9e;background:#312315;overflow-wrap:anywhere;font-size:14px}#loginStatus[data-state="error"]{color:#ffd0d0;background:#3b1925;border-color:#e58a92}
+#confirmStatus:empty,#loginStatus:empty,#registerStatus:empty,#otpStatus:empty{display:none}
+#confirmStatus:not(:empty),#loginStatus:not(:empty){margin:0;padding:12px;border-radius:10px;border:1px solid #947548;color:#ffde9e;background:#312315;overflow-wrap:anywhere;font-size:14px}#loginStatus[data-state="error"]{color:#ffd0d0;background:#3b1925;border-color:#e58a92}
 #forgotPassword{margin-top:12px}
 .switch-copy{text-align:left;margin:14px 0 0}
 .notice{font-size:12px}
@@ -65,6 +65,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c7
  .auth-panel{width:100%}main h1{font-size:30px}
 }
 
+#signupHelp{margin:16px 0;border:1px solid #51445f;padding:12px;border-radius:12px}#signupHelp summary{color:#e9c782;cursor:pointer;font-weight:700}
 </style></head>
 <body>
 <header><a class="brand" href="/">TRIXOVEL</a><span>COLLECTORS · SELLERS · PARTNERS</span></header>
@@ -73,7 +74,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c7
 <h1>Welcome to Trixovel</h1><p><small>Formerly Cardora. Existing members can use the same account. If you previously signed in on the old website, sign in again here. Local collections remain on the original browser domain.</small></p>
 <p class="tagline">Collect. Buy. Sell. Connect.</p>
 <p class="notice"><strong>Early access · Free membership:</strong> Register to access your collector account. Shopping, seller applications, referrals, points, commissions and payments are not available. Never pay to unlock an account.</p>
-<section id="registration" class="auth-panel">
+<p id="callbackStatus" class="notice" role="status" aria-live="polite" hidden></p><section id="registration" class="auth-panel">
 <div id="authTabs" role="group" aria-label="Account access"><button type="button" id="tabLogin" aria-pressed="true">Sign in</button><button type="button" id="tabRegister" aria-pressed="false">Create account</button></div>
 <h2 id="authTitle">Welcome back</h2><p class="auth-subtitle">Access your Trixovel account.</p>
 <div class="google-wrap"><button id="googleLogin" type="button" class="secondary" disabled aria-describedby="googleHint"><span class="google-mark" aria-hidden="true">G</span>Continue with Google</button>
@@ -107,7 +108,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c7
 </form>
 <p id="registerStatus" role="status" aria-live="polite"></p>
 <p class="switch-copy">Already registered? <button type="button" id="toLogin" class="text-button">Sign in</button></p></div>
-<label class="consent"><input id="acceptTerms" type="checkbox"> I have reviewed the <a href="#member-terms">membership terms</a> and <a href="#member-privacy">privacy notice</a>.</label>
+<details id="signupHelp"><summary>Confirm your email / 邮箱验证</summary><p>For new accounts: enter the six-digit signup code from your email. If you received a link instead, open it in the original browser. Never share verification codes.</p><form id="confirmSignup"><label>Email address<input id="confirmEmail" type="email" autocomplete="email" required maxlength="254"></label><label>Six-digit confirmation code<input id="confirmCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><button type="submit">Verify email &amp; sign in · 验证并登录</button></form><p><button type="button" class="secondary" id="resendSignup">Resend confirmation · 重发验证邮件</button></p><p id="confirmStatus" role="status" aria-live="polite" aria-atomic="true"></p></details><label class="consent"><input id="acceptTerms" type="checkbox"> I have reviewed the <a href="#member-terms">membership terms</a> and <a href="#member-privacy">privacy notice</a>.</label>
 </section>
 <section id="interestPanel" hidden>
 <h2>Choose your interest</h2>
@@ -151,6 +152,9 @@ const key="sb_publishable_V99GEROTQ492-d_w2QIoGg_RWx8DqwT";
 // Disabled until a separately authorized protected-preview provider test.
 const googlePreviewVerified=false;
 const $=id=>document.getElementById(id);
+const callbackParams=[new URLSearchParams(location.search||''),new URLSearchParams((location.hash||'').replace(/^#/,''))];
+const callbackError=callbackParams.some(p=>p.has('error')||p.has('error_code'));
+const callbackAttempt=callbackError||callbackParams.some(p=>p.has('code'));
 const client=window.supabase.createClient(url,key,{auth:{storageKey:'cardora-member-v1',flowType:'pkce',persistSession:true,autoRefreshToken:true}});
 const role=()=>document.querySelector('input[name="interest"]:checked')?.value||'collector';
 const safeText=(id,v)=>{$(id).textContent=String(v)};
@@ -165,6 +169,9 @@ $('tabRegister').onclick=$('toRegister').onclick=()=>authMode(true);
 $('emailToggle').onclick=()=>{const panel=$('emailPanel');panel.hidden=!panel.hidden;$('emailToggle').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)$('otpEmail').focus();};
 $('forgotPassword').onclick=()=>{$('forgotHint').hidden=!$('forgotHint').hidden;};
 const sessionUser=async()=>{const {data,error}=await client.auth.getUser();return !error&&data?.user&&!data.user.is_anonymous&&data.user.email_confirmed_at?data.user:null};
+function showConfirmation(email=''){if(email)$('confirmEmail').value=email;$('signupHelp').open=true;}
+function callbackNotice(message){safeText('callbackStatus',message);$('callbackStatus').hidden=false;}
+if(callbackAttempt){callbackNotice(callbackError?'Verification link could not be completed. Use Confirm your email to request a new code. 邮箱验证链接失败，请重发验证码。':'Checking your verification link… 正在检查验证链接。');showConfirmation();}
 const googleButton=$('googleLogin');
 googleButton.disabled=!googlePreviewVerified;
 googleButton.addEventListener('click',async()=>{
@@ -210,8 +217,9 @@ async function refresh(){
    $('interestPanel').hidden=false;
    $('application').hidden=role()==='collector';
    safeText('accountStatus','Your linked Trixovel member profile is active. Seller and partner approvals remain separate.');
+   if(callbackAttempt&&!callbackError)callbackNotice('Signed in to your verified account. 已登录邮箱验证账户。');
   }
- }else safeText('accountStatus','');
+ }else {safeText('accountStatus','');if(callbackAttempt&&!callbackError){callbackNotice('No verified session found. Sign in if already confirmed, or request a new confirmation code. 未找到验证会话，请登录或重发验证码。');showConfirmation();}}
 }
 const hints={
  collector:'Explore collectible cards and be notified about launch only if you separately opt in later.',
@@ -235,7 +243,8 @@ $('register').addEventListener('submit',async e=>{
      await client.auth.signOut();throw Error('Registration identity mismatch');
    }
  }
- safeText('registerStatus',data?.session?'Account session verified. Checking your member profile.':'If registration is accepted, check your email for the confirmation link. Open it in the same browser, then sign in. No account or seller approval is guaranteed.');
+ safeText('registerStatus',data?.session?'Account session verified. Checking your member profile.':'If registration is accepted, check your email for the confirmation link. Use the confirmation code below if provided, or open the link in the same browser. No account or seller approval is guaranteed.');
+ if(!data?.session)showConfirmation(email);
  await refresh();
  }catch(e){safeText('registerStatus','Registration not completed. Check your details or try again later.');}
  finally{$('regPass').value='';$('regConfirm').value='';btn.disabled=false}
@@ -248,9 +257,39 @@ $('login').addEventListener('submit',async e=>{
  try{const {data,error}=await client.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPass').value});
  if(error||!data?.session)throw error||Error('Invalid session');
  clearTimeout(slow);status.setAttribute('data-state','pending');safeText('loginStatus','Signed in. Checking your member profile…');await refresh();}
- catch(e){clearTimeout(slow);status.setAttribute('data-state','error');safeText('loginStatus',e?.code==='invalid_credentials'?'Sign-in failed: incorrect email or password. 邮箱或密码错误。':'Sign-in failed. Check your email, password or connection, or use Continue with Email. 登录失败，请检查资料或网络。');}
+ catch(e){clearTimeout(slow);if(e?.code==='email_not_confirmed')showConfirmation($('loginEmail').value.trim());status.setAttribute('data-state','error');safeText('loginStatus',e?.code==='email_not_confirmed'?'Confirm your email first. 请先验证邮箱。':e?.code==='invalid_credentials'?'Sign-in failed: incorrect email or password. 邮箱或密码错误。':'Sign-in failed. Check your email, password or connection, or use Continue with Email. 登录失败，请检查资料或网络。');}
  finally{clearTimeout(slow);$('loginPass').value='';btn.textContent='Sign In';btn.disabled=false}
 });
+let confirmBusy=false;
+async function signupConfirmation(e,resend){
+ e.preventDefault();if(confirmBusy)return;confirmBusy=true;
+ const btn=resend?$('resendSignup'):e.currentTarget.querySelector('button');btn.disabled=true;
+ const email=$('confirmEmail').value.trim().toLowerCase();
+ try{
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)throw Error('Invalid email');
+  if((await client.auth.getUser()).data?.user)throw Error('Sign out first');
+  safeText('confirmStatus',resend?'Requesting confirmation… 正在发送。':'Checking confirmation code… 正在验证。');
+  if(resend){
+   const {error}=await client.auth.resend({type:'signup',email,options:{emailRedirectTo:location.origin+'/join.html'}});
+   if(error)throw error;
+   safeText('confirmStatus','If eligible, check your inbox for a new confirmation email. 请查收最新邮件。');
+  }else{
+   const token=$('confirmCode').value.trim();
+   if(!/^\d{6}$/.test(token))throw Error('Invalid code');
+   const {error}=await client.auth.verifyOtp({email,token,type:'email'});
+   if(error)throw error;
+   const user=await sessionUser();
+   if(!user||user.email?.toLowerCase()!==email||$('confirmEmail').value.trim().toLowerCase()!==email){
+    await client.auth.signOut();throw Error('Identity mismatch');
+   }
+   callbackNotice('Email verified. Signed in successfully. 邮箱验证成功，已登录。');
+   await refresh();
+  }
+ }catch(_){safeText('confirmStatus',resend?'Unable to request confirmation. Check email or try later. 无法重发，请稍后再试。':'Confirmation failed. Check the latest code or request a new one. 验证失败，请检查验证码或重新发送。');}
+ finally{$('confirmCode').value='';btn.disabled=false;confirmBusy=false;}
+}
+$('confirmSignup').addEventListener('submit',e=>signupConfirmation(e,false));
+$('resendSignup').addEventListener('click',e=>signupConfirmation(e,true));
 let otpTarget='',otpBusy=false;
 function resetOtp(){otpTarget='';$('otpCode').value='';$('otpVerify').hidden=true;}
 $('otpEmail').addEventListener('input',resetOtp);
