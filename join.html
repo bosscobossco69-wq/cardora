@@ -99,6 +99,8 @@ header{position:relative;padding-top:64px}
 #memberMain[data-member-view="active"]{max-width:760px;display:block}
 #memberMain[data-member-view="active"]>section{margin:14px 0}
 #memberMain[data-member-view="active"] #account{padding:18px}
+#memberMain[data-member-view="active"] #account{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}#memberMain[data-member-view="active"] #account>h2{grid-row:1;grid-column:1;margin:0;font-size:19px}#memberMain[data-member-view="active"] #logout{grid-row:1;grid-column:2}#memberMain[data-member-view="active"] #memberDetails{grid-row:2;grid-column:1/-1}#memberMain[data-member-view="active"] #accountStatus{grid-column:1/-1;margin:4px 0;font-size:13px}
+
 #memberMain[data-member-view="active"] .roles{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:480px){#memberMain[data-member-view="active"] .roles{grid-template-columns:1fr}#memberMain[data-member-view="active"] #account{padding:14px}.hub-hero{padding:17px}.hub-tile{padding:11px;min-height:120px}.hub-grid{gap:8px}}
 @media(min-width:760px){.hub-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
