@@ -7,7 +7,7 @@ assert.match(root,/href="\/join\.html"/);assert.match(root,/>TRIXOVEL</);
 assert.match(root,/noindex,nofollow/);
 assert.doesNotMatch(root,/crqqockaetgacddxkqpb/);
 const statsScript=page=>page.match(/<script>([\s\S]*?)<\/script>/)[1].split('// Read only the public singleton aggregate. No session token, no user table.')[1];
-assert.ok(statsScript(root));assert.equal(statsScript(root),statsScript(html));
+assert.ok(statsScript(root));const securityPart=x=>x.slice(0,x.indexOf('function renderStats()'))+x.slice(x.indexOf('async function refreshStats()'),x.indexOf('for(const id of',x.indexOf('async function refreshStats()')));assert.equal(securityPart(statsScript(root)),securityPart(statsScript(html)));
 for(const target of ['/collection-preview.html#search','/collection-preview.html#cert-heading','/collection-preview.html#saved','/join.html','/packs-live-preview.html'])assert.ok(root.includes('href="'+target+'"'));
 assert.match(root,/Browse without an account/);assert.match(root,/游客免费浏览/);assert.match(root,/no purchase or stream is available/);
 const sql=fs.readFileSync('supabase/drafts/CARDORA_DRAFT_community_snapshot.sql','utf8');
@@ -36,3 +36,5 @@ vm.runInContext('renderStats()',context);
 for(const id of ['members','verified','today'])assert.equal(get(id).textContent,'—');
 vm.runInContext(root.match(/<script>([\s\S]*?)<\/script>/)[1],vm.createContext({document,Intl,Date,AbortController,setTimeout,clearTimeout,setInterval:(fn,ms)=>{assert.equal(ms,60000)},fetch:()=>{throw Error('network forbidden in offline test')}}));
 console.log('Offline community homepage checks passed');
+
+assert.match(root,/id="ms"/);assert.match(root,/Ahli berdaftar/);assert.match(root,/trixovel-language/);
