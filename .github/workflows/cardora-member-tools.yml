@@ -1,7 +1,7 @@
 name: Cardora member tools offline
 on:
   pull_request:
-    paths: ['join.html','collection-preview.html','scripts/test-member-release-offline.mjs','scripts/test-card-catalog-offline.mjs','.github/workflows/cardora-member-tools.yml']
+    paths: ['index.html','packs-live-preview.html','scripts/test-community-home-offline.mjs','join.html','collection-preview.html','scripts/test-member-release-offline.mjs','scripts/test-card-catalog-offline.mjs','.github/workflows/cardora-member-tools.yml']
 permissions:
   contents: read
 jobs:
@@ -13,3 +13,4 @@ jobs:
           persist-credentials: false
       - run: node scripts/test-member-release-offline.mjs
       - run: node scripts/test-card-catalog-offline.mjs
+      - run: node scripts/test-community-home-offline.mjs
