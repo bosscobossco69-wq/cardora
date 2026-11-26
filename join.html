@@ -50,6 +50,7 @@ button.secondary{background:#1b1527;border-color:#493a5b}
 .auth-panel input::placeholder{color:#a79cb8}
 button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c782;outline-offset:3px}
 #loginStatus:empty,#registerStatus:empty,#otpStatus:empty{display:none}
+#loginStatus:not(:empty){margin:0;padding:12px;border-radius:10px;border:1px solid #947548;color:#ffde9e;background:#312315;overflow-wrap:anywhere;font-size:14px}#loginStatus[data-state="error"]{color:#ffd0d0;background:#3b1925;border-color:#e58a92}
 #forgotPassword{margin-top:12px}
 .switch-copy{text-align:left;margin:14px 0 0}
 .notice{font-size:12px}
@@ -89,9 +90,9 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #e9c7
 <form id="login">
 <label>Email<input id="loginEmail" placeholder="you@example.com" type="email" autocomplete="username" required></label>
 <label>Password<input id="loginPass" placeholder="Enter your password" type="password" autocomplete="current-password" required></label>
+<p id="loginStatus" role="status" aria-live="polite" aria-atomic="true"></p>
 <button type="submit">Sign In</button>
 </form>
-<p id="loginStatus" role="status" aria-live="polite"></p>
 
 <button type="button" id="forgotPassword" class="text-button">Forgot password?</button>
 <p id="forgotHint" hidden><small>Password recovery is not yet available. Use Continue with Email to sign in with an existing account.</small></p>
@@ -240,13 +241,15 @@ $('register').addEventListener('submit',async e=>{
  finally{$('regPass').value='';$('regConfirm').value='';btn.disabled=false}
 });
 $('login').addEventListener('submit',async e=>{
- e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+ e.preventDefault();const btn=e.currentTarget.querySelector('button');if(btn.disabled)return;btn.disabled=true;
+ const status=$('loginStatus');status.setAttribute('data-state','pending');btn.textContent='Signing in…';
+ safeText('loginStatus','Signing in… 正在登录，请稍候。');
+ const slow=setTimeout(()=>{safeText('loginStatus','Still connecting. Please check your network. 连接较慢，请检查网络。');},10000);
  try{const {data,error}=await client.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPass').value});
- $('loginPass').value='';
- if(error||!data?.session)throw Error('Invalid session');
- safeText('loginStatus','Signed in.');await refresh();}
- catch(e){safeText('loginStatus','Sign-in failed. Verify email confirmation and password.');}
- finally{btn.disabled=false}
+ if(error||!data?.session)throw error||Error('Invalid session');
+ clearTimeout(slow);status.setAttribute('data-state','pending');safeText('loginStatus','Signed in. Checking your member profile…');await refresh();}
+ catch(e){clearTimeout(slow);status.setAttribute('data-state','error');safeText('loginStatus',e?.code==='invalid_credentials'?'Sign-in failed: incorrect email or password. 邮箱或密码错误。':'Sign-in failed. Check your email, password or connection, or use Continue with Email. 登录失败，请检查资料或网络。');}
+ finally{clearTimeout(slow);$('loginPass').value='';btn.textContent='Sign In';btn.disabled=false}
 });
 let otpTarget='',otpBusy=false;
 function resetOtp(){otpTarget='';$('otpCode').value='';$('otpVerify').hidden=true;}
