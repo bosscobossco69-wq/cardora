@@ -1,0 +1,24 @@
+name: Cardora member tools offline
+on:
+  pull_request:
+    paths: ['scripts/test-tcgdex-live.mjs','index.html','packs-live-preview.html','scripts/test-community-home-offline.mjs','join.html','collection-preview.html','scripts/test-member-release-offline.mjs','scripts/test-card-catalog-offline.mjs','.github/workflows/cardora-member-tools.yml']
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node scripts/test-member-release-offline.mjs
+      - run: node scripts/test-card-catalog-offline.mjs
+      - run: node scripts/test-community-home-offline.mjs
+  external-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node scripts/test-tcgdex-live.mjs
