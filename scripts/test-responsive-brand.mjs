@@ -71,5 +71,17 @@ try{
   }
  }
 
+
+ for(const file of ['one-piece.html','yugioh.html']){
+  for(const width of [320,390,768,1440]){
+   await load(file,width);
+   for(const lang of ['en','zh','ms','th']){
+    const r=await evaluate('(()=>{const s=document.getElementById("language");s.value='+JSON.stringify(lang)+';s.dispatchEvent(new Event("change"));const nav=[...document.querySelectorAll("nav.worlds a")];const fields=[...document.querySelectorAll("input")];return {lang:document.documentElement.lang,overflow:document.documentElement.scrollWidth>innerWidth+1,nav:nav.length,inside:nav.every(a=>a.origin===location.origin),fields:fields.every(i=>{const b=i.getBoundingClientRect();return b.left>=0&&b.right<=innerWidth+1&&b.width>0}),art:document.querySelector(".hero img").naturalWidth,labels:[...document.querySelectorAll("[data-t]")].every(e=>e.textContent.trim()&&e.textContent!==e.dataset.t)}})()');
+    assert.ok(!r.overflow&&r.nav===3&&r.inside&&r.fields&&r.art>0&&r.labels&&r.lang===(lang==='zh'?'zh-Hans':lang),file+' '+width+' '+lang+' '+JSON.stringify(r));
+    console.log('PASS: card world '+file+' '+width+'px '+lang+' internal links, image, forms and layout');
+   }
+  }
+ }
+
 }finally{ws?.close();browser.kill();await new Promise(r=>server.close(r));try{fs.rmSync(profile,{recursive:true,force:true})}catch{}}
 console.log('ALL RESPONSIVE BRAND BROWSER CHECKS PASSED');
