@@ -290,7 +290,7 @@ googleButton.addEventListener('click',async()=>{
 });
 let refreshGeneration=0,activeIdentity=null,observedIdentity=undefined,checking=false,loggingOut=false,logoutAttempt=0,scheduledRefresh=null;
 function bounded(promise,ms=12000){let timer;return Promise.race([Promise.resolve(promise),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('REQUEST_TIMEOUT')),ms)})]).finally(()=>clearTimeout(timer));}
-function clearMember(){ if($('launchAdminLinks'))$('launchAdminLinks').hidden=true;profileEditor?.clear();$('memberMain').setAttribute('data-member-view','entry');$('memberDetails').hidden=true;safeText('memberNumber','');safeText('memberEmail',''); }
+function clearMember(){ profileEditor?.clear();if($('launchAdminLinks'))$('launchAdminLinks').hidden=true;$('memberMain').setAttribute('data-member-view','entry');$('memberDetails').hidden=true;safeText('memberNumber','');safeText('memberEmail',''); }
 function clearAccountView(){clearMember();$('interestPanel').hidden=true;$('application').hidden=true;}
 function cancelScheduledRefresh(){if(scheduledRefresh!==null){clearTimeout(scheduledRefresh);scheduledRefresh=null;}}
 function signedOutView(){refreshGeneration++;cancelScheduledRefresh();checking=false;activeIdentity=null;observedIdentity=null;clearAccountView();$('sessionCheck').hidden=true;$('account').hidden=true;$('registration').hidden=false;$('retryProfile').hidden=true;safeText('accountStatus','');resetOtp();}
