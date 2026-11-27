@@ -15,7 +15,7 @@ let lang='en',status='pending',generation=0,identity=null,rows=[],busy=false,sta
 const tr=k=>words[k]?.[LANGS.indexOf(lang)]||k;
 function setStatus(k){status=k;$('appStatus').textContent=tr(k);}
 function controls(enabled){for(const id of fields)if($(id))$(id).disabled=!enabled;}
-function clearFields(){for(const id of fields){const el=$(id);if(!el)continue;if(id==='consent')el.checked=false;else if(id!=='submit')el.value=id==='kind'?(new URLSearchParams(location.search||'').get('kind')==='partner'?'partner':'seller'):'';}}
+function clearFields(){for(const id of fields){const el=$(id);if(!el)continue;if(id==='consent')el.checked=false;else if(id!=='submit')el.value=id==='kind'?(typeof location!=='undefined'&&new URLSearchParams(location.search||'').get('kind')==='partner'?'partner':'seller'):'';}}
 function invalidate(){generation++;identity=null;rows=[];busy=false;controls(false);clearFields();$('records').replaceChildren();}
 function bounded(p,ms=12000){let timer;return Promise.race([Promise.resolve(p),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('timeout')),ms);})]).finally(()=>clearTimeout(timer));}
 async function checkedUser(){
