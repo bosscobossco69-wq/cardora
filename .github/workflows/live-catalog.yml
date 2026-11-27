@@ -1,0 +1,19 @@
+name: TRIXOVEL live public catalog probes
+on:
+  pull_request:
+    paths:
+      - 'card-world.js'
+      - 'collection-preview.html'
+      - 'scripts/test-live-catalog.mjs'
+      - '.github/workflows/live-catalog.yml'
+permissions:
+  contents: read
+jobs:
+  public-catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node scripts/test-live-catalog.mjs
