@@ -1,0 +1,45 @@
+name: Cardora global launch PostgreSQL RLS
+on:
+  pull_request:
+    paths:
+      - 'docs/security/global-launch-intake-review.sql'
+      - 'scripts/test-global-launch-rls.sql'
+      - 'scripts/test-global-launch-offline.mjs'
+      - 'global-launch.html'
+      - 'application-review.html'
+      - 'launch-*.js'
+      - '.github/workflows/global-launch-rls.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-launch-rls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic_test_password
+          POSTGRES_DB: profile_rls_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d profile_rls_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Test reviewed launch schema on disposable PostgreSQL
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: synthetic_test_password
+          PGDATABASE: profile_rls_test
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/test-global-launch-rls.sql
+      - name: Check four-language preview and release gates
+        run: node scripts/test-global-launch-offline.mjs
