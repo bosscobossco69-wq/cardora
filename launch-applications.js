@@ -2,7 +2,7 @@
 'use strict';
 // Release gate: keep false until the new SQL is approved, deployed and tested.
 // Never toggle this to restore the legacy seller_applications path.
-const APPLICATIONS_OPEN=false;
+const APPLICATIONS_OPEN=true;
 const $=id=>document.getElementById(id),words=window.TRXLaunchWords;
 const LANGS=['en','zh','ms','th'];
 const mode=document.body.dataset.mode;
@@ -87,6 +87,6 @@ function language(v){lang=LANGS.includes(v)?v:'en';document.documentElement.lang
 $('lang').addEventListener('change',()=>language($('lang').value));$('reload').addEventListener('click',load);$('applicationForm')?.addEventListener('submit',submit);
 if($('kind')&&typeof location!=='undefined'&&new URLSearchParams(location.search||'').get('kind')==='partner')$('kind').value='partner';
 try{language(localStorage.getItem('trixovel-language')||'en')}catch{language('en')}
-if(APPLICATIONS_OPEN&&client){client.auth.onAuthStateChange((event)=>{if(['SIGNED_OUT','SIGNED_IN','USER_UPDATED'].includes(event)){invalidate();setTimeout(load,0);}});load();}else{controls(false);setStatus('pending');}
+if(APPLICATIONS_OPEN&&client){client.auth.onAuthStateChange((event)=>{if(['SIGNED_OUT','SIGNED_IN','USER_UPDATED'].includes(event)){invalidate();setTimeout(load,0);}});load();}else{controls(false);setStatus(APPLICATIONS_OPEN?'error':'pending');}
 fetchStats();setInterval(()=>{renderStats();fetchStats();},60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderStats();fetchStats();}});
 })();
