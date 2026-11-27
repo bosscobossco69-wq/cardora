@@ -192,9 +192,10 @@ header{position:relative;padding-top:64px}
 <section id="freeInvite"><h2><span data-l10n="77">Invite friends</span></h2><p><span data-l10n="78">Anyone can share the free registration link. No identity check or purchase is required. Ordinary invitations do not track referrals or generate commissions.</span></p><label for="inviteLink"><span data-l10n="79">Official registration link</span></label><input id="inviteLink" readonly value="https://trixovel.com/join.html"><p><button type="button" id="shareInvite"><span data-l10n="80">Share / Copy link</span></button></p><p id="inviteStatus" role="status" aria-live="polite"></p></section><section id="member-terms"><h2><span data-l10n="81">Free membership terms</span></h2><p><span data-l10n="82">Trixovel early access is a personal project operated from Malaysia, not a registered company. Free ordinary membership only; no payments, seller approval, rewards or earnings are offered. Use your own email, keep your credentials private, and do not impersonate others or abuse the service. Legacy accounts and privileges are not transferred automatically.</span></p></section>
 <section id="member-privacy"><h2><span data-l10n="83">Member privacy notice</span></h2><p><span data-l10n="84">We use your email, account identifier, membership status and authentication records to create and secure your account, prevent abuse and respond to support requests. Supabase provides authentication and database services; Vercel hosts the site. Essential browser storage maintains your session. Registration does not opt you into marketing. Do not submit identity documents, bank details or payment information. You may request access, correction or deletion by contacting</span> <a href="mailto:nkj30733838@gmail.com">nkj30733838@gmail.com</a><span data-l10n="85">. Account data is retained while needed for your account and security or legal requirements. Never email passwords or codes.</span></p></section>
 <p><small><span data-l10n="86">For assistance, email Trixovel support. This account is separate from legacy marketplace accounts.</span></small></p>
-</main><footer><span data-l10n="87">Trixovel early access · No inventory required for registration · No paid referral scheme</span></footer>
+</main><footer><span data-l10n="87">Trixovel early access · No inventory required for registration · No paid referral scheme</span><section id="growthPrivacy" hidden></section></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <script src="/member-profile.js"></script>
+<script src="/growth-events.js"></script>
 <script>
 (function(){
 'use strict';
@@ -341,9 +342,11 @@ $('register').addEventListener('submit',async e=>{
  if(password.length<8||password.length>128||password!==$('regConfirm').value)throw Error('Password requirements not met.');
  if(!$('acceptTerms').checked)throw Error('Review the membership terms and privacy notice first.');
  if((await client.auth.getUser()).data?.user)throw Error('Sign out before creating another account');
+ window.TRXGrowth?.record('signup_submit');
  const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+'/join.html'}});
  $('regPass').value='';$('regConfirm').value='';
  if(error)throw error;
+ window.TRXGrowth?.record('signup_response_ok');
  if(data?.session){
    const identity=await sessionUser();
    if(!identity||identity.email?.toLowerCase()!==email){
@@ -353,7 +356,7 @@ $('register').addEventListener('submit',async e=>{
  safeText('registerStatus',data?.session?'Account session verified. Checking your member profile.':'If registration is accepted, check your email for the confirmation link. Use the confirmation code below if provided, or open the link in the same browser. No account or seller approval is guaranteed.');
  if(!data?.session){showConfirmation(email);safeText('confirmStatus','If registration is accepted, check your email for the confirmation link. Use the confirmation code below if provided, or open the link in the same browser. No account or seller approval is guaranteed.');}
  await refresh();
- }catch(e){$('registerStatus').setAttribute('data-state','error');safeText('registerStatus',e?.message==='Password requirements not met.'?'Passwords must match and contain 8–128 characters.':e?.message==='Review the membership terms and privacy notice first.'?'Review the membership terms and privacy notice first.':'Registration not completed. If you already have an account, sign in or use an email code. Otherwise check your details or try later.');}
+ }catch(e){window.TRXGrowth?.record('signup_failed');$('registerStatus').setAttribute('data-state','error');safeText('registerStatus',e?.message==='Password requirements not met.'?'Passwords must match and contain 8–128 characters.':e?.message==='Review the membership terms and privacy notice first.'?'Review the membership terms and privacy notice first.':'Registration not completed. If you already have an account, sign in or use an email code. Otherwise check your details or try later.');}
  finally{$('regPass').value='';$('regConfirm').value='';renderStrength();hidePasswords();btn.disabled=false}
 });
 $('login').addEventListener('submit',async e=>{
@@ -389,6 +392,7 @@ async function signupConfirmation(e,resend){
    if(!user||user.email?.toLowerCase()!==email||$('confirmEmail').value.trim().toLowerCase()!==email){
     await client.auth.signOut();throw Error('Identity mismatch');
    }
+   window.TRXGrowth?.record('email_verified');
    callbackNotice('Email verified. Signed in successfully. 邮箱验证成功，已登录。');
    await refresh();
   }
@@ -468,6 +472,7 @@ $('shareInvite').addEventListener('click',async()=>{
  }catch(e){if(e?.name==='AbortError')return;}
  $('inviteLink').focus();$('inviteLink').select();safeText('inviteStatus','Select and copy the official link. 请长按复制注册链接。');
 });
+if(!callbackAttempt&&new URLSearchParams(location.search||'').get('mode')==='register')authMode(true);
 refresh();
 })();
 </script></body></html>
