@@ -52,5 +52,24 @@ try{
  for(const file of ['join.html','collection-preview.html','global-launch.html','application-review.html','growth-admin.html','packs-live-preview.html','reset-password.html']){
   for(const width of [390,1440]){await load(file,width);await check(file,width)}
  }
+
+ // Expose the signed-out panels solely for layout tests; auth SDK/network remain blocked.
+ function inspectAuth(register){
+  const $=id=>document.getElementById(id);
+  $('sessionCheck').hidden=true;$('registration').hidden=false;$('loginPanel').hidden=register;$('registerPanel').hidden=!register;$('consentRow').hidden=!register;
+  const panel=$('registration'),form=$(register?'register':'login'),submit=form.querySelector('button[type=submit]'),close=panel.querySelector('.auth-close'),bounds=panel.getBoundingClientRect();
+  const fields=[...form.querySelectorAll('input[type=email],input[type=password]')];
+  const boxes=fields.map(i=>{const r=i.getBoundingClientRect();return r.width>0&&r.height>=50&&r.left>=bounds.left&&r.right<=bounds.right});
+  return {overflow:document.documentElement.scrollWidth>innerWidth+1,panel:bounds.left>=0&&bounds.right<=innerWidth+1,fields:boxes,button:submit.getBoundingClientRect().height>=50,close:close.getAttribute('href')==='/',consent:!register||($('consentRow').getBoundingClientRect().bottom<=submit.getBoundingClientRect().top),google:document.querySelector('.google-wrap').hidden&&$('googleLogin').disabled};
+ }
+ for(const width of [320,390,768,1440]){
+  await load('join.html',width);
+  for(const register of [false,true]){
+   const r=await evaluate('('+inspectAuth.toString()+')('+register+')');
+   assert.ok(!r.overflow&&r.panel&&r.fields.length===(register?3:2)&&r.fields.every(Boolean)&&r.button&&r.close&&r.consent&&r.google,'auth panel '+width+' '+register+' '+JSON.stringify(r));
+   console.log('PASS: visible '+(register?'registration':'login')+' form '+width+'px layout and accessible controls');
+  }
+ }
+
 }finally{ws?.close();browser.kill();await new Promise(r=>server.close(r));try{fs.rmSync(profile,{recursive:true,force:true})}catch{}}
 console.log('ALL RESPONSIVE BRAND BROWSER CHECKS PASSED');
