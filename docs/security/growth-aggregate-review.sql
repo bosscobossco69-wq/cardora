@@ -25,9 +25,9 @@ begin
  if p_event is null or p_source is null or p_event not in ('page_home','page_join','join_click','signup_submit','signup_response_ok','signup_failed','email_verified','seller_interest','partner_interest') or p_source not in ('facebook','tiktok','google','direct','other') then return false; end if;
  -- Bounded aggregate storage: at most 45 buckets/day, 30-day rolling window, 5000 accepted hits/day.
  -- This is a global abuse ceiling, not a per-person identity or proof of a genuine visitor.
- perform pg_catalog.pg_advisory_xact_lock(174296211,1);
- if (select coalesce(sum(hits),0) from public.cardora_growth_counts where day_myt=d)>=5000 then return false; end if;
+ if not pg_catalog.pg_try_advisory_xact_lock(174296211,1) then return false; end if;
  delete from public.cardora_growth_counts where day_myt < d-29;
+ if (select coalesce(sum(hits),0) from public.cardora_growth_counts where day_myt=d)>=5000 then return false; end if;
  insert into public.cardora_growth_counts(day_myt,source,event,hits) values(d,p_source,p_event,1)
  on conflict(day_myt,source,event) do update set hits=public.cardora_growth_counts.hits+1;
  return true;
