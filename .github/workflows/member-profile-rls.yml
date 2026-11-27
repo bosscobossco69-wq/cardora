@@ -1,0 +1,41 @@
+name: Cardora member profile PostgreSQL RLS
+on:
+  pull_request:
+    paths:
+      - 'docs/security/member-profile-schema-review.sql'
+      - 'scripts/test-member-profile-rls.sql'
+      - '.github/workflows/member-profile-rls.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-profile-rls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic_test_password
+          POSTGRES_DB: profile_rls_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d profile_rls_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Run exact reviewed schema and adversarial SQL on temporary PostgreSQL
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: synthetic_test_password
+          PGDATABASE: profile_rls_test
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -c 'select version();'
+          psql -X -v ON_ERROR_STOP=1 -f scripts/test-member-profile-rls.sql

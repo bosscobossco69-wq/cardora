@@ -182,7 +182,7 @@ assert.ok(html.indexOf('<section id="account" hidden>')<html.indexOf('<section i
 assert.ok(html.indexOf('id="memberMain" data-member-view="entry"')>=0);
 for(const target of ['/collection-preview.html#search','/collection-preview.html#saved','/collection-preview.html#cert-heading','/packs-live-preview.html','#memberProfile','#freeInvite','/'])assert.ok(hub.includes('href="'+target+'"'),target);
 assert.equal([...hub.matchAll(/class="hub-tile hub-locked"/g)].length,4);
-assert.doesNotMatch(hub,/class="hub-tile hub-locked"[^>]*href|<form|<input|<button/);
+assert.doesNotMatch(hub,/class="hub-tile hub-locked"[^>]*href/);assert.match(hub,/<div id="profileEditor"[^>]* hidden>/);assert.match(hub,/<button id="profileSave" type="submit" disabled>/);
 assert.match(hub,/On this device only/);assert.match(hub,/Concept preview · no purchase or stream/);
 const allIds=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);assert.equal(allIds.length,new Set(allIds).size);
 const dictionaries={};for(const m of script.matchAll(/(?:const staticL10n=|Object\.assign\(staticL10n,)(\{[^\n]*?\})(?:;|\);)/g))Object.assign(dictionaries,JSON.parse(m[1]));
@@ -199,3 +199,26 @@ assert.match(content,/trixovel-language/);
 assert.match(content,page==='reset-password.html'?/option value="th">ภาษาไทย/:/id="langTh"/);
 }
 console.log('PASS: Thai auth messages and four-locale page dictionaries');
+
+const profileSource=readFileSync(new URL('../member-profile.js',import.meta.url),'utf8');
+const schema=readFileSync(new URL('../docs/security/member-profile-schema-review.sql',import.meta.url),'utf8');
+assert.match(html,/profileEditor\?\.open\(confirmed\.id\)/);assert.match(html,/function clearMember\(\)\{ profileEditor\?\.clear\(\)/);
+assert.match(schema,/enable row level security/);assert.match(schema,/force row level security/);
+assert.match(schema,/grant update \(nickname,region,bio,avatar\) on public\.cardora_member_details to authenticated/);
+assert.match(schema,/email_confirmed_at is not null/);assert.match(schema,/coalesce\(a\.is_anonymous, false\) = false/);assert.match(schema,/u\.status = 'active'/);
+assert.equal([...schema.matchAll(/owner_id = \(select auth\.uid\(\)\)/g)].length,4);
+assert.doesNotMatch(schema.replace(/^--.*$/gm,''),/grant[^;\n]+on public\.users/i);assert.doesNotMatch(profileSource,/localStorage\.setItem|innerHTML|service_role|sb_secret_/);
+function profileFixture({record=null,unavailable=false}={}){
+ const nodes=new Map(),calls=[];let identity='a',readGate=null,writeGate=null,row=record;
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',textContent:'',disabled:true,hidden:true,events:{},addEventListener(k,fn){this.events[k]=fn;}});return nodes.get(id);};
+ const window={};vm.runInNewContext(profileSource,{window});
+ const client={from(table){assert.equal(table,'cardora_member_details');return {select(fields){assert.equal(fields,'owner_id,nickname,region,bio,avatar');return {eq(key,id){assert.equal(key,'owner_id');calls.push({op:'read',id});return {async maybeSingle(){if(readGate)await readGate;return {data:row,error:unavailable?{code:'PGRST205'}:null};}};}};},insert(v){calls.push({op:'insert',v});return {select(){return {async single(){if(writeGate)await writeGate;row=v;return {data:v,error:null};}};}};},update(v){return {eq(key,id){assert.equal(key,'owner_id');calls.push({op:'update',id,v});return {select(){return {async single(){if(writeGate)await writeGate;row={owner_id:id,...v};return {data:row,error:null};}};}};}};}};}};
+ const editor=window.TRXMemberProfile({client,document:{getElementById:node},verify:async()=>identity?{id:identity,email_confirmed_at:'verified'}:null,timeout:p=>p});
+ return {editor,node,calls,setIdentity:id=>identity=id,setReadGate:p=>readGate=p,setWriteGate:p=>writeGate=p,setRow:v=>row=v,save:()=>node('profileForm').events.submit({preventDefault(){}})};
+}
+const pf=profileFixture();await pf.editor.open('a');assert.equal(pf.node('profileSave').disabled,false);pf.editor.setLanguage('th');assert.equal(pf.node('profileEditStatus').textContent,'โปรไฟล์ของคุณเป็นส่วนตัว');pf.node('profileNickname').value='นักสะสม';pf.node('profileRegion').value='Thailand';pf.node('profileBio').value='Card collector';pf.node('profileAvatar').value='gem';await pf.save();assert.equal(pf.calls.at(-1).op,'insert');assert.equal(pf.calls.at(-1).v.owner_id,'a');assert.equal(pf.node('profileEditStatus').textContent,'บันทึกโปรไฟล์แล้ว');pf.node('profileNickname').value='New name';await pf.save();assert.equal(pf.calls.at(-1).op,'update');assert.equal(pf.calls.at(-1).id,'a');assert.equal('owner_id' in pf.calls.at(-1).v,false);
+const bad=pf.calls.length;pf.node('profileAvatar').value='https://evil.invalid';await pf.save();assert.equal(pf.calls.length,bad);pf.editor.clear();assert.equal(pf.node('profileNickname').value,'');assert.equal(pf.node('profileEditor').hidden,true);assert.equal(pf.node('profileSave').disabled,true);
+const unavailableProfile=profileFixture({unavailable:true});await unavailableProfile.editor.open('a');assert.equal(unavailableProfile.node('profileSave').disabled,true);await unavailableProfile.save();assert.equal(unavailableProfile.calls.length,1);
+const cross=profileFixture({record:{owner_id:'b',nickname:'private other',region:'',bio:'',avatar:'star'}});await cross.editor.open('a');assert.equal(cross.node('profileSave').disabled,true);assert.equal(cross.node('profileNickname').value,'');
+const stale=profileFixture({record:{owner_id:'a',nickname:'private a',region:'',bio:'',avatar:'star'}});let unblockRead;stale.setReadGate(new Promise(r=>unblockRead=r));const pendingRead=stale.editor.open('a');await tick();stale.editor.clear();stale.setIdentity('b');unblockRead();await pendingRead;assert.equal(stale.node('profileNickname').value,'');assert.equal(stale.node('profileEditor').hidden,true);
+console.log('PASS: profile private editor, four-language status, owner-bound writes, unavailable schema, stale session and SQL draft constraints');
