@@ -1,0 +1,49 @@
+name: Cardora growth preview
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'join.html'
+      - 'growth-*.js'
+      - 'growth-admin.html'
+      - 'launch-applications.js'
+      - 'docs/security/growth-aggregate-review.sql'
+      - 'scripts/test-growth-*'
+      - '.github/workflows/growth-preview.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-growth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic_test_password
+          POSTGRES_DB: growth_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d growth_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Isolated profile, application and growth RLS tests
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: synthetic_test_password
+          PGDATABASE: growth_test
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/test-growth-rls.sql
+      - name: Verify closed gates and consent signals
+        run: |
+          node scripts/test-growth-offline.mjs
+          node scripts/test-global-launch-offline.mjs
+          node scripts/test-member-release-offline.mjs
