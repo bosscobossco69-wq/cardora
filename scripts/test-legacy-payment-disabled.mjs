@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 for (const slug of ['create-toyyibpay-subscription-bill','toyyibpay-subscription-callback']){
  const code=fs.readFileSync('docs/security/legacy-isolation/'+slug+'/index.ts','utf8');
- assert.doesNotMatch(code,/\bimport\s|\bfetch\s*\(|Deno\.env|createClient|\.rpc\s*\(|\.from\s*\(/);
+ assert.doesNotMatch(code.replace(/^\s*\/\/.*$/gm,''),/\bimport\s|\bfetch\s*\(|Deno\.env|createClient|\.rpc\s*\(|\.from\s*\(/);
  let handler,calls=0;
  const deny=()=>{calls++;throw Error('Unexpected network or secret access');};
  vm.runInNewContext(code,{Response,Deno:{serve:f=>{handler=f;},env:{get:deny}},fetch:deny,console:{log:deny,error:deny}});
