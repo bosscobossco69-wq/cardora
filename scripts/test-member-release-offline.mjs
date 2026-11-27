@@ -207,7 +207,7 @@ assert.match(schema,/enable row level security/);assert.match(schema,/force row 
 assert.match(schema,/grant update \(nickname,region,bio,avatar\) on public\.cardora_member_details to authenticated/);
 assert.match(schema,/email_confirmed_at is not null/);assert.match(schema,/coalesce\(a\.is_anonymous, false\) = false/);assert.match(schema,/u\.status = 'active'/);
 assert.equal([...schema.matchAll(/owner_id = \(select auth\.uid\(\)\)/g)].length,4);
-assert.doesNotMatch(schema,/grant[^;\n]+on public\.users/i);assert.doesNotMatch(profileSource,/localStorage\.setItem|innerHTML|service_role|sb_secret_/);
+assert.doesNotMatch(schema.replace(/^--.*$/gm,''),/grant[^;\n]+on public\.users/i);assert.doesNotMatch(profileSource,/localStorage\.setItem|innerHTML|service_role|sb_secret_/);
 function profileFixture({record=null,unavailable=false}={}){
  const nodes=new Map(),calls=[];let identity='a',readGate=null,writeGate=null,row=record;
  const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',textContent:'',disabled:true,hidden:true,events:{},addEventListener(k,fn){this.events[k]=fn;}});return nodes.get(id);};
