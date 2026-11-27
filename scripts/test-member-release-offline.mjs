@@ -17,6 +17,7 @@ async function fixture({user={id:'synthetic-a',email:'a@example.invalid',email_c
 }
 const active=await fixture();
 assert.equal(active.node('memberDetails').hidden,false);
+assert.equal(active.node('memberMain')['data-member-view'],'active');
 assert.equal(active.node('memberNumber').textContent,'TRX-SYNTHETIC');
 assert.equal(active.node('memberEmail').textContent,'a@example.invalid');
 assert.ok(active.calls.every(id=>id==='synthetic-a'));
@@ -31,10 +32,11 @@ assert.equal(active.node('apply').hidden,true);
 await active.node('logout').handlers.click();await active.drain();assert.equal(active.logoutCalls[0].scope,'local');assert.equal(active.node('registration').hidden,false);assert.equal(active.node('account').hidden,true);
 assert.equal(active.node('memberDetails').hidden,true);
 assert.equal(active.node('memberEmail').textContent,'');
+assert.equal(active.node('memberMain')['data-member-view'],'entry');
 assert.equal(active.node('memberNumber').textContent,'');
 assert.equal(active.node('application').hidden,true);
 for(const args of [{profile:null},{profile:{status:'suspended'}},{error:{message:'offline failure'}},{user:{id:'anonymous',is_anonymous:true}}]){
- const f=await fixture(args);assert.equal(f.node('memberDetails').hidden,true);assert.equal(f.node('interestPanel').hidden,true);assert.equal(f.node('application').hidden,true);
+ const f=await fixture(args);assert.equal(f.node('memberMain')['data-member-view'],'entry');assert.equal(f.node('memberDetails').hidden,true);assert.equal(f.node('interestPanel').hidden,true);assert.equal(f.node('application').hidden,true);
 }
 const switching=await fixture();
 let release;switching.holdLookup(new Promise(r=>{release=r;}));
@@ -42,9 +44,9 @@ switching.event('USER_UPDATED');await switching.drain();
 switching.setUser({id:'synthetic-b',email:'b@example.invalid',email_confirmed_at:'2026-11-25T00:00:00Z'});
 switching.setProfile({id:'profile-b',status:'active',member_id:'TRX-SECOND'});
 switching.holdLookup(null);switching.event('SIGNED_IN');
-assert.equal(switching.node('memberEmail').textContent,'');
+assert.equal(switching.node('memberEmail').textContent,'');assert.equal(switching.node('memberMain')['data-member-view'],'entry');
 await switching.drain();release();await tick();
-assert.equal(switching.node('memberEmail').textContent,'b@example.invalid');
+assert.equal(switching.node('memberEmail').textContent,'b@example.invalid');assert.equal(switching.node('memberMain')['data-member-view'],'active');
 assert.equal(switching.node('memberNumber').textContent,'TRX-SECOND');
 assert.ok(switching.calls.includes('synthetic-b'));
 console.log('PASS: active identity, inactive/missing/error/anonymous denial, logout, paused application and stale account switch (offline)');
@@ -106,7 +108,7 @@ console.log('PASS: signup confirmation and resend, invalid or mismatched identit
 
 const visibility=await fixture({user:null});visibility.node('tabRegister').onclick();assert.equal(visibility.node('registerPanel').hidden,false);assert.equal(visibility.node('loginPanel').hidden,true);assert.equal(visibility.node('consentRow').hidden,false);assert.equal(visibility.node('signupHelp').hidden,true);for(const id of ['loginPass','regPass','regConfirm']){const input=visibility.node(id),toggle=visibility.node(id+'Toggle');input.value='synthetic-password';assert.equal(input.type,'password');toggle.handlers.click();assert.equal(input.type,'text');assert.equal(toggle['aria-pressed'],'true');assert.equal(input.value,'synthetic-password');toggle.handlers.click();assert.equal(input.type,'password');assert.equal(toggle['aria-pressed'],'false');}visibility.node('regPassToggle').handlers.click();visibility.node('tabLogin').onclick();assert.equal(visibility.node('regPass').type,'password');assert.equal(visibility.node('regPass').value,'');assert.equal(visibility.node('loginPanel').hidden,false);assert.equal(visibility.node('registerPanel').hidden,true);assert.equal(visibility.node('consentRow').hidden,true);visibility.node('forgotPassword').onclick();assert.equal(visibility.node('emailPanel').hidden,false);visibility.node('openConfirm').handlers.click();assert.equal(visibility.node('loginPanel').hidden,true);assert.equal(visibility.node('registerPanel').hidden,true);assert.equal(visibility.node('signupHelp').hidden,false);visibility.node('backLogin').handlers.click();assert.equal(visibility.node('signupHelp').hidden,true);assert.equal(visibility.node('loginPanel').hidden,false);assert.match(html,/<div class="google-wrap" hidden>/);for(const id of ['loginPass','regPass','regConfirm'])assert.match(html,new RegExp('id="'+id+'Toggle" aria-controls="'+id+'" aria-label="Show password" aria-pressed="false"'));console.log('PASS: accessible eye controls, login/register isolation, confirmation and recovery navigation');
 
-const locale=await fixture({user:null});locale.node('languageSelect').value='ms';locale.node('languageSelect').handlers.change();locale.node('tabRegister').onclick();assert.equal(locale.node('authTitle').textContent,'Daftar akaun percuma');locale.node('regPass').value='synthetic-password';locale.node('languageSelect').value='zh';locale.node('languageSelect').handlers.change();assert.equal(locale.node('authTitle').textContent,'创建免费账户');assert.equal(locale.node('regPass').value,'synthetic-password');locale.node('languageSelect').value='en';locale.node('languageSelect').handlers.change();assert.equal(locale.node('authTitle').textContent,'Create your free account');assert.equal(locale.node('regPass').value,'synthetic-password');console.log('PASS: language switch preserves inputs and updates dynamic labels');
+const locale=await fixture({user:null});locale.node('languageSelect').value='ms';locale.node('languageSelect').handlers.change();locale.node('tabRegister').onclick();assert.equal(locale.node('authTitle').textContent,'Daftar akaun percuma');locale.node('regPass').value='synthetic-password';locale.node('languageSelect').value='zh';locale.node('languageSelect').handlers.change();assert.equal(locale.node('authTitle').textContent,'创建免费账户');assert.equal(locale.node('regPass').value,'synthetic-password');locale.node('languageSelect').value='en';locale.node('languageSelect').handlers.change();assert.equal(locale.node('authTitle').textContent,'Create your free account');assert.equal(locale.node('regPass').value,'synthetic-password');locale.node('languageSelect').value='th';locale.node('languageSelect').handlers.change();assert.equal(locale.node('authTitle').textContent,'สร้างบัญชีฟรีของคุณ');assert.equal(locale.node('regPass').value,'synthetic-password');locale.node('languageSelect').value='en';locale.node('languageSelect').handlers.change();assert.equal(locale.node('authTitle').textContent,'Create your free account');console.log('PASS: language switch preserves inputs and updates dynamic labels');
 
 
 // Native single OTP input retains autofill and paste; six visual cells are non-interactive.
@@ -174,3 +176,26 @@ const noLink=await recoveryFixture();noLink.setSession(noLink.makeUser());noLink
 const failedUpdate=await recoveryFixture({updateError:true});await requestRecovery(failedUpdate);await failedUpdate.submit('verification');failedUpdate.node('password').value=failedUpdate.node('confirmation').value='synthetic-new-password';await failedUpdate.submit('change');assert.match(failedUpdate.node('status').textContent,/not completed/);assert.equal(failedUpdate.node('password').value,'');
 assert.doesNotMatch(recoveryHtml,/sb_secret_|service_role|sk_live_/);
 console.log('PASS: recovery preview blocked, OTP and PKCE event verification, identity mismatch and normal-session denial, password mismatch, update and logout (mocked)');
+
+const hub=html.slice(html.indexOf('<div id="memberDetails" hidden>'),html.indexOf('<p id="accountStatus"'));
+assert.ok(html.indexOf('<section id="account" hidden>')<html.indexOf('<section id="interestPanel" hidden>'));
+assert.ok(html.indexOf('id="memberMain" data-member-view="entry"')>=0);
+for(const target of ['/collection-preview.html#search','/collection-preview.html#saved','/collection-preview.html#cert-heading','/packs-live-preview.html','#memberProfile','#freeInvite','/'])assert.ok(hub.includes('href="'+target+'"'),target);
+assert.equal([...hub.matchAll(/class="hub-tile hub-locked"/g)].length,4);
+assert.doesNotMatch(hub,/class="hub-tile hub-locked"[^>]*href|<form|<input|<button/);
+assert.match(hub,/On this device only/);assert.match(hub,/Concept preview · no purchase or stream/);
+const allIds=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);assert.equal(allIds.length,new Set(allIds).size);
+const dictionaries={};for(const m of script.matchAll(/(?:const staticL10n=|Object\.assign\(staticL10n,)(\{[^\n]*?\})(?:;|\);)/g))Object.assign(dictionaries,JSON.parse(m[1]));
+for(const m of html.matchAll(/data-l10n="(\d+)"/g)){assert.equal(dictionaries[m[1]]?.length,4,'translation '+m[1]);assert.ok(dictionaries[m[1]].every(v=>typeof v==='string'&&v.trim().length>0));}
+for(const page of ['collection-preview.html','packs-live-preview.html']){const content=readFileSync(new URL('../'+page,import.meta.url),'utf8');assert.match(content,/<a href="\/join\.html"><span data-l10n="\d+">Member center<\/span><\/a>/);assert.match(content,/noindex,nofollow/);assert.match(content,/trixovel-language/);}
+console.log('PASS: member hub navigation, locked features, existing identity gates, unique IDs and four-language labels');
+
+for(const m of script.matchAll(/(?:const messageL10n=|Object\.assign\(messageL10n,)(\{[^\n]*?\})(?:;|\);)/g))for(const [k,v] of Object.entries(JSON.parse(m[1]))){assert.equal(v.length,4,k);assert.match(v[3],/[\u0e00-\u0e7f]/,k);}
+for(const page of ['reset-password.html','collection-preview.html','packs-live-preview.html']){
+const content=readFileSync(new URL('../'+page,import.meta.url),'utf8');
+const match=content.match(page==='reset-password.html'?/words=(\{[^\n]*?\});/:/(?:const staticL10n=|const words=)(\[\[[^\n]*?\]\]);/);
+assert.ok(match,page);for(const v of Object.values(JSON.parse(match[1]))){assert.equal(v.length,4,page);assert.ok(v[3].trim(),page);}
+assert.match(content,/trixovel-language/);
+assert.match(content,page==='reset-password.html'?/option value="th">ภาษาไทย/:/id="langTh"/);
+}
+console.log('PASS: Thai auth messages and four-locale page dictionaries');

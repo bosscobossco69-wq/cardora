@@ -50,3 +50,21 @@ vm.runInContext(root.match(/<script>([\s\S]*?)<\/script>/)[1],vm.createContext({
 console.log('Offline community homepage checks passed');
 
 assert.match(root,/id="ms"/);assert.match(root,/Ahli berdaftar/);assert.match(root,/trixovel-language/);
+
+const thai=JSON.parse(root.match(/const th=(\{[^\n]*?\});/)[1]);
+const malay=JSON.parse(root.match(/const ms=(\{[^\n]*?\});/)[1]);
+assert.deepEqual(Object.keys(thai).sort(),Object.keys(malay).sort());
+for(const v of Object.values(thai))assert.match(v,/[\u0e00-\u0e7f]/);
+assert.match(root,/id="th" type="button" aria-pressed="false">ไทย/);
+const langNodes=new Map();const saved=new Map();const el=id=>{if(!langNodes.has(id))langNodes.set(id,{textContent:'',attrs:{},handlers:{},setAttribute(k,v){this.attrs[k]=v;},addEventListener(k,fn){(this.handlers[k]??=[]).push(fn)}});return langNodes.get(id);};
+const dataNodes=[...root.matchAll(/data-t="([^"]+)"[^>]*>([^<]*)</g)].map(m=>({dataset:{t:m[1]},textContent:m[2]}));
+const langDoc={hidden:true,documentElement:{},getElementById:el,querySelectorAll:()=>dataNodes,addEventListener(){}};
+const langCtx=vm.createContext({document:langDoc,Intl,Date,AbortController,setTimeout,clearTimeout,setInterval(){},fetch:()=>{throw Error('offline')},localStorage:{getItem:k=>saved.get(k)||null,setItem:(k,v)=>saved.set(k,v)}});
+vm.runInContext(root.match(/<script>([\s\S]*?)<\/script>/)[1],langCtx);
+assert.equal(langDoc.documentElement.lang,'en');
+for(const cb of el('th').handlers.click)cb();
+assert.equal(langDoc.documentElement.lang,'th');assert.equal(saved.get('trixovel-language'),'th');
+assert.equal(dataNodes.find(n=>n.dataset.t==='headline').textContent,thai.headline);
+for(const cb of el('en').handlers.click)cb();
+assert.equal(langDoc.documentElement.lang,'en');assert.equal(saved.get('trixovel-language'),'en');
+console.log('PASS: Thai homepage labels, English default, language switch and persistence');
