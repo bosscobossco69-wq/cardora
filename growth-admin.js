@@ -21,8 +21,14 @@ async function load(){
  try{
   const id=await verifiedAdmin();if(current!==g)return;if(!id){status='denied';render();return}
   const day=new Date();day.setDate(day.getDate()-29);const start=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(day);
-  const {data,error}=await client.from('cardora_growth_counts').select('day_myt,source,event,hits').gte('day_myt',start).order('day_myt',{ascending:false}).limit(1350);
-  const again=await verifiedAdmin();if(current!==g)return;if(error||again!==id||!Array.isArray(data))throw Error('unavailable');
+  const data=[];
+  for(let offset=0;offset<1350;offset+=250){
+   const page=await client.from('cardora_growth_counts').select('day_myt,source,event,hits').gte('day_myt',start).order('day_myt',{ascending:false}).order('source').order('event').range(offset,Math.min(offset+249,1349));
+   if(current!==g)return;
+   if(page.error||!Array.isArray(page.data))throw Error('unavailable');
+   data.push(...page.data);if(page.data.length<250)break;
+  }
+  const again=await verifiedAdmin();if(current!==g)return;if(again!==id||!Array.isArray(data))throw Error('unavailable');
   rows=data;status=rows.length?'':'empty';render();if(rows.length)$('status').textContent='';
  }catch{if(current===g){rows=[];status='unavailable';render()}}
 }
