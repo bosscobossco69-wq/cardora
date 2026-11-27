@@ -12,6 +12,11 @@ for(const c of checks){
   assert.ok(res.ok,'HTTP '+res.status);
   const cors=res.headers.get('access-control-allow-origin');
   const data=await res.json();
+  if(c.name.startsWith('One Piece')){
+   const row=Array.isArray(data)?data[0]:data;
+   const list=Array.isArray(row?.data)?row.data:Array.isArray(row?.results)?row.results:[row];
+   console.log('One Piece response shape: '+JSON.stringify({array:Array.isArray(data),keys:Object.keys(row||{}),rowKeys:Object.keys(list[0]||{}),sample:Object.fromEntries(Object.entries(list[0]||{}).filter(([k,v])=>/^(card_)?(name|id|number|code|set_id|set_name)$/i.test(k)&&['string','number'].includes(typeof v)).map(([k,v])=>[k,String(v).slice(0,120)])),cors:cors||'absent'}));
+  }
   assert.ok(c.validate(data),'unexpected public reference response');
   console.log(c.name+': valid JSON; CORS '+(cors||'absent'));
   if(c.cors)assert.ok(cors==='*'||cors===origin,'browser origin not allowed');
