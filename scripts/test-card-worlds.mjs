@@ -30,3 +30,11 @@ const off=fixture('yugioh',{fail:true});await off.search('89631139');assert.equa
 for(const l of ['en','zh','ms','th']){off.language(l);assert.equal(off.document.documentElement.lang,l==='zh'?'zh-Hans':l);assert.ok(off.labels.every(x=>x.textContent&&x.textContent!==x.dataset.t))}
 const bad=fixture('one-piece',{broken:true});bad.manual('New','TEST-1');assert.equal(bad.node('savedRows').children.length,1);bad.language('en');assert.match(bad.node('savedStatus').textContent,/storage unavailable/);
 console.log('PASS: internal category navigation, OP reference name/number lookup, local variant notes, persistence/removal, game isolation, YGO bounded request/cache/fallback, four languages and storage failure');
+
+const academy=fs.readFileSync('collector-academy.html','utf8');
+assert.match(home,/href="\/collector-academy\.html"/);assert.match(academy,/noindex,follow/);assert.match(academy,/connect-src 'none'/);assert.equal((academy.match(/<article class="panel">/g)||[]).length,12);assert.doesNotMatch(academy,/adsbygoogle|<script src=|fetch\(|innerHTML/);
+const guideNodes=new Map(),getGuide=id=>{if(!guideNodes.has(id))guideNodes.set(id,{hidden:false,value:'',addEventListener(k,f){this[k]=f}});return guideNodes.get(id)};
+const guideDoc={documentElement:{},getElementById:getGuide};
+vm.runInNewContext(academy.match(/<script>([\s\S]*?)<\/script>/)[1],{document:guideDoc,localStorage:{getItem:()=>null,setItem(){}}});
+for(const lang of ['en','zh','ms','th']){getGuide('language').value=lang;getGuide('language').change();assert.equal(guideDoc.documentElement.lang,lang==='zh'?'zh-Hans':lang);for(const k of ['en','zh','ms','th'])assert.equal(getGuide('guide-'+k).hidden,k!==lang)}
+console.log('PASS: original collector academy, three topics, four languages, offline-only reading and internal homepage navigation');
