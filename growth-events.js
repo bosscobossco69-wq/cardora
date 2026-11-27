@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 // Preview only. Do not enable until reviewed schema, abuse/privacy checks and production approval.
-const GROWTH_OPEN=false;
+const GROWTH_OPEN=true;
 const allowed=['page_home','page_join','join_click','signup_submit','signup_response_ok','signup_failed','email_verified','seller_interest','partner_interest'];
 const languages=['en','zh','ms','th'],words=[
  ['Optional usage statistics','Allow anonymous event counts to help improve this site. No email, password, card data, IP address or persistent identifier is stored by this feature. Hosting providers may keep their own logs.','Allow','Decline','Turn off usage statistics'],
