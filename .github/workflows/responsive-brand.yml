@@ -1,0 +1,20 @@
+name: TRIXOVEL responsive brand browser
+on:
+  pull_request:
+    paths:
+      - '*.html'
+      - 'assets/brand/**'
+      - 'scripts/test-responsive-brand.mjs'
+      - '.github/workflows/responsive-brand.yml'
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Verify original image hashes and responsive browser layouts
+        run: node scripts/test-responsive-brand.mjs
