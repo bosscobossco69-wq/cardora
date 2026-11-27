@@ -1,0 +1,23 @@
+name: TRIXOVEL three card worlds
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'collection-preview.html'
+      - 'one-piece.html'
+      - 'yugioh.html'
+      - 'card-world.js'
+      - 'assets/brand/card-world.css'
+      - 'scripts/test-card-worlds.mjs'
+      - '.github/workflows/card-worlds.yml'
+permissions:
+  contents: read
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node scripts/test-card-worlds.mjs

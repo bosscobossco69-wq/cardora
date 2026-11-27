@@ -1,0 +1,7 @@
+/* TRIXOVEL branded responsive UI. Local images only, no external font or image requests. */
+.trx-brand{display:inline-flex!important;align-items:center;justify-content:flex-start;gap:10px;min-width:0;max-width:100%;color:#e9ce88;text-decoration:none;white-space:nowrap;vertical-align:middle}
+.trx-brand img{display:block;width:clamp(48px,6vw,78px);height:auto;flex:none;object-fit:contain;filter:drop-shadow(0 3px 6px #0005)}
+.trx-brand .trx-wordmark{font-family:Georgia,"Times New Roman",serif!important;font-size:clamp(23px,3vw,39px)!important;font-weight:700!important;line-height:1.12!important;letter-spacing:.045em!important;color:#efd496!important;background:linear-gradient(180deg,#fff0c6 5%,#dfb976 48%,#e9ce88 70%,#b99157 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 1px 1px #a97c3220}
+.trx-brand:focus-visible{outline:2px solid #fff;outline-offset:5px;border-radius:6px}
+@media(max-width:420px){.trx-brand{gap:7px}.trx-brand img{width:54px}.trx-brand .trx-wordmark{font-size:25px!important;letter-spacing:.035em!important}}
+@media(max-width:330px){.trx-brand img{width:46px}.trx-brand .trx-wordmark{font-size:22px!important}}

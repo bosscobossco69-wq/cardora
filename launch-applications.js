@@ -2,7 +2,7 @@
 'use strict';
 // Release gate: keep false until the new SQL is approved, deployed and tested.
 // Never toggle this to restore the legacy seller_applications path.
-const APPLICATIONS_OPEN=false;
+const APPLICATIONS_OPEN=true;
 const $=id=>document.getElementById(id),words=window.TRXLaunchWords;
 const LANGS=['en','zh','ms','th'];
 const mode=document.body.dataset.mode;
@@ -15,7 +15,7 @@ let lang='en',status='pending',generation=0,identity=null,rows=[],busy=false,sta
 const tr=k=>words[k]?.[LANGS.indexOf(lang)]||k;
 function setStatus(k){status=k;$('appStatus').textContent=tr(k);}
 function controls(enabled){for(const id of fields)if($(id))$(id).disabled=!enabled;}
-function clearFields(){for(const id of fields){const el=$(id);if(!el)continue;if(id==='consent')el.checked=false;else if(id!=='submit')el.value=id==='kind'?'seller':'';}}
+function clearFields(){for(const id of fields){const el=$(id);if(!el)continue;if(id==='consent')el.checked=false;else if(id!=='submit')el.value=id==='kind'?(typeof location!=='undefined'&&new URLSearchParams(location.search||'').get('kind')==='partner'?'partner':'seller'):'';}}
 function invalidate(){generation++;identity=null;rows=[];busy=false;controls(false);clearFields();$('records').replaceChildren();}
 function bounded(p,ms=12000){let timer;return Promise.race([Promise.resolve(p),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('timeout')),ms);})]).finally(()=>clearTimeout(timer));}
 async function checkedUser(){
@@ -48,7 +48,7 @@ async function load(){
  setStatus('waiting');
  try{
   const u=await checkedUser();if(g!==generation)return;if(!u){setStatus('noAccess');return;}
-  let q=client.from(TABLE).select(FIELDS);if(mode!=='admin')q=q.eq('owner_id',u.id);
+  let q=client.from(TABLE).select(FIELDS);if(mode!=='admin')q=q.eq('owner_id',u.id);else q=q.in('status',['pending','contacted']);
   const {data,error}=await bounded(q.order('created_at',{ascending:false}).limit(100));
   if(g!==generation)return;
   const again=await checkedUser();if(g!==generation)return;if(error||!again||again.id!==u.id||!Array.isArray(data))throw Error('read');
@@ -58,7 +58,7 @@ async function load(){
 }
 async function submit(e){
  e.preventDefault();if(!APPLICATIONS_OPEN||mode!=='public'||!identity||busy||!$('consent').checked)return;
- const g=generation,id=identity,p={owner_id:id,kind:$('kind').value,name:$('appName').value.trim(),region:$('region').value.trim(),contact:$('contact').value.trim(),categories:$('categories').value.trim(),details:$('details').value.trim()};
+ const g=generation,id=identity,p={owner_id:id,consent_version:'application-v1',kind:$('kind').value,name:$('appName').value.trim(),region:$('region').value.trim(),contact:$('contact').value.trim(),categories:$('categories').value.trim(),details:$('details').value.trim()};
  if(!['seller','partner'].includes(p.kind)||rows.some(r=>r.kind===p.kind)||!$('applicationForm').reportValidity()){setStatus('error');return;}
  busy=true;controls(false);
  try{
@@ -85,7 +85,8 @@ function renderStats(){if(mode!=='public')return;const good=validStats(stats);fo
 async function fetchStats(){if(mode!=='public'||document.hidden)return;const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),8000);try{const r=await fetch(url+'/rest/v1/cardora_community_snapshot?select=registered_members,verified_members,new_today,day_myt,measured_at&singleton=eq.true',{headers:{apikey:key,Accept:'application/json'},credentials:'omit',cache:'no-store',signal:ctrl.signal});if(!r.ok)throw Error('stats');const d=await r.json();stats=Array.isArray(d)&&d.length===1&&validStats(d[0])?d[0]:null;}catch{stats=null;}finally{clearTimeout(timer);renderStats();}}
 function language(v){lang=LANGS.includes(v)?v:'en';document.documentElement.lang=lang==='zh'?'zh-Hans':lang;$('lang').value=lang;for(const el of document.querySelectorAll('[data-t]'))el.textContent=tr(el.dataset.t);setStatus(status);render();renderStats();try{localStorage.setItem('trixovel-language',lang)}catch{}}
 $('lang').addEventListener('change',()=>language($('lang').value));$('reload').addEventListener('click',load);$('applicationForm')?.addEventListener('submit',submit);
+if($('kind')&&typeof location!=='undefined'&&new URLSearchParams(location.search||'').get('kind')==='partner')$('kind').value='partner';
 try{language(localStorage.getItem('trixovel-language')||'en')}catch{language('en')}
-if(APPLICATIONS_OPEN&&client){client.auth.onAuthStateChange((event)=>{if(['SIGNED_OUT','SIGNED_IN','USER_UPDATED'].includes(event)){invalidate();setTimeout(load,0);}});load();}else{controls(false);setStatus('pending');}
+if(APPLICATIONS_OPEN&&client){client.auth.onAuthStateChange((event)=>{if(['SIGNED_OUT','SIGNED_IN','USER_UPDATED'].includes(event)){invalidate();setTimeout(load,0);}});load();}else{controls(false);setStatus(APPLICATIONS_OPEN?'error':'pending');}
 fetchStats();setInterval(()=>{renderStats();fetchStats();},60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderStats();fetchStats();}});
 })();
