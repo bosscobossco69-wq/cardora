@@ -30,7 +30,7 @@ alter table public.cardora_member_details enable row level security;
 alter table public.cardora_member_details force row level security;
 revoke all on public.cardora_member_details from public, anon, authenticated;
 grant select (owner_id,nickname,region,bio,avatar) on public.cardora_member_details to authenticated;
-grant insert (nickname,region,bio,avatar) on public.cardora_member_details to authenticated;
+grant insert (owner_id,nickname,region,bio,avatar) on public.cardora_member_details to authenticated;
 grant update (nickname,region,bio,avatar) on public.cardora_member_details to authenticated;
 create policy member_details_select_own on public.cardora_member_details for select to authenticated
 using (owner_id = (select auth.uid()) and (select cardora_profile_private.is_active_verified_member()));
