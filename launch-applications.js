@@ -48,7 +48,7 @@ async function load(){
  setStatus('waiting');
  try{
   const u=await checkedUser();if(g!==generation)return;if(!u){setStatus('noAccess');return;}
-  let q=client.from(TABLE).select(FIELDS);if(mode!=='admin')q=q.eq('owner_id',u.id);
+  let q=client.from(TABLE).select(FIELDS);if(mode!=='admin')q=q.eq('owner_id',u.id);else q=q.in('status',['pending','contacted']);
   const {data,error}=await bounded(q.order('created_at',{ascending:false}).limit(100));
   if(g!==generation)return;
   const again=await checkedUser();if(g!==generation)return;if(error||!again||again.id!==u.id||!Array.isArray(data))throw Error('read');
@@ -58,7 +58,7 @@ async function load(){
 }
 async function submit(e){
  e.preventDefault();if(!APPLICATIONS_OPEN||mode!=='public'||!identity||busy||!$('consent').checked)return;
- const g=generation,id=identity,p={owner_id:id,kind:$('kind').value,name:$('appName').value.trim(),region:$('region').value.trim(),contact:$('contact').value.trim(),categories:$('categories').value.trim(),details:$('details').value.trim()};
+ const g=generation,id=identity,p={owner_id:id,consent_version:'application-v1',kind:$('kind').value,name:$('appName').value.trim(),region:$('region').value.trim(),contact:$('contact').value.trim(),categories:$('categories').value.trim(),details:$('details').value.trim()};
  if(!['seller','partner'].includes(p.kind)||rows.some(r=>r.kind===p.kind)||!$('applicationForm').reportValidity()){setStatus('error');return;}
  busy=true;controls(false);
  try{
